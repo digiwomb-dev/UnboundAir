@@ -12,9 +12,11 @@ Was zuletzt tatsächlich ausgeführt wurde. Eine Aufgabe gilt erst als abgenomme
 
 | Was | Stand |
 |---|---|
-| Zuletzt getesteter Commit | *(noch keiner)* |
-| Ergebnis | *(ausstehend)* |
-| Als Nächstes zu prüfen | Testpunkt 1 |
+| Zuletzt getesteter Commit | `3bede7d` |
+| Ergebnis | Testpunkt 1 bestanden – Dev Container baut und startet, Temurin 26.0.2+10 und libjpeg-turbo 2.1.5 antworten |
+| Als Nächstes zu prüfen | Testpunkt 2 |
+
+Ausgeführt mit der `devcontainer`-CLI 0.89.0 auf Podman (`--docker-path podman`).
 
 ## Testpunkte
 
@@ -22,12 +24,12 @@ Der Meilenstein ist in vier Testpunkte geschnitten, damit ein Fehlschlag klein u
 
 | # | Prüft | Aufgaben | Anforderungen | Ergebnis |
 |---|---|---|---|---|
-| 1 | Dev Container baut und startet; `java -version` meldet 26, `jpegtran -version` antwortet | T1.3, T1.4 | DC-01, DC-02 | *(ausstehend)* |
+| 1 | Dev Container baut und startet; `java -version` meldet 26, `jpegtran -version` antwortet | T1.3, T1.4 | DC-01, DC-02 | **bestanden** (`3bede7d`) |
 | 2 | `./gradlew build` läuft durch | T1.6–T1.9 | TE-03 | *(ausstehend)* |
 | 3 | `./gradlew test` grün: Protokoll, Client, Fake-Scanner | T1.10–T1.14 | SC-01–SC-07, TE-01 | *(ausstehend)* |
 | 4 | `./gradlew test` grün: Befehle gegen den Fake-Scanner | T1.15–T1.17 | BE-01, BE-02, DC-03 | *(ausstehend)* |
 
-Die Aufgaben T1.0 bis T1.2 und T1.5 ändern nur Doku und Konfiguration und brauchen keinen Testlauf.
+Die Aufgaben T1.0 bis T1.2, T1.5 und T1.18 ändern nur Doku und Konfiguration und brauchen keinen Testlauf.
 
 ## Aufgaben
 
@@ -38,14 +40,15 @@ Je Aufgabe: eine ID, genau eine Datei, ein prüfbares Abnahmekriterium und die A
 - [x] **T1.0** *(Commit, keine Datei)* – Rahmen als erster Commit. *Abnahme:* `git log --oneline` zeigt `chore: add project framework`; `git ls-files _input` ist leer. *Anforderung:* Ergebnis 1 und 8 (kein ID-Bereich betroffen).
 - [x] **T1.1** `docs/plan.md` – Korrekturen aus der Klärungsrunde. *Abnahme:* Versionstabelle mit Java 26; SC-02 definiert „Vorgang"; SC-06 und SC-07 vorhanden; KL-01 nutzt `unboundair.*`/`UNBOUNDAIR_*`; SV-01 nennt beide Testbilder; SV-03 sagt „eine Komponente (Luma)"; CT-01 nur `arm64`; Abschnitt „Entschieden" vorhanden. *Anforderung:* Planpflege nach `AGENTS.md` (kein ID-Bereich betroffen).
 - [x] **T1.2** `docs/offene-fragen.md` – offene Punkte mit Status. *Abnahme:* Enthält die 6 Fragen aus dem Wissensstand plus `version`-Antwortformat, 500-ms-Pause und `battlow`, je mit Status und Herkunft; die Abgrenzung zu den offenen Entscheidungen des Plans ist erklärt. *Anforderung:* DO-07.
-- [ ] **T1.5** `.gitignore` – Build-Ordner ergänzen. *Abnahme:* `build/` und `.gradle/` ignoriert, `_input/` unverändert enthalten. *Anforderung:* Ergebnis 1 (kein ID-Bereich betroffen).
+- [x] **T1.5** `.gitignore` – Build-Ordner ergänzen. *Abnahme:* `build/` und `.gradle/` ignoriert, `_input/` unverändert enthalten. *Anforderung:* Ergebnis 1 (kein ID-Bereich betroffen).
+- [x] **T1.18** `README.md` – Einstieg und Wegweiser durch die Doku. *Abnahme:* Erklärt in wenigen Sätzen, was `UnboundAir` ist, nennt den Aufbaustand und verweist auf jede Datei in `docs/` mit einem Satz, wofür sie da ist. Kein Schnellstart – der kommt in Meilenstein 5. *Anforderung:* DO-08.
 
 ### Testpunkt 1 – Dev Container
 
-- [ ] **T1.3** `.devcontainer/Dockerfile` – Build- und Testumgebung. *Abnahme:* Basis Temurin JDK 26, installiert `libjpeg-turbo-progs`; keine feste Architektur verdrahtet. *Anforderung:* DC-01.
-- [ ] **T1.4** `.devcontainer/devcontainer.json` – Dev-Container-Definition. *Abnahme:* Verweist auf T1.3; im gestarteten Container liefern `java -version` (26) und `jpegtran -version` Ausgaben. *Anforderung:* DC-01, DC-02.
+- [x] **T1.3** `.devcontainer/Dockerfile` – Build- und Testumgebung. *Abnahme:* Basis Temurin JDK 26, installiert `libjpeg-turbo-progs`; keine feste Architektur verdrahtet. *Anforderung:* DC-01.
+- [x] **T1.4** `.devcontainer/devcontainer.json` – Dev-Container-Definition. *Abnahme:* Verweist auf T1.3; im gestarteten Container liefern `java -version` (26) und `jpegtran -version` Ausgaben. *Anforderung:* DC-01, DC-02.
 
-Beide Dateien sind geschrieben, aber **noch nicht verifiziert**: Der Container wurde nie gebaut oder gestartet.
+Verifiziert am Commit `3bede7d`: `java -version` meldet `Temurin-26.0.2+10`, `jpegtran -version` meldet `libjpeg-turbo version 2.1.5`. Der Digest-Pin im Dockerfile löst bei der `devcontainer`-CLI eine Warnung aus („failed validation", „Could not parse image name"); das ist nur deren Vorab-Prüfung, der Build läuft trotzdem durch – siehe `entwicklung.md`.
 
 ### Testpunkt 2 – Gradle-Gerüst
 
@@ -67,7 +70,3 @@ Beide Dateien sind geschrieben, aber **noch nicht verifiziert**: Der Container w
 - [ ] **T1.15** `src/main/kotlin/.../cli/StatusCommand.kt` – Befehl `status`. *Abnahme:* Gibt Status und Firmware-Version aus (gegen den Fake: `nopaper` und `NB0a.032`). *Anforderung:* BE-01.
 - [ ] **T1.16** `src/main/kotlin/.../cli/ScanCommand.kt` – Befehl `scan`. *Abnahme:* `scan [--dpi 300|600] [--out DATEI]` schreibt das Roh-JPEG; kein Zuschnitt (folgt in Meilenstein 2). *Anforderung:* BE-02 (Teil).
 - [ ] **T1.17** `src/test/kotlin/.../cli/CommandTest.kt` – Befehlstests. *Abnahme:* Beide Befehle laufen gegen den Fake-Scanner grün. *Anforderung:* BE-01, BE-02, DC-03.
-
-### Noch offen
-
-- [ ] **T1.18** `README.md` – Einstieg und Wegweiser durch die Doku. *Abnahme:* Erklärt in wenigen Sätzen, was `UnboundAir` ist, nennt den Aufbaustand und verweist auf jede Datei in `docs/` mit einem Satz, wofür sie da ist. Kein Schnellstart – der kommt in Meilenstein 5. *Anforderung:* DO-08.

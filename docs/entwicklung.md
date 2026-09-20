@@ -20,7 +20,15 @@ Repository klonen und im Dev Container öffnen. In VS Code: Ordner öffnen, dann
 devcontainer up --workspace-folder .
 ```
 
-Beim ersten Start wird das Image gebaut, das dauert ein paar Minuten. Danach prüfen, ob die Umgebung stimmt:
+Wer Podman statt Docker verwendet, hängt `--docker-path podman` an – die CLI sucht sonst nach einer ausführbaren Datei namens `docker` und bricht mit `spawn docker ENOENT` ab:
+
+```bash
+devcontainer up --workspace-folder . --docker-path podman
+```
+
+Beim ersten Start wird das Image gebaut, das dauert einige Minuten. Die Ausgabe wirkt dabei streckenweise wie eingefroren, weil die Fortschrittsanzeige der Container-Runtime gepuffert durchgereicht wird. `--log-level debug` zeigt stattdessen jeden Schritt einzeln.
+
+Danach prüfen, ob die Umgebung stimmt:
 
 ```bash
 java -version      # erwartet: Temurin, Version 26
@@ -28,6 +36,17 @@ jpegtran -version  # erwartet: eine libjpeg-turbo-Version
 ```
 
 Beides muss antworten. `jpegtran` ist keine Kür: Zuschnitt und Graustufen-Umwandlung laufen ausschließlich darüber, ohne das Programm schlagen die entsprechenden Tests fehl.
+
+### Warnung beim Auflösen des Image-Namens
+
+Das Basis-Image ist im Dockerfile per Digest festgenagelt. Die `devcontainer`-CLI kann die Schreibweise `name:tag@sha256:…` in ihrer Vorab-Prüfung nicht verarbeiten und meldet:
+
+```
+Path 'library/eclipse-temurin:26-jdk-noble' for input '…@sha256:…' failed validation.
+Error fetching image details: Could not parse image name '…'
+```
+
+Das ist folgenlos: Die Meldung stammt aus einer Metadaten-Abfrage der CLI, nicht aus dem Build. Die Container-Runtime versteht den Digest und zieht das Image korrekt.
 
 ## Bauen und testen
 
