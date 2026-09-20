@@ -220,9 +220,10 @@ Je Aufgabe: eine ID, genau eine Datei, ein prüfbares Abnahmekriterium und die A
 
 - [x] **T1.0** *(Commit, keine Datei)* – Rahmen als erster Commit. *Abnahme:* `git log --oneline` zeigt `chore: add project framework`; `git ls-files _input` ist leer. *Anforderung:* Ergebnis 1 und 8.
 - [x] **T1.1** `docs/plan.md` – Korrekturen aus der Klärungsrunde. *Abnahme:* Versionstabelle mit Java 26; SC-02 definiert „Vorgang"; SC-06 und SC-07 vorhanden; KL-01 nutzt `unboundair.*`/`UNBOUNDAIR_*`; SV-01 nennt beide Testbilder; SV-03 sagt „eine Komponente (Luma)"; CT-01 nur `arm64`; Abschnitt „Entschieden" vorhanden. *Anforderung:* Planpflege nach AGENTS.md.
-- [ ] **T1.2** `docs/offene-fragen.md` – offene Punkte mit Status. *Abnahme:* Enthält die 6 Fragen aus dem Wissensstand plus `normalize`, `version`-Antwortformat, 500-ms-Pause und Seitengrößen-Abweichung, je mit Status und Herkunft. *Anforderung:* DO-07.
-- [ ] **T1.3** `.devcontainer/Dockerfile` – Build- und Testumgebung. *Abnahme:* Basis Temurin JDK 26, installiert `libjpeg-turbo-progs`; keine feste Architektur verdrahtet. *Anforderung:* DC-01.
-- [ ] **T1.4** `.devcontainer/devcontainer.json` – Dev-Container-Definition. *Abnahme:* Verweist auf T1.3; im gestarteten Container liefern `java -version` (26) und `jpegtran -version` Ausgaben. *Anforderung:* DC-01, DC-02.
+- [x] **T1.2** `docs/offene-fragen.md` – offene Punkte mit Status. *Abnahme:* Enthält die 6 Fragen aus dem Wissensstand plus `normalize`, `version`-Antwortformat, 500-ms-Pause und Seitengrößen-Abweichung, je mit Status und Herkunft. *Anforderung:* DO-07.
+- [x] **T1.3** `.devcontainer/Dockerfile` – Build- und Testumgebung. *Abnahme:* Basis Temurin JDK 26, installiert `libjpeg-turbo-progs`; keine feste Architektur verdrahtet. *Anforderung:* DC-01.
+- [x] **T1.4** `.devcontainer/devcontainer.json` – Dev-Container-Definition. *Abnahme:* Verweist auf T1.3; im gestarteten Container liefern `java -version` (26) und `jpegtran -version` Ausgaben. *Anforderung:* DC-01, DC-02.
+  *Noch nicht verifiziert:* Der Container wurde nie gestartet – im Entwicklungssystem fehlt eine Container-Runtime. Die Abnahme von T1.3 und T1.4 steht damit aus und wird nachgeholt, sobald die Runtime bereitsteht.
 
 **Teil B – braucht eine laufende Container-Runtime (Tests laufen nur dort, siehe AGENTS.md):**
 
