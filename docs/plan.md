@@ -35,7 +35,8 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
   | Spring Boot | 4.1.1 | |
   | Kotlin | 2.4.20 | **bewusst neuer** als die von Spring Boot 4.1.1 verwaltete 2.3.21 – siehe Hinweis unten |
   | Apache PDFBox | 3.0.8 | |
-  | ktlint-Gradle-Plugin | 14.2.0 | siehe TE-03 |
+  | Spotless-Gradle-Plugin | 8.10.2 | führt den Linter aus, siehe TE-03 |
+  | ktlint (über Spotless) | 1.8.0 | der eigentliche Linter |
 
   Die Obergrenze setzt jeweils der älteste Baustein der Kette: Gradle begrenzt Java, Spring Boot begrenzt Kotlin. Beim Anheben einer Version diese Tabelle mitpflegen.
 
@@ -191,8 +192,8 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
   *Abnahme:* Jedes dieser fünf Verhalten lässt sich im Test gezielt einschalten.
 - **TE-02** Testbilder: die echten Testbilder aus `_input/fixtures/` als Test-Ressource plus synthetische Fälle: A4 ohne Schwarz oben und seitlich, nur Streifen unten; dunkles Bild.
   *Abnahme:* Alle Testbilder liegen als Test-Ressourcen vor und werden in den SV-Tests genutzt.
-- **TE-03** Linting mit ktlint über das Gradle-Plugin (entschieden, siehe „Entschieden – nicht mehr offen").
-  *Abnahme:* Der Linter läuft im Build mit und meldet nichts.
+- **TE-03** Linting mit ktlint, ausgeführt über das Spotless-Gradle-Plugin (entschieden, siehe „Entschieden – nicht mehr offen").
+  *Abnahme:* Der Linter läuft im Build mit (`spotlessCheck` hängt an `check`) und meldet nichts.
 
 ### Doku (DO) – `docs/`, Deutsch als führende Fassung
 
@@ -260,7 +261,11 @@ Hier stehen nur Punkte, die **eine Entscheidung** brauchen. Was sich dagegen nur
 Punkte, die zu Projektbeginn geklärt wurden. Die Begründungen gehören nach DO-06 in `docs/entscheidungen.md`.
 
 - **Lizenz:** Apache-2.0. Wie MIT freizügig, aber mit ausdrücklicher Patentklausel – sinnvoll, weil hier ein Hersteller-Protokoll nachgebaut wird. Herkunft wird dokumentiert: s400w ist CC0 (kein Code übernommen, nur Protokollwissen), AirScan als Quelle genannt, kein Hersteller-Code im Repo.
-- **Linter (TE-03):** ktlint über das Gradle-Plugin. Reine Formatierung, kaum Konfiguration, wenig Rauschen – detekt würde mehr Feinjustierung verlangen, ohne hier mehr zu bringen.
+- **Linter (TE-03):** ktlint als Regelwerk, ausgeführt über das **Spotless**-Gradle-Plugin. Reine Formatierung, kaum Konfiguration, wenig Rauschen – detekt würde mehr Feinjustierung verlangen, ohne hier mehr zu bringen.
+
+  Der Umweg über Spotless ist nicht Geschmackssache, sondern nötig: Das ktlint-Gradle-Plugin scheiterte mit `Extensions storage is not registered`. Ursache ist eine Kette aus drei Gliedern – `spring-boot-dependencies` importiert das `kotlin-bom`, dieses verwaltet auch `kotlin-compiler-embeddable`, und `io.spring.dependency-management` wendet das auf **alle** Konfigurationen an, also auch auf die des Linters. Dadurch bekommt ktlint statt seines eigenen Compilers (2.1.0) den des Projekts (2.4.20) untergeschoben und stürzt ab. Spotless löst seine Werkzeuge über `detachedConfiguration` auf, die von `configurations.all {}` nicht erfasst wird – damit greift die Überschreibung dort nicht.
+
+  Erschwerend: ktlint ist mit Kotlin 2.4 ohnehin nicht kompatibel (ktlint-Issue 3289, gemeldet von einem JetBrains-Compiler-Entwickler); der Fix existiert bisher nur in ktlint 2.0.0-ALPHA. Der Linter parst deshalb bewusst mit einem älteren Compiler als dem, mit dem übersetzt wird – für Formatierungsregeln genügt das. Siehe OF-11.
 - **DPI-Quelle (SV-05):** Maßgeblich ist die **befohlene** Auflösung (wir setzen `dpi300`/`dpi600` selbst). Der JPEG-Header wird zusätzlich gelesen; weicht er ab, wird **gewarnt, nicht abgebrochen**. Grund: Laut offener Frage 5 stimmt die physische Größe ohnehin nicht, der Header ist also nicht vertrauenswürdiger als unser eigener Befehl – eine Abweichung ist aber ein wertvoller Hinweis.
 - **Modul-Auswahl (AU-03):** Umgebungsvariable `UNBOUNDAIR_OUTPUT_MODULES` als Komma-Liste, in v1 mit dem Wert `paperless`. Eine Liste kostet jetzt nichts und nimmt die offene Frage „mehrere Module gleichzeitig" nicht vorweg.
 - **Outbox (AU-04):** Ablage unter `unboundair.outbox.path`, Default `/var/lib/unboundair/outbox`; je Dokument ein Unterordner mit `document.pdf` und `metadata.json` (Metadaten müssen mitpersistiert werden, sonst überleben sie den Neustart nicht). Backoff: Start 30 s, Faktor 2, Deckel 1 h, unbegrenzte Versuche. Nach erfolgreicher Zustellung wird der Ordner gelöscht.

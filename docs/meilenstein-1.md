@@ -20,20 +20,19 @@ Ausgeführt mit der `devcontainer`-CLI 0.89.0 auf Podman (`--docker-path podman`
 
 ### Testpunkt 2 – was auszuführen ist
 
-Das Gradle-Gerüst (T1.6 bis T1.9) ist geschrieben und committet, aber **noch nie gebaut worden**. Auszuführen:
+Auszuführen:
 
 ```bash
 devcontainer exec --workspace-folder . --docker-path podman bash -lc "./gradlew build"
 ```
 
-Der erste Lauf lädt Gradle 9.7.1 und alle Abhängigkeiten herunter und dauert entsprechend lange. Erwartet wird `BUILD SUCCESSFUL`.
+Erwartet wird `BUILD SUCCESSFUL`.
 
-Unsicher sind vier Punkte, weil sie nie ausgeführt wurden:
+**Erster Versuch (Commit `06a91f9`): fehlgeschlagen.** Der Linter brach ab mit `Extensions storage is not registered`, beim Parsen von `build.gradle.kts` und `UnboundAirApplication.kt`. Alles davor – Gradle, Java 26, der Kotlin-Compiler – lief durch. Damit sind drei der vier ursprünglich unsicheren Punkte erledigt: Kotlin 2.4.20 setzt sich gegen Spring Boots 2.3.21 durch, `jvmToolchain(26)` findet das JDK, der Netzzugang besteht.
 
-1. Ob Kotlin 2.4.20 sich gegen die von Spring Boot 4.1.1 verwaltete 2.3.21 durchsetzt. Die Plugin-Reihenfolge in `build.gradle.kts` soll das bewirken; greift sie nicht, scheitert der Compiler am `jvmTarget` für Java 26.
-2. Ob ktlint 14.2.0 mit Kotlin 2.4.20 zusammenarbeitet.
-3. Ob `jvmToolchain(26)` das JDK im Container findet, statt eines herunterladen zu wollen.
-4. Ob im Container Netzzugang für den ersten Lauf besteht.
+Ursache war nicht der Linter selbst, sondern die Versionsverwaltung von Spring Boot, die ktlint dessen eigenen Compiler entzieht – ausführlich in OF-11. Umgestellt auf ktlint über Spotless.
+
+**Offen ist jetzt nur noch:** ob Spotless' `detachedConfiguration` die Überschreibung tatsächlich umgeht. Die Annahme stammt aus dem gelesenen Quelltext von Spotless, nicht aus einem Testlauf.
 
 Schlägt der Build fehl, ist die Meldung ab `* What went wrong:` das Entscheidende.
 
@@ -72,7 +71,7 @@ Verifiziert am Commit `3bede7d`: `java -version` meldet `Temurin-26.0.2+10`, `jp
 ### Testpunkt 2 – Gradle-Gerüst
 
 - [ ] **T1.6** `settings.gradle.kts` – Projektname `unboundair`. *Abnahme:* `./gradlew projects` zeigt den Namen. *Anforderung:* Ergebnis 1 (kein ID-Bereich betroffen).
-- [ ] **T1.7** `build.gradle.kts` – Abhängigkeiten und Linter. *Abnahme:* Alle Versionen aus der Tabelle in `plan.md` fest gepinnt, ktlint im Build verdrahtet, `./gradlew build` im Dev Container grün. *Anforderung:* TE-03.
+- [ ] **T1.7** `build.gradle.kts` – Abhängigkeiten und Linter. *Abnahme:* Alle Versionen aus der Tabelle in `plan.md` fest gepinnt, ktlint über Spotless im Build verdrahtet (`spotlessCheck` hängt an `check`), `./gradlew build` im Dev Container grün. *Anforderung:* TE-03.
 - [ ] **T1.8** `gradle/wrapper/gradle-wrapper.properties` – Wrapper. *Abnahme:* `./gradlew --version` meldet Gradle 9.7.1; die Prüfsumme des mit eingecheckten `gradle-wrapper.jar` stimmt mit der in `entwicklung.md` genannten überein. *Anforderung:* DC-01 (Gradle über den Wrapper).
 - [ ] **T1.9** `src/main/kotlin/.../UnboundAirApplication.kt` – Einstiegspunkt. *Abnahme:* Startet und beendet sich ohne Web-Server. *Anforderung:* Ergebnis 1 (kein ID-Bereich betroffen).
 

@@ -163,3 +163,29 @@ Die Antwort `battlow` ist aus der App bekannt, wurde am Gerät aber nie ausgelö
 **So gebaut:** Eigene Exception (SC-05); der Fake-Scanner kann `battlow` auf Wunsch senden (TE-01), damit der Pfad getestet ist.
 
 **Klärt:** Gerät leerlaufen lassen – oder offen lassen, bis es zufällig auftritt.
+
+---
+
+## OF-11 Der Linter hinkt der Kotlin-Version hinterher
+
+**Status:** beobachtet · **Herkunft:** [Analyse] – am eigenen Build beobachtet und in den Abhängigkeiten nachvollzogen
+
+Dieses Projekt nutzt grundsätzlich die neueste stabile Kotlin-Version, derzeit 2.4.20. Linter betten den Kotlin-Compiler aber selbst ein, um Quelltext zu parsen, und liegen dabei regelmäßig mehrere Versionen zurück:
+
+| Werkzeug | eingebetteter Kotlin-Compiler |
+|---|---|
+| ktlint 1.5.0 (Vorgabe des ktlint-Gradle-Plugins) | 2.1.0 |
+| ktlint 1.8.0 (neueste stabile) | 2.2.21 |
+| detekt 1.23.8 (neueste stabile, Februar 2025) | 2.0.21 |
+| detekt 2.0.0-alpha.6 | 2.4.10 |
+
+Zwei getrennte Probleme treffen hier zusammen:
+
+1. **Versionsüberschreibung.** `spring-boot-dependencies` importiert das `kotlin-bom`, dieses verwaltet auch `kotlin-compiler-embeddable`, und `io.spring.dependency-management` wendet die Verwaltung auf *alle* Konfigurationen an – auch auf die des Linters. Der bekommt dadurch den Compiler des Projekts untergeschoben statt seines eigenen und stürzt mit `Extensions storage is not registered` ab.
+2. **Echte Unverträglichkeit.** ktlint ist mit Kotlin 2.4 grundsätzlich nicht kompatibel (ktlint-Issue 3289, gemeldet von einem JetBrains-Compiler-Entwickler, geschlossen im Juni 2026). Der Fix steckt bisher nur in ktlint 2.0.0-ALPHA-4. Die Grenze verläuft genau zwischen Kotlin 2.4.10 (funktioniert) und 2.4.20 (bricht).
+
+**So gebaut:** ktlint läuft über das Spotless-Plugin, das seine Werkzeuge über eine `detachedConfiguration` auflöst. Solche Konfigurationen erfasst `configurations.all {}` nicht, deshalb greift Problem 1 dort nicht. Der Linter parst dadurch bewusst mit einem älteren Compiler (2.2.21) als dem, mit dem übersetzt wird (2.4.20).
+
+**Womit zu rechnen ist:** Solange die Differenz besteht, kann der Linter Syntax nicht verstehen, die erst nach Kotlin 2.2 hinzugekommen ist. Für die hier verwendeten Sprachmittel ist das unkritisch; fällt es doch auf, äußert es sich als Parse-Fehler in einer bestimmten Datei.
+
+**Klärt sich,** sobald ktlint 2.x stabil ist und die Gradle-Plugins dessen neue Koordinaten unterstützen. Dann ist zu prüfen, ob der Umweg über Spotless noch nötig ist. Dieser Abstand tritt bei jedem Kotlin-Update erneut auf und ist kein einmaliges Problem.

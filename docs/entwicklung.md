@@ -55,10 +55,15 @@ Das ist folgenlos: Die Meldung stammt aus einer Metadaten-Abfrage der CLI, nicht
 Alles im Dev Container ausführen:
 
 ```bash
-./gradlew build         # kompilieren, Linter, Tests
-./gradlew test          # nur Tests
-./gradlew ktlintCheck   # nur Linter
+./gradlew build           # kompilieren, Linter, Tests
+./gradlew test            # nur Tests
+./gradlew spotlessCheck   # nur Linter
+./gradlew spotlessApply   # Formatierungsmängel automatisch beheben
 ```
+
+`spotlessCheck` hängt an der `check`-Task und läuft damit bei `build` automatisch mit. `spotlessApply` ändert Dateien – bewusst einsetzen, nicht nebenbei.
+
+Geprüft wird mit **ktlint**; Spotless ist nur der Rahmen, der es startet. Warum dieser Umweg nötig ist, steht in `plan.md` unter „Entschieden – nicht mehr offen" und in `offene-fragen.md` unter OF-11.
 
 Die Tests kommen ohne echte Geräte und ohne fremde Dienste aus: Der Scanner wird durch einen Fake-Scanner ersetzt, der im Test als TCP-Server läuft und das Verhalten des echten Geräts nachbildet – inklusive seiner Eigenheiten wie der Füllbytes in den Antworten.
 

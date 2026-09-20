@@ -10,7 +10,14 @@ plugins {
     kotlin("plugin.spring") version "2.4.20"
     id("org.springframework.boot") version "4.1.1"
     id("io.spring.dependency-management") version "1.1.7"
-    id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
+
+    // Runs ktlint. Not applied through the ktlint Gradle plugin on purpose:
+    // Spring Boot's dependency management imports the Kotlin BOM and applies
+    // it to every configuration, which replaces ktlint's own compiler with
+    // the project's 2.4.20 and makes it crash. Spotless resolves its tools
+    // through a detached configuration, which that mechanism does not touch.
+    // See docs/plan.md, "Entschieden", and OF-11.
+    id("com.diffplug.spotless") version "8.10.2"
 }
 
 group = "dev.digiwomb.unboundair"
@@ -37,6 +44,19 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation(kotlin("test"))
+}
+
+spotless {
+    // The ktlint version is pinned explicitly rather than left to Spotless,
+    // so an update of the plugin cannot silently change the rule set.
+    kotlin {
+        target("src/**/*.kt")
+        ktlint("1.8.0")
+    }
+    kotlinGradle {
+        target("*.gradle.kts")
+        ktlint("1.8.0")
+    }
 }
 
 tasks.withType<Test> {
