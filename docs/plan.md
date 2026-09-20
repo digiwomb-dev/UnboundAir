@@ -230,7 +230,7 @@ Je Aufgabe: eine ID, genau eine Datei, ein prüfbares Abnahmekriterium und die A
 
 - [x] **T1.0** *(Commit, keine Datei)* – Rahmen als erster Commit. *Abnahme:* `git log --oneline` zeigt `chore: add project framework`; `git ls-files _input` ist leer. *Anforderung:* Ergebnis 1 und 8.
 - [x] **T1.1** `docs/plan.md` – Korrekturen aus der Klärungsrunde. *Abnahme:* Versionstabelle mit Java 26; SC-02 definiert „Vorgang"; SC-06 und SC-07 vorhanden; KL-01 nutzt `unboundair.*`/`UNBOUNDAIR_*`; SV-01 nennt beide Testbilder; SV-03 sagt „eine Komponente (Luma)"; CT-01 nur `arm64`; Abschnitt „Entschieden" vorhanden. *Anforderung:* Planpflege nach AGENTS.md.
-- [x] **T1.2** `docs/offene-fragen.md` – offene Punkte mit Status. *Abnahme:* Enthält die 6 Fragen aus dem Wissensstand plus `normalize`, `version`-Antwortformat, 500-ms-Pause und Seitengrößen-Abweichung, je mit Status und Herkunft. *Anforderung:* DO-07.
+- [x] **T1.2** `docs/offene-fragen.md` – offene Punkte mit Status. *Abnahme:* Enthält die 6 Fragen aus dem Wissensstand plus `version`-Antwortformat, 500-ms-Pause und `battlow`, je mit Status und Herkunft; die Abgrenzung zu den offenen Entscheidungen des Plans ist erklärt. *Anforderung:* DO-07.
 - [x] **T1.3** `.devcontainer/Dockerfile` – Build- und Testumgebung. *Abnahme:* Basis Temurin JDK 26, installiert `libjpeg-turbo-progs`; keine feste Architektur verdrahtet. *Anforderung:* DC-01.
 - [x] **T1.4** `.devcontainer/devcontainer.json` – Dev-Container-Definition. *Abnahme:* Verweist auf T1.3; im gestarteten Container liefern `java -version` (26) und `jpegtran -version` Ausgaben. *Anforderung:* DC-01, DC-02.
   *Noch nicht verifiziert:* Der Container wurde nie gestartet – im Entwicklungssystem fehlt eine Container-Runtime. Die Abnahme von T1.3 und T1.4 steht damit aus und wird nachgeholt, sobald die Runtime bereitsteht.
@@ -253,6 +253,8 @@ Je Aufgabe: eine ID, genau eine Datei, ein prüfbares Abnahmekriterium und die A
 
 ## Offene Entscheidungen – nicht vorwegnehmen, fragen
 
+Hier stehen nur Punkte, die **eine Entscheidung** brauchen. Was sich dagegen nur **am Gerät klären** lässt, steht in `docs/offene-fragen.md` – dort ist die Abgrenzung erklärt. Zweistufige Punkte (erst messen, dann entscheiden) stehen in beiden Listen und verweisen aufeinander.
+
 - **Deployment:** Ziel-Host und konkretes Deployment-Beispiel. Dass als Container betrieben wird, steht fest.
 - **CI:** Tests und Image-Build. Welches CI-System, ist egal – wird erst mit Meilenstein 6 festgelegt.
 - **Web-UI:** Umfang und Technik – kommt perspektivisch, nicht in v1.
@@ -260,9 +262,9 @@ Je Aufgabe: eine ID, genau eine Datei, ein prüfbares Abnahmekriterium und die A
 - **GraalVM Native Image:** später prüfen, vor allem ob ImageIO/AWT und PDFBox darin laufen.
 - **Mehrere Ausgabe-Module gleichzeitig** (ein Dokument an mehrere Ziele) oder immer genau eins? Die Konfiguration nimmt bereits eine Komma-Liste entgegen (AU-03), damit diese Entscheidung offen bleibt; in v1 ist nur ein Wert sinnvoll.
 - **Englische Doku:** wie die Übersetzung ins Repo kommt und mit der deutschen Fassung synchron bleibt (Struktur, Werkzeug, Ablauf).
-- **Defaults** für `poll-interval`, `batch-timeout` und Leerlauf – nach Messung mit `measure`. Bis dahin gelten die vorläufigen Defaults aus DL-01/DL-04 (3 s bzw. 20 s).
-- **Seitengrößen-Abweichung** (siehe `offene-fragen.md`).
-- **`normalize`:** was es genau tun soll und mit welchem Werkzeug – ImageMagick wäre eine zusätzliche Abhängigkeit und stünde gegen „Abhängigkeiten minimal". Bis zur Entscheidung wird SV-04 nicht gebaut (siehe `offene-fragen.md`).
+- **Defaults** für `poll-interval`, `batch-timeout` und Leerlauf – nach Messung mit `measure` (Messgrundlagen: OF-01 bis OF-03). Bis dahin gelten die vorläufigen Defaults aus DL-01/DL-04 (3 s bzw. 20 s).
+- **Seitengrößen-Abweichung:** ob der Dienst die Abweichung ausgleicht oder die Pixelmaße unverändert übernimmt – erst nach der Messung zu entscheiden (OF-05).
+- **`normalize`:** was es genau tun soll – Kontrast strecken, Weißpunkt setzen, etwas anderes – und mit welchem Werkzeug. ImageMagick wäre eine zusätzliche Systemabhängigkeit und stünde gegen „Abhängigkeiten minimal". Bis zur Entscheidung wird SV-04 nicht gebaut.
 - **`linux/amd64`-Image:** wann es dazukommt und wie es verifiziert wird (siehe CT-01).
 
 ## Entschieden – nicht mehr offen

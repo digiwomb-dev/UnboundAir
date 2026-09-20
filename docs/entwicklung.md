@@ -41,6 +41,26 @@ Die Tests brauchen kein Netzwerk und keine echten Geräte. Der Scanner wird durc
 
 **Der echte Scanner wird nie für Tests verwendet.** Er ist nur nach ausdrücklicher Freigabe und nur für Messläufe (`measure`) im Spiel.
 
+## Gradle-Wrapper
+
+Der Wrapper ist im Repository eingecheckt, inklusive `gradle-wrapper.jar`. Die Datei stammt aus der offiziellen Gradle-Veröffentlichung und wurde gegen die von Gradle publizierte Prüfsumme verifiziert:
+
+| | Wert |
+|---|---|
+| Gradle-Version | 9.7.1 |
+| SHA-256 des `gradle-wrapper.jar` | `7a9ce74cff467ca1bf60a4fcd9f05185acceda4d0f382434d393e17864262c5d` |
+| Quelle der Prüfsumme | `https://services.gradle.org/versions/all`, Feld `wrapperChecksum` |
+
+Beim Anheben der Gradle-Version ist diese Prüfsumme mitzuführen und erneut abzugleichen. Nachprüfen lässt sie sich jederzeit:
+
+```bash
+sha256sum gradle/wrapper/gradle-wrapper.jar
+```
+
+## Zusammenarbeit am Repository
+
+Gearbeitet wird derzeit direkt auf `main`, ohne Branches und Pull Requests – der Stand muss nach jedem abgeschlossenen Schritt sofort abholbar sein, weil Tests auf einem anderen Rechner von Hand ausgeführt werden. Commits folgen trotzdem den Conventional Commits und bleiben klein.
+
 ## Warum der Umweg über den Dev Container
 
 Der Container enthält dieselben Systemabhängigkeiten wie das spätere Laufzeit-Image: dieselbe JDK-Hauptversion, dasselbe `jpegtran`. Driften die beiden auseinander, laufen die Tests grün und der Dienst fällt im Betrieb um. Deshalb gilt: gebaut und getestet wird im Container, nicht daneben.

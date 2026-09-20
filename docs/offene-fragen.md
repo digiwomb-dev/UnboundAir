@@ -2,6 +2,25 @@
 
 Was am Gerät oder am Protokoll noch nicht geklärt ist. Die Leitplanke lautet: **nichts am Protokoll erfinden**. Was hier steht, ist entweder konfigurierbar gebaut oder wartet auf eine Messung – geraten wird nichts.
 
+## Abgrenzung zu den offenen Entscheidungen im Plan
+
+Es gibt zwei Listen mit offenen Punkten. Der Unterschied ist, **wer sie beantworten kann**:
+
+| | Diese Datei | `plan.md`, Abschnitt „Offene Entscheidungen" |
+|---|---|---|
+| Beantwortet durch | die Wirklichkeit – Messung am Gerät | den Auftraggeber – eine Ansage |
+| Typische Frage | „Wie verhält sich das Gerät bei X?" | „Wollen wir X oder Y?" |
+| Geklärt mit | Scanner anschließen, `measure` laufen lassen, nachmessen | Entscheidung |
+| Wandert später nach | `protokoll.md`, `hardware.md` (DO-01, DO-02) | `entscheidungen.md` (DO-06) |
+
+Beispiel: „Welches CI-System?" beantwortet kein Messgerät – das gehört in den Plan. „Kommt bei 3-Sekunden-Takt `devbusy`?" entscheidet niemand – das Gerät tut es oder tut es nicht, also gehört es hierher.
+
+**Zweistufige Punkte** gehören in beide Listen, aber in dieser Reihenfolge: erst messen (hier), dann aus dem Messergebnis einen Wert festlegen (Plan). Betroffen sind die Defaults für `poll-interval` und `batch-timeout` (OF-01 bis OF-03) sowie die Seitengrößen-Abweichung (OF-05). Bei diesen Einträgen steht der zugehörige Plan-Punkt dabei.
+
+Reine Produktentscheidungen stehen **nicht** hier, auch wenn sie den Code betreffen – etwa was `normalize` tun soll.
+
+## Aufbau der Einträge
+
 Jeder Eintrag hat eine feste ID, einen Status und eine Herkunft. IDs werden nie neu vergeben. Geklärte Fragen bleiben stehen und bekommen die Antwort dazu, damit nachvollziehbar bleibt, warum etwas so gebaut ist.
 
 **Status:** `offen` · `beobachtet` (Hinweise da, nicht bestätigt) · `geklärt` (mit Antwort)
@@ -22,6 +41,8 @@ Das Gerät schaltet sich laut Handbuch nach 5 Minuten ohne Aktion ab. Unklar ist
 
 **Klärt:** `measure` – protokolliert den Zeitpunkt, ab dem das Gerät nicht mehr erreichbar ist, und den Abstand zur letzten Aktivität.
 
+**Zweistufig:** Nach der Messung ist noch zu entscheiden, welcher Default daraus wird – siehe „Defaults" in den offenen Entscheidungen des Plans.
+
 ---
 
 ## OF-02 Kommt bei 3-Sekunden-Takt `devbusy`?
@@ -34,6 +55,8 @@ Die Mustek-App fragt den Status nicht periodisch ab, AirScan alle 8 s. Ob das Ge
 
 **Klärt:** `measure` – zählt die `devbusy`-Antworten pro Lauf.
 
+**Zweistufig:** Kommt `devbusy` häufig, muss anschließend entschieden werden, wie stark das Polling gestreckt wird – siehe „Defaults" in den offenen Entscheidungen des Plans.
+
 ---
 
 ## OF-03 Scan-Dauer und Abstand zwischen zwei Seiten
@@ -45,6 +68,8 @@ Wie lange ein Scan dauert und wie viel Zeit zwischen zwei Blättern vergeht, wen
 **So gebaut:** `batch-timeout` konfigurierbar, vorläufiger Default 20 s (DL-04).
 
 **Klärt:** `measure` – misst Scan-Dauer, Übertragungsdauer und die Abstände zwischen den Seiten (Mittelwert, Minimum, Maximum).
+
+**Zweistufig:** Aus den gemessenen Abständen ist anschließend der endgültige `batch-timeout` festzulegen – siehe „Defaults" in den offenen Entscheidungen des Plans.
 
 ---
 
@@ -78,6 +103,8 @@ Unklar ist, ob der Scanner am Rand etwas abschneidet, ob der Einzug das Blatt st
 **So gebaut:** Seitengröße im PDF = Pixel ÷ DPI, ohne Umrechnung auf Normformate (SV-05). Maßgeblich ist die befohlene Auflösung; weicht der JPEG-Header ab, wird gewarnt statt abgebrochen.
 
 **Klärt:** Nachmessen mit dem Lineal am echten Gerät, zusätzlich ein Scan mit bekanntem Referenzmaß.
+
+**Zweistufig:** Steht die Ursache fest, ist zu entscheiden, ob der Dienst die Abweichung ausgleicht oder die Pixelmaße unverändert übernimmt – siehe „Seitengrößen-Abweichung" in den offenen Entscheidungen des Plans.
 
 ---
 
@@ -117,15 +144,13 @@ Die Regel lautet 200 ms vor und nach jedem Senden. Der Referenzcode weicht an zw
 
 ---
 
-## OF-09 Was soll `normalize` tun?
+## OF-09 Was soll `normalize` tun? – verschoben
 
-**Status:** offen · **Herkunft:** Projektentscheidung, nicht Gerät
+**Status:** verschoben in `plan.md`, Abschnitt „Offene Entscheidungen"
 
-`normalize` ist als einziger Pfad mit Neukomprimierung vorgesehen (SV-04), Default aus. Nicht festgelegt ist, was es inhaltlich tun soll – Kontrast strecken, Weißpunkt setzen, etwas anderes – und mit welchem Werkzeug. ImageMagick wäre eine zusätzliche Systemabhängigkeit und stünde gegen die Entscheidung „Abhängigkeiten minimal".
+Der Punkt stand zunächst hier, gehört aber nicht in diese Liste: Was `normalize` tun soll und mit welchem Werkzeug, beantwortet keine Messung am Gerät, sondern eine Entscheidung. Die ID bleibt stehen, damit Verweise nicht ins Leere laufen.
 
 **So gebaut:** vorerst gar nicht. SV-04 bleibt zurückgestellt, bis Zweck und Werkzeug entschieden sind. Die Verarbeitungskette (SV-07) ist so gebaut, dass ein weiterer Schritt später ohne Umbau dazukommen kann.
-
-**Klärt:** Entscheidung des Auftraggebers, keine Messung.
 
 ---
 
