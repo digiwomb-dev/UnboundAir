@@ -32,6 +32,8 @@ Fachliche Grundlage ist `docs/protokoll.md` – solange es die noch nicht gibt, 
 
 ## Leitplanken – nie verletzen
 
+Kurzfassung. Maßgeblich sind die ausführlichen Formulierungen in `docs/plan.md` unter „Feste Entscheidungen" – bei Abweichungen gilt der Plan.
+
 - **Nie neu komprimieren:** Zuschnitt und Graustufen nur per `jpegtran`, JPEGs unverändert ins PDF (PDFBox `JPEGFactory`). Einzige Ausnahme: optionales `normalize`, Default aus.
 - **Scanner-Antworten per Präfix vergleichen** – das Gerät hängt Füllbytes an.
 - **Ausgabe-Module per Laufzeit-Auswahl,** kein `@ConditionalOnProperty` o. Ä. (hält GraalVM Native Image offen).

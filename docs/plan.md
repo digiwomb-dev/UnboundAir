@@ -58,9 +58,11 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
 
 Jede Anforderung hat eine feste ID und ein Abnahmekriterium. IDs werden nie umnummeriert; neue Anforderungen bekommen die nächste freie Nummer ihres Bereichs. Aufgaben in den Aufgabenlisten verweisen auf die IDs, die sie umsetzen.
 
+**Zu den Verweisen auf `_input/`:** Einige Anforderungen nennen als Vorlage Dateien unter `_input/` – den Wissensstand, den Python-Referenzcode, die Testbilder. Dieses Verzeichnis liegt nur lokal vor und wird nie committet. Wer das Repository klont, hat es nicht. Diese Anforderungen sind deshalb für Außenstehende erst dann vollständig nachprüfbar, wenn das Wissen nach `docs/protokoll.md` (DO-01) überführt und die Testbilder als Test-Ressourcen abgelegt sind (TE-02).
+
 ### Scanner-Client (SC)
 
-- **SC-01** Befehle, Antworten und Scan-Ablauf exakt laut `iscan-air-wissen.md`.
+- **SC-01** Befehle, Antworten und Scan-Ablauf exakt laut `_input/iscan-air-wissen.md`.
   *Abnahme:* Ein Test gegen den Fake-Scanner durchläuft Status → DPI → Scan → JPEG-Größe → JPEG-Daten und erhält die Nutzlast bytegleich.
 - **SC-02** Eine TCP-Verbindung pro **Vorgang**, nicht pro Befehl. Ein Vorgang ist entweder *eine Statusabfrage* oder *ein kompletter Scan* (`status` → DPI → `scan` → `jpegsize` → `jpegdata`) – der Scan schickt innerhalb seiner Verbindung erneut `status`, das eröffnet keine neue Verbindung. So macht es auch der Referenzcode.
   Pausen: 200 ms vor und nach jedem Senden. Ausnahme: vor dem Lesen der Massendaten (nach `jpegdata`) 500 ms, weil der Referenzcode das am echten Gerät so erprobt hat – siehe `offene-fragen.md`.
@@ -96,7 +98,7 @@ Jede Anforderung hat eine feste ID und ein Abnahmekriterium. IDs werden nie umnu
 
 ### Seitenverarbeitung (SV)
 
-- **SV-01** Auto-Zuschnitt nach `reference/autocrop_reference.py`: Papier vor schwarzem Hintergrund finden, Ursprung nach innen auf die iMCU-Grenze runden (aus dem Chroma-Subsampling), `jpegtran -crop`.
+- **SV-01** Auto-Zuschnitt nach `_input/reference/autocrop_reference.py`: Papier vor schwarzem Hintergrund finden, Ursprung nach innen auf die iMCU-Grenze runden (aus dem Chroma-Subsampling), `jpegtran -crop`.
   *Abnahme:* Zwei echte Testbilder, zwei Fälle:
   - `envelope_dl_300dpi_raw.jpg` (roh 1776 × 2769) wird auf ca. 1216 × 2494 px zugeschnitten, Luma identisch mit dem Original-Ausschnitt.
   - `din_a4_300dpi_raw.jpg` (roh 2464 × 3425) hat keinen schwarzen Rand – jede Zeile und Spalte ist hell. Hier darf der Zuschnitt **nichts** abschneiden: die Ausgabe ist bytegleich zur Eingabe.
@@ -121,7 +123,7 @@ Jede Anforderung hat eine feste ID und ein Abnahmekriterium. IDs werden nie umnu
   *Abnahme:* Test: 3 Seiten → PDF mit 3 Seiten; jedes eingebettete Bild ist bytegleich zu seiner Eingabedatei.
 - **AU-02** Modul-Schnittstelle: Ein Ausgabe-Modul bekommt ein fertiges Dokument (PDF plus Metadaten wie Scan-Zeitpunkt und Seitenzahl) und meldet Erfolg oder Fehler zurück. Neue Module lassen sich ergänzen, ohne den Kern zu ändern.
   *Abnahme:* Ein Modul, das nur im Test existiert, lässt sich ohne Änderung am Kern einhängen und empfängt Dokument und Metadaten.
-- **AU-03** Welche Module aktiv sind, steht in der Konfiguration (z. B. mittels Env-Var=paperless`) und wird zur Laufzeit ausgewertet. Jedes Modul hat eigene Einstellungen mit eigenem Präfix.
+- **AU-03** Welche Module aktiv sind, steht in der Property `unboundair.output.modules` (Env-Var `UNBOUNDAIR_OUTPUT_MODULES`) als Komma-Liste, z. B. `paperless`, und wird zur Laufzeit ausgewertet. Jedes Modul hat eigene Einstellungen unter `unboundair.output.<modul>.*`, beim paperless-Modul also `unboundair.output.paperless.*`.
   *Abnahme:* Test: Nur konfigurierte Module erhalten Dokumente. Im Code gibt es kein `@ConditionalOnProperty` o. Ä.
 - **AU-04** Outbox (für alle Module gleich): Dokument erst lokal persistieren, dann ans Modul übergeben, erst nach Erfolg löschen. Retry mit exponentiellem Backoff, überlebt Neustarts.
   *Abnahme:* Test: Modul schlägt fehl → Datei bleibt, Wiederholungen mit wachsendem Abstand; nach einem Neustart wird sie zugestellt und dann gelöscht.
@@ -132,7 +134,16 @@ Jede Anforderung hat eine feste ID und ein Abnahmekriterium. IDs werden nie umnu
 
 ### Konfiguration & Logging (KL)
 
-- **KL-01** Spring-Boot-Properties unter `unboundair.*` (klein, mit Punkten), per Umgebungsvariable als `UNBOUNDAIR_…` setzbar (groß, mit Unterstrichen) – die bei Spring übliche Schreibweise, z. B. `unboundair.poll-interval` ↔ `UNBOUNDAIR_POLLINTERVAL`. Alle Defaults zentral an einer Stelle und in der Doku.
+- **KL-01** Spring-Boot-Properties unter `unboundair.*` (klein, mit Punkten), per Umgebungsvariable setzbar (groß, mit Unterstrichen) – die bei Spring übliche Schreibweise. Achtung bei der Umrechnung: Jeder Punkt wird zum Unterstrich, ein Bindestrich im Namen entfällt ersatzlos.
+
+  | Property | Umgebungsvariable |
+  |---|---|
+  | `unboundair.poll-interval` | `UNBOUNDAIR_POLLINTERVAL` |
+  | `unboundair.output.modules` | `UNBOUNDAIR_OUTPUT_MODULES` |
+  | `unboundair.outbox.path` | `UNBOUNDAIR_OUTBOX_PATH` |
+  | `unboundair.output.paperless.token-file` | `UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE` |
+
+  Alle Defaults zentral an einer Stelle und in der Doku.
   *Abnahme:* Test: Eine Umgebungsvariable überschreibt den Default. Jede Einstellung steht mit ihrem Default in der Doku.
 - **KL-02** Logs auf stdout (journald-freundlich). Pro Seite: Scan-Dauer, Übertragungsdauer, Größe, Maße in mm nach Zuschnitt.
   *Abnahme:* Test: Der Log-Eintrag einer Seite enthält alle vier Werte.
@@ -147,7 +158,7 @@ Unterbefehle der Anwendung (Umsetzung entscheidest du, z. B. Startskript `unboun
   *Abnahme:* Gegen den Fake-Scanner entstehen die Roh- und die beschnittene Datei.
 - **BE-03** `crop IN OUT` – Zuschnitt einer vorhandenen Datei.
   *Abnahme:* Das echte Testbild ergibt dasselbe Ergebnis wie bei SV-01.
-- **BE-04** `measure` – Messmodus wie `reference/iscan_autoscan_test.py`: automatisch scannen ohne Ausgabe an Module, misst Seitenabstände, `devbusy`, Auto-Off und Doppelscans, Zusammenfassung am Ende.
+- **BE-04** `measure` – Messmodus wie `_input/reference/iscan_autoscan_test.py`: automatisch scannen ohne Ausgabe an Module, misst Seitenabstände, `devbusy`, Auto-Off und Doppelscans, Zusammenfassung am Ende.
   *Abnahme:* Gegen einen Fake-Scanner mit mehreren Seiten, `devbusy` und Offline enthält die Zusammenfassung Seitenzahl, Abstände, `devbusy`-Anzahl und Offline-Zeitpunkt; kein Dokument geht an ein Modul.
 - **BE-05** `run` – der Dienst.
   *Abnahme:* siehe „Ergebnis", Punkt 4.
@@ -176,16 +187,16 @@ Eine Aufgabe gilt erst als abgenommen, wenn ihr Testergebnis im Teststand des je
 
 Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
 
-- **TE-01** Fake-Scanner nach `reference/fake_scanner.py` in Kotlin als TCP-Server im Test (bildet die echten Füllbytes, geteilte `jpegsize`-Antwort, `devbusy`, Offline und `battlow` nach). `battlow` kennt die Referenz nicht, wird aber für SC-05 gebraucht.
+- **TE-01** Fake-Scanner nach `_input/reference/fake_scanner.py` in Kotlin als TCP-Server im Test (bildet die echten Füllbytes, geteilte `jpegsize`-Antwort, `devbusy`, Offline und `battlow` nach). `battlow` kennt die Referenz nicht, wird aber für SC-05 gebraucht.
   *Abnahme:* Jedes dieser fünf Verhalten lässt sich im Test gezielt einschalten.
 - **TE-02** Testbilder: die echten Testbilder aus `_input/fixtures/` als Test-Ressource plus synthetische Fälle: A4 ohne Schwarz oben und seitlich, nur Streifen unten; dunkles Bild.
   *Abnahme:* Alle Testbilder liegen als Test-Ressourcen vor und werden in den SV-Tests genutzt.
-- **TE-03** Linting mit einem Kotlin-Linter (ktlint oder detekt, entscheide du).
+- **TE-03** Linting mit ktlint über das Gradle-Plugin (entschieden, siehe „Entschieden – nicht mehr offen").
   *Abnahme:* Der Linter läuft im Build mit und meldet nichts.
 
 ### Doku (DO) – `docs/`, Deutsch als führende Fassung
 
-- **DO-01** `protokoll.md` – aus `iscan-air-wissen.md`, mit Herkunftsmarkierungen.
+- **DO-01** `protokoll.md` – aus `_input/iscan-air-wissen.md`, mit Herkunftsmarkierungen.
   *Abnahme:* Jede Aussage trägt ihre Herkunftsmarkierung.
 - **DO-02** `hardware.md` – Gerät, Messwerte, bekannte Eigenheiten.
   *Abnahme:* Enthält die Messwerte aus dem Wissensstand; neue Messwerte aus `measure` werden ergänzt.
@@ -193,7 +204,7 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
   - **Host-Voraussetzungen:** Die WLAN-Verbindung zum Scanner hält der Host. NetworkManager-Profil fürs Scanner-WLAN (an `wlan0` gebunden, `connection.autoconnect yes`, `connection.autoconnect-retries 0`, `ipv4.never-default yes`), nftables auf `wlan0` (eingehend nur established/related + DHCP, ausgehend nur `192.168.18.33:23` + DHCP, kein Forwarding).
   - **Netzwerk:** Der Container muss `192.168.18.33:23` über das WLAN des Hosts erreichen (z. B. Host-Netzwerk).
   - **Persistenz:** Die Outbox liegt auf einem persistenten Volume, sonst gehen ungesendete Dokumente beim Neustart verloren.
-  - **Konfiguration & Secrets:** Einstellungen per `UNBOUNDAIR_…`-Umgebungsvariablen, paperless-Token als eingebundene Datei über `UNBOUNDAIR_PAPERLESS_TOKEN_FILE`.
+  - **Konfiguration & Secrets:** Einstellungen per `UNBOUNDAIR_…`-Umgebungsvariablen (Schreibweise siehe KL-01), paperless-Token als eingebundene Datei über `UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE`.
   - **Beenden:** Beim Stoppen schließt der Dienst den offenen Batch ab. Der Stop-Timeout der Container-Runtime muss dafür reichen, ein laufender Scan kann bis zu 60 s dauern.
   - **Logs, Neustart, Update:** Logs auf stdout, Neustart-Verhalten, Update eines laufenden Containers.
 
@@ -262,7 +273,7 @@ Der Auftrag ist fertig, wenn alles hier stimmt – vorher nicht:
 
 1. **Projekt:** Gradle-Projekt mit Kotlin und Spring Boot, Wrapper, fest gepinnte Versionen, Linter ohne Befunde. `_input/` steht in `.gitignore` und wurde nie committet.
 2. **Dev Container:** Repo im Dev Container öffnen → `./gradlew test` läuft komplett grün, ohne Zugriff auf echte Geräte oder Dienste.
-3. **Befehle:** `status`, `scan`, `crop`, `measure` und `run` funktionieren gegen den Fake-Scanner.
+3. **Befehle:** `status`, `scan`, `measure` und `run` funktionieren gegen den Fake-Scanner; `crop` arbeitet auf einer vorhandenen Datei und braucht keinen Scanner.
 4. **Dienst:** `run` gegen Fake-Scanner und Mock-paperless: 3 Seiten → 1 PDF mit 3 Seiten in korrekter Größe, ans paperless-Modul übergeben und hochgeladen. Scanner offline schließt den Batch. Outbox-Retry funktioniert nach Neustart.
 5. **Zuschnitt:** Das Kuvert-Testbild wird verlustfrei auf ca. 1216 × 2494 px zugeschnitten (Luma identisch); das A4-Testbild ohne schwarzen Rand bleibt unverändert (bytegleich).
 6. **Container:** Image baut für `arm64` (amd64 später), `jpegtran` ist darin verfügbar, `status` läuft im Container gegen den Fake-Scanner.

@@ -23,11 +23,11 @@ Reine Produktentscheidungen stehen **nicht** hier, auch wenn sie den Code betref
 
 Jeder Eintrag hat eine feste ID, einen Status und eine Herkunft. IDs werden nie neu vergeben. Geklärte Fragen bleiben stehen und bekommen die Antwort dazu, damit nachvollziehbar bleibt, warum etwas so gebaut ist.
 
-**Status:** `offen` · `beobachtet` (Hinweise da, nicht bestätigt) · `geklärt` (mit Antwort)
+**Status:** `offen` · `beobachtet` (Hinweise da, nicht bestätigt) · `geklärt` (mit Antwort) · `verschoben` (gehört nicht hierher, ID bleibt als Wegweiser stehen)
 
 **Herkunft:** **[Gerät]** am echten Gerät verifiziert · **[App/s400w]** aus der Windows-App bzw. s400w, am Gerät nicht getestet · **[Handbuch]** · **[Scan]** an 1–2 echten Scans beobachtet · **[Analyse]** aus den Testbildern in dieser Arbeit abgeleitet
 
-Die meisten Punkte lassen sich erst mit dem Befehl `unboundair measure` am echten Gerät klären (BE-04). Ein Gerätetest ist bisher nicht freigegeben, deshalb gelten überall vorläufige Werte.
+Die meisten Punkte lassen sich erst mit dem Befehl `measure` am echten Gerät klären (BE-04; wie er aufgerufen wird, ist noch offen). Ein Gerätetest ist bisher nicht freigegeben, deshalb gelten überall vorläufige Werte.
 
 ---
 
