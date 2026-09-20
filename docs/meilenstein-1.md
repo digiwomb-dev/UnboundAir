@@ -12,11 +12,30 @@ Was zuletzt tatsächlich ausgeführt wurde. Eine Aufgabe gilt erst als abgenomme
 
 | Was | Stand |
 |---|---|
-| Zuletzt getesteter Commit | `3bede7d` |
+| Zuletzt getesteter Commit | `3bede7d` (Testpunkt 1) |
 | Ergebnis | Testpunkt 1 bestanden – Dev Container baut und startet, Temurin 26.0.2+10 und libjpeg-turbo 2.1.5 antworten |
-| Als Nächstes zu prüfen | Testpunkt 2 |
+| Als Nächstes zu prüfen | **Testpunkt 2**, Stand `06a91f9` – Ergebnis liegt noch nicht vor |
 
 Ausgeführt mit der `devcontainer`-CLI 0.89.0 auf Podman (`--docker-path podman`).
+
+### Testpunkt 2 – was auszuführen ist
+
+Das Gradle-Gerüst (T1.6 bis T1.9) ist geschrieben und committet, aber **noch nie gebaut worden**. Auszuführen:
+
+```bash
+devcontainer exec --workspace-folder . --docker-path podman bash -lc "./gradlew build"
+```
+
+Der erste Lauf lädt Gradle 9.7.1 und alle Abhängigkeiten herunter und dauert entsprechend lange. Erwartet wird `BUILD SUCCESSFUL`.
+
+Unsicher sind vier Punkte, weil sie nie ausgeführt wurden:
+
+1. Ob Kotlin 2.4.20 sich gegen die von Spring Boot 4.1.1 verwaltete 2.3.21 durchsetzt. Die Plugin-Reihenfolge in `build.gradle.kts` soll das bewirken; greift sie nicht, scheitert der Compiler am `jvmTarget` für Java 26.
+2. Ob ktlint 14.2.0 mit Kotlin 2.4.20 zusammenarbeitet.
+3. Ob `jvmToolchain(26)` das JDK im Container findet, statt eines herunterladen zu wollen.
+4. Ob im Container Netzzugang für den ersten Lauf besteht.
+
+Schlägt der Build fehl, ist die Meldung ab `* What went wrong:` das Entscheidende.
 
 ## Testpunkte
 

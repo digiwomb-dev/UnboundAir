@@ -106,3 +106,23 @@ Der Ablauf je Schritt:
 Eine Aufgabe gilt erst als abgenommen, wenn ihr Testergebnis dort steht. Aufgaben, die geschrieben, aber noch nicht ausgeführt wurden, werden ausdrücklich als „nicht verifiziert" geführt.
 
 Den aktuellen Teststand und die Testpunkte des laufenden Meilensteins findest du in `meilenstein-1.md`.
+
+### Bekannte Eigenheiten der Testumgebung
+
+- Die `devcontainer`-CLI ruft fest `docker` auf. Mit Podman muss `--docker-path podman` mitgegeben werden, sonst bricht sie mit `spawn docker ENOENT` ab.
+- Die Ausgabe langer Läufe wirkt eingefroren, weil Fortschrittsanzeigen gepuffert durchgereicht werden. `--log-level debug` zeigt die einzelnen Schritte.
+- Der Digest-Pin des Basis-Image erzeugt eine Warnung der CLI („Could not parse image name"). Folgenlos, siehe oben.
+
+## Einstieg für eine neue Arbeitssitzung
+
+Wer hier neu dazukommt, liest in dieser Reihenfolge:
+
+1. `AGENTS.md` – wie gearbeitet wird, Leitplanken, Regeln
+2. `docs/plan.md` – Auftrag, feste Entscheidungen, Anforderungen mit IDs, Meilensteine
+3. `docs/meilenstein-1.md` – Aufgaben, Testpunkte und der aktuelle Teststand
+4. diese Datei – Bauen und Testen
+5. `docs/offene-fragen.md` – was am Gerät noch unklar ist
+
+Weitergearbeitet wird bei der ersten offenen Aufgabe in `meilenstein-1.md`. Steht dort ein Testpunkt ohne Ergebnis, ist zuerst dieses Ergebnis einzuholen – nicht weiterbauen und das Testen aufschieben.
+
+Das Verzeichnis `_input/` (Wissensstand, Python-Referenzcode, Testbilder) liegt nur lokal vor und ist nicht Teil des Repositorys. Mehrere Anforderungen verweisen darauf.
