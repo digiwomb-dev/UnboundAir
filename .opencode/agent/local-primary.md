@@ -1,6 +1,6 @@
 ---
 description: Runs the first local UnboundAir implementation attempt with the model selected for the current session.
-mode: primary
+mode: subagent
 temperature: 0.1
 ---
 

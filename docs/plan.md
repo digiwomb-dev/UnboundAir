@@ -11,7 +11,7 @@ Diese Dateien sind von Anfang an im Repo und werden nur nach Rückfrage geänder
 - `.gitignore` (enthält `_input/`)
 - `AGENTS.md`
 - `docs/plan.md` (diese Datei)
-- `.opencode/agent/pruefer.md`
+- `.opencode/agent/reviewer.md`
 
 `_input/` liegt nur lokal vor und wird nie committet. Inhalte daraus gezielt überführen: Wissen → `docs/`, Testbild → Test-Ressourcen, Python-Referenzcode in Kotlin neu schreiben (nicht 1:1 übersetzen).
 

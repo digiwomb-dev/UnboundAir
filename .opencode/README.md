@@ -4,7 +4,7 @@
 
 ## Modelle in LM Studio
 
-Waehle fuer `@local-primary` je Session selbst ein lokales Modell. Die weiteren Versuche nutzen diese voneinander abweichenden Modelle:
+Starte die Hauptsession mit dem Modell deiner Wahl. Rufe danach `@local-primary` fuer den ersten lokalen Versuch auf. Die weiteren Versuche nutzen diese voneinander abweichenden Modelle:
 
 - `devstral-small`: zweiter, unabhaengiger Implementierungsversuch.
 - `gpt-oss-20b`: dritter, unabhaengiger Implementierungsversuch.
@@ -13,7 +13,7 @@ Die Modell-IDs muessen den vom LM-Studio-Plugin bereitgestellten IDs entsprechen
 
 ## Eskalation
 
-`@local-primary` fuehrt den ersten lokalen Versuch mit dem von dir fuer die Session gewaehlten Modell aus. Nach einem fehlgeschlagenen Hauptversuch wird `@local-second-opinion` verwendet, danach `@local-third-opinion`. Erst nach drei erfolglosen lokalen Modellen darf ein Cloud-Fallback vorgeschlagen werden. Er braucht jedes Mal deine ausdrueckliche Freigabe.
+Rufe `@local-primary` in der Hauptsession auf; er nutzt das dort gewaehlte Modell. Nach einem fehlgeschlagenen ersten Versuch folgt `@local-second-opinion`, danach `@local-third-opinion`. Erst nach drei erfolglosen lokalen Modellen darf ein Cloud-Fallback vorgeschlagen werden. Er braucht jedes Mal deine ausdrueckliche Freigabe.
 
 `@cloud-fallback` ist absichtlich deaktiviert. Sobald Anbieter und Modell feststehen, wird er mit einem Modell eingerichtet, das von der Hauptsession abweicht.
 

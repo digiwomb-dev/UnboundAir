@@ -52,7 +52,7 @@ Kurzfassung. Maßgeblich sind die ausführlichen Formulierungen in `docs/plan.md
 
 ## Prüfer
 
-- Subagent `pruefer`: darf nur lesen und Tests ausführen, ändert nichts.
-- Aufruf: am Ende jedes Meilensteins automatisch, sonst wenn ich `@pruefer` schreibe.
+- Subagent `reviewer`: darf nur lesen und Tests ausführen, ändert nichts.
+- Aufruf: am Ende jedes Meilensteins automatisch, sonst wenn ich `@reviewer` schreibe.
 - Seinen Befund zeigst du mir unverändert. Behoben wird erst nach meinem „Go", ein Befund pro Schritt.
 - Welches Modell er nutzt, lege ich in seiner Agent-Datei fest – nicht ändern.
