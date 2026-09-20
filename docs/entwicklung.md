@@ -2,13 +2,15 @@
 
 Wie man `UnboundAir` baut und testet. Gearbeitet wird ausschließlich im Dev Container – auf dem Rechner selbst muss außer einer Container-Runtime und dem Dev-Container-Tooling nichts installiert sein, insbesondere kein JDK und kein Gradle.
 
+> **Stand: Meilenstein 1, im Aufbau.** Das Gradle-Projekt existiert noch nicht. Abschnitte, die es voraussetzen, sind als „noch nicht vorhanden" gekennzeichnet. Was heute schon geht, steht unter „Dev Container starten".
+
 ## Voraussetzungen
 
 - Eine Container-Runtime (z. B. Podman oder Docker)
 - Dev-Container-Unterstützung: entweder die Erweiterung „Dev Containers" in VS Code oder die `devcontainer`-CLI
 - Git
 
-Mehr nicht. JDK, Gradle und `jpegtran` bringt der Container mit.
+Mehr nicht. Das JDK und `jpegtran` bringt der Container mit; Gradle lädt der Wrapper beim ersten Lauf selbst herunter.
 
 ## Dev Container starten
 
@@ -21,7 +23,7 @@ devcontainer up --workspace-folder .
 Beim ersten Start wird das Image gebaut, das dauert ein paar Minuten. Danach prüfen, ob die Umgebung stimmt:
 
 ```bash
-java -version      # erwartet: OpenJDK 26
+java -version      # erwartet: Temurin, Version 26
 jpegtran -version  # erwartet: eine libjpeg-turbo-Version
 ```
 
@@ -29,21 +31,27 @@ Beides muss antworten. `jpegtran` ist keine Kür: Zuschnitt und Graustufen-Umwan
 
 ## Bauen und testen
 
+> **Noch nicht vorhanden.** Das Gradle-Projekt entsteht in den Aufgaben T1.5 bis T1.9, siehe `meilenstein-1.md`. Die folgenden Befehle funktionieren erst danach.
+
 Alles im Dev Container ausführen:
 
 ```bash
-./gradlew build   # kompilieren, Linter, Tests
-./gradlew test    # nur Tests
+./gradlew build         # kompilieren, Linter, Tests
+./gradlew test          # nur Tests
 ./gradlew ktlintCheck   # nur Linter
 ```
 
-Die Tests brauchen kein Netzwerk und keine echten Geräte. Der Scanner wird durch einen Fake-Scanner ersetzt, der im Test als TCP-Server läuft und das Verhalten des echten Geräts nachbildet – inklusive seiner Eigenheiten wie der Füllbytes in den Antworten.
+Die Tests kommen ohne echte Geräte und ohne fremde Dienste aus: Der Scanner wird durch einen Fake-Scanner ersetzt, der im Test als TCP-Server läuft und das Verhalten des echten Geräts nachbildet – inklusive seiner Eigenheiten wie der Füllbytes in den Antworten.
+
+Eine Netzwerkverbindung braucht trotzdem, wer zum ersten Mal baut: Der Wrapper lädt die Gradle-Distribution, Gradle lädt die Abhängigkeiten. Beides landet im Cache und wird danach nicht mehr benötigt.
 
 **Der echte Scanner wird nie für Tests verwendet.** Er ist nur nach ausdrücklicher Freigabe und nur für Messläufe (`measure`) im Spiel.
 
 ## Gradle-Wrapper
 
-Der Wrapper ist im Repository eingecheckt, inklusive `gradle-wrapper.jar`. Die Datei stammt aus der offiziellen Gradle-Veröffentlichung und wurde gegen die von Gradle publizierte Prüfsumme verifiziert:
+> **Noch nicht vorhanden.** Der Wrapper wird in T1.8 eingecheckt.
+
+Der Wrapper gehört mit ins Repository, inklusive `gradle-wrapper.jar`. Die Datei stammt aus der offiziellen Gradle-Veröffentlichung; ihre Prüfsumme ist vorab gegen die von Gradle publizierte Angabe abgeglichen worden:
 
 | | Wert |
 |---|---|
@@ -51,7 +59,7 @@ Der Wrapper ist im Repository eingecheckt, inklusive `gradle-wrapper.jar`. Die D
 | SHA-256 des `gradle-wrapper.jar` | `7a9ce74cff467ca1bf60a4fcd9f05185acceda4d0f382434d393e17864262c5d` |
 | Quelle der Prüfsumme | `https://services.gradle.org/versions/all`, Feld `wrapperChecksum` |
 
-Beim Anheben der Gradle-Version ist diese Prüfsumme mitzuführen und erneut abzugleichen. Nachprüfen lässt sie sich jederzeit:
+Beim Anheben der Gradle-Version ist diese Prüfsumme mitzuführen und erneut abzugleichen. Nachprüfen lässt sie sich, sobald die Datei da ist:
 
 ```bash
 sha256sum gradle/wrapper/gradle-wrapper.jar
@@ -65,23 +73,17 @@ Gearbeitet wird derzeit direkt auf `main`, ohne Branches und Pull Requests – d
 
 Der Container enthält dieselben Systemabhängigkeiten wie das spätere Laufzeit-Image: dieselbe JDK-Hauptversion, dasselbe `jpegtran`. Driften die beiden auseinander, laufen die Tests grün und der Dienst fällt im Betrieb um. Deshalb gilt: gebaut und getestet wird im Container, nicht daneben.
 
-## Teststand
+## Wie getestet wird, solange keine Runtime da ist
 
-Dieser Abschnitt hält fest, welcher Stand zuletzt tatsächlich ausgeführt wurde und was als Nächstes zu prüfen ist.
+Die Umgebung, in der der Code entsteht, hat keine Container-Runtime und bekommt auch keine. Das blockiert nichts, verschiebt aber die Ausführung: Gebaut und committet wird dort, ausgeführt auf einem Rechner mit Runtime.
 
-**Hintergrund:** Die Entwicklungsumgebung, in der der Code entsteht, hat keine Container-Runtime. Tests werden deshalb von Hand auf einem Rechner mit Runtime ausgeführt und die Ergebnisse zurückgemeldet. Solange das so ist, gilt jede Aufgabe erst dann als abgenommen, wenn ihr Ergebnis hier steht.
+Der Ablauf je Schritt:
 
-| Was | Stand |
-|---|---|
-| Zuletzt getesteter Commit | *(noch keiner)* |
-| Ergebnis | *(ausstehend)* |
-| Als Nächstes zu prüfen | Testpunkt 1 – Dev Container startet, `java -version` und `jpegtran -version` antworten |
+1. Ein abgeschlossenes Stück wird gebaut, committet und nach `origin/main` gepusht.
+2. Es folgt eine Ansage, welche Befehle auszuführen sind und was dabei herauskommen soll.
+3. Die Ausgabe wird zurückgemeldet – auch im Fehlerfall.
+4. Das Ergebnis wird im Fortschritt des jeweiligen Meilensteins festgehalten, erst dann geht es weiter.
 
-### Testpunkte in Meilenstein 1
+Eine Aufgabe gilt erst als abgenommen, wenn ihr Testergebnis dort steht. Aufgaben, die geschrieben, aber noch nicht ausgeführt wurden, werden ausdrücklich als „nicht verifiziert" geführt.
 
-Meilenstein 1 ist in vier Testpunkte geschnitten, damit ein Fehlschlag klein und zuordenbar bleibt.
-
-1. **Dev Container** – Image baut, `java -version` meldet 26, `jpegtran -version` antwortet. Deckt DC-01 und DC-02 ab.
-2. **Gradle-Gerüst** – `./gradlew build` läuft durch. Deckt die Aufgaben T1.5 bis T1.9 ab.
-3. **Scanner-Client** – `./gradlew test` grün, Fake-Scanner und Protokoll-Tests. Deckt T1.10 bis T1.14 ab (SC-01 bis SC-07, TE-01).
-4. **Befehle** – `./gradlew test` grün, `status` und `scan` gegen den Fake-Scanner. Deckt T1.15 bis T1.17 ab (BE-01, BE-02 teilweise, DC-03).
+Den aktuellen Teststand und die Testpunkte des laufenden Meilensteins findest du in `meilenstein-1.md`.

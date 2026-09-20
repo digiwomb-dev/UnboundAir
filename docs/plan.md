@@ -30,7 +30,7 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
 
   | Baustein | Version | Anmerkung |
   |---|---|---|
-  | Java | 26 | neueste verfügbare Java-Version; Java 27 existiert noch nicht. Bewusst **kein** LTS (das wäre 25). |
+  | Java | 26 | höchste Version, die Gradle 9.7.1 ausführen kann. Java 27 ist seit dem 15.09.2026 verfügbar, wird von Gradle aber noch nicht unterstützt. Bewusst **kein** LTS (das wäre 25). |
   | Gradle | 9.7.1 | unterstützt laut Kompatibilitätsmatrix JVM 17–26, JVM 27+ noch nicht |
   | Spring Boot | 4.1.1 | |
   | Kotlin | 2.4.20 | **bewusst neuer** als die von Spring Boot 4.1.1 verwaltete 2.3.21 – siehe Hinweis unten |
@@ -38,6 +38,8 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
   | ktlint-Gradle-Plugin | 14.2.0 | siehe TE-03 |
 
   Die Obergrenze setzt jeweils der älteste Baustein der Kette: Gradle begrenzt Java, Spring Boot begrenzt Kotlin. Beim Anheben einer Version diese Tabelle mitpflegen.
+
+  **Warum nicht Java 27:** Gradle 9.7.1 gibt in seiner Kompatibilitätsmatrix ausdrücklich an, JVM 27 und neuer nicht auszuführen. Sobald Gradle nachzieht, ist Java 27 der nächste Schritt – der Grundsatz bleibt „neueste stabile Version".
 
   **Kotlin wird bewusst hochgezogen:** Spring Boot 4.1.1 verwaltet Kotlin 2.3.21, und dessen Compiler kennt als höchstes Bytecode-Ziel `JVM_25` – mit Java 26 lässt sich damit nicht bauen. Kotlin 2.4.20 kennt `JVM_26`. Deshalb wird die von Spring Boot vorgegebene Kotlin-Version im Build überschrieben. Das ist die einzige Stelle, an der bewusst von Spring Boots verwalteten Versionen abgewichen wird; sie gehört mit Begründung nach `docs/entscheidungen.md` (DO-06). Falls daraus Probleme entstehen, ist der Rückfallweg Java 25 statt 26.
 - **Eine Anwendung,** in v1 ohne Web-Oberfläche. Den Kern (Scanner, Verarbeitung, Batch, Ausgabe) so schneiden, dass später eine Web-UI andocken kann, ohne den Kern umzubauen.
@@ -166,13 +168,9 @@ Unterbefehle der Anwendung (Umsetzung entscheidest du, z. B. Startskript `unboun
 
 Hinweis: Wie die Tests im Dev Container gestartet werden, hängt von der Umgebung ab, in der du arbeitest, und gehört nicht ins Repo. Kannst du sie nicht selbst im Dev Container starten: sag es mir – lass sie nicht stillschweigend woanders laufen.
 
-**Aktuelle Lage:** In der Umgebung, in der der Code entsteht, gibt es keine Container-Runtime, und es wird auch keine geben. Tests werden deshalb von Hand auf einem Rechner mit Runtime ausgeführt und die Ergebnisse zurückgemeldet. Daraus folgt der Arbeitsrhythmus:
+**Aktuelle Lage:** In der Umgebung, in der der Code entsteht, gibt es keine Container-Runtime, und es wird dauerhaft keine geben. Das blockiert die Arbeit nicht, verschiebt aber die Ausführung: Gebaut wird dort, ausgeführt auf einem Rechner mit Runtime, die Ergebnisse kommen zurück. Der Ablauf steht in `docs/entwicklung.md`, Abschnitt „Wie getestet wird, solange keine Runtime da ist".
 
-1. Ein abgeschlossenes Stück bauen, committen und nach `origin/main` pushen.
-2. Anhalten und die auszuführenden Befehle nennen, samt erwartetem Ergebnis.
-3. Auf die Rückmeldung warten – erst danach weiterbauen.
-
-Eine Aufgabe gilt erst als abgenommen, wenn ihr Testergebnis im Abschnitt „Teststand" in `docs/entwicklung.md` steht. Aufgaben, die geschrieben, aber noch nicht ausgeführt wurden, werden dort ausdrücklich als „nicht verifiziert" geführt.
+Eine Aufgabe gilt erst als abgenommen, wenn ihr Testergebnis im Teststand des jeweiligen Meilensteins steht (`docs/meilenstein-N.md`). Aufgaben, die geschrieben, aber noch nicht ausgeführt wurden, werden dort ausdrücklich als „nicht verifiziert" geführt und bekommen keinen Haken.
 
 ### Tests (TE)
 
@@ -208,48 +206,27 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
   *Abnahme:* Jede feste Entscheidung aus diesem Plan steht mit Begründung drin.
 - **DO-07** `offene-fragen.md` – aus dem Wissensstand, wird mit Messwerten fortgeschrieben. Die Datei entsteht **bereits in Meilenstein 1** und wird danach laufend fortgeschrieben, weil die Leitplanke „Nichts am Protokoll erfinden – Offenes gehört in `docs/offene-fragen.md`" ab der ersten Codezeile gilt.
   *Abnahme:* Alle offenen Punkte aus dem Wissensstand sind mit Status aufgeführt.
+- **DO-08** `README.md` im Wurzelverzeichnis – Einstieg und Wegweiser. Entsteht **bereits in Meilenstein 1**, damit von Anfang an erkennbar ist, welche Datei wofür da ist; in Meilenstein 5 kommt der Schnellstart dazu.
+  *Abnahme:* Erklärt, was `UnboundAir` ist, nennt den Aufbaustand und verweist auf jede Datei in `docs/` mit einem Satz, wofür sie da ist. Ab Meilenstein 5 zusätzlich: Schnellstart.
 
 ## Meilensteine
 
-**Aktuell:** Meilenstein 1, in Arbeit – Teil A der Aufgabenliste. Teil B ist blockiert, bis im Entwicklungssystem eine Container-Runtime bereitsteht (siehe Hinweis bei DC-03).
+**Aktuell:** Meilenstein 1, in Arbeit. Einzelheiten und Fortschritt: `docs/meilenstein-1.md`.
 
-- [ ] **1.** Grundgerüst: Gradle mit Kotlin DSL und Wrapper, Spring Boot, Linter, JUnit; `.gitignore` um Build-Ordner ergänzen. Dev Container, Scanner-Client, Fake-Scanner, `offene-fragen.md`, Befehle `status` und `scan` (vorerst nur Roh-Datei). *Anforderungen:* SC-01–SC-07, DC-01–DC-03, TE-01, TE-03, BE-01, BE-02 (Teil: nur Roh-Datei, Zuschnitt folgt in M2), DO-07.
-- [ ] **2.** Zuschnitt, Graustufen, Befehl `crop`, `scan` speichert zusätzlich die beschnittene Datei, Tests mit echtem und synthetischen Bildern. *Anforderungen:* SV-01–SV-04, SV-06, SV-07, TE-02, BE-02, BE-03.
+- [ ] **1.** Grundgerüst: Gradle mit Kotlin DSL und Wrapper, Spring Boot, Linter, JUnit; `.gitignore` um Build-Ordner ergänzen. Dev Container, Scanner-Client, Fake-Scanner, `offene-fragen.md`, Befehle `status` und `scan` (vorerst nur Roh-Datei). *Anforderungen:* SC-01–SC-07, DC-01–DC-03, TE-01, TE-03, BE-01, BE-02 (Teil: nur Roh-Datei, Zuschnitt folgt in M2), DO-07, DO-08 (Wegweiser-Teil).
+- [ ] **2.** Zuschnitt, Graustufen, Befehl `crop`, `scan` speichert zusätzlich die beschnittene Datei, Tests mit echtem und synthetischen Bildern. *Anforderungen:* SV-01–SV-03, SV-06, SV-07, TE-02, BE-02, BE-03. (**SV-04 nicht**, solange `normalize` offen ist – siehe „Offene Entscheidungen".)
 - [ ] **3.** Dienst-Loop und Batch-Logik, PDF-Erzeugung, Konfiguration und Logging, Befehl `measure`. *Anforderungen:* DL-01–DL-06, SV-05, AU-01, KL-01, KL-02, BE-04.
 - [ ] **4.** Ausgabe-Modul-Schnittstelle, Outbox und Retry, erstes Modul paperless-ngx. *Anforderungen:* AU-02–AU-06.
-- [ ] **5.** `run` (Dienst), Signal-Handling, Container-Image (mit `jpegtran`), `betrieb.md` für den Container-Betrieb, Doku vollständig auf Deutsch. *Anforderungen:* BE-05, DL-07, CT-01, DO-01–DO-07.
+- [ ] **5.** `run` (Dienst), Signal-Handling, Container-Image (mit `jpegtran`), `betrieb.md` für den Container-Betrieb, Doku vollständig auf Deutsch. *Anforderungen:* BE-05, DL-07, CT-01, DO-01–DO-06, DO-08 (Schnellstart-Teil).
 - [ ] **6.** Erst nach meiner Entscheidung: Deployment-Beispiel und CI.
 
 Pflege: Den Haken setzt du, wenn ein Meilenstein fertig und vom Prüfer ohne blockierende Befunde abgenommen ist. „Aktuell" hältst du immer auf dem Stand.
 
-### Aufgabenliste Meilenstein 1
+Die Aufgaben eines Meilensteins stehen in einer eigenen Datei, zusammen mit seinen Testpunkten und seinem Teststand:
 
-Je Aufgabe: eine ID, genau eine Datei, ein prüfbares Abnahmekriterium und die Anforderungs-IDs, die sie umsetzt.
+- Meilenstein 1: `docs/meilenstein-1.md`
 
-**Teil A – ohne Container-Runtime machbar (nur Doku und Konfiguration, keine Tests nötig):**
-
-- [x] **T1.0** *(Commit, keine Datei)* – Rahmen als erster Commit. *Abnahme:* `git log --oneline` zeigt `chore: add project framework`; `git ls-files _input` ist leer. *Anforderung:* Ergebnis 1 und 8.
-- [x] **T1.1** `docs/plan.md` – Korrekturen aus der Klärungsrunde. *Abnahme:* Versionstabelle mit Java 26; SC-02 definiert „Vorgang"; SC-06 und SC-07 vorhanden; KL-01 nutzt `unboundair.*`/`UNBOUNDAIR_*`; SV-01 nennt beide Testbilder; SV-03 sagt „eine Komponente (Luma)"; CT-01 nur `arm64`; Abschnitt „Entschieden" vorhanden. *Anforderung:* Planpflege nach AGENTS.md.
-- [x] **T1.2** `docs/offene-fragen.md` – offene Punkte mit Status. *Abnahme:* Enthält die 6 Fragen aus dem Wissensstand plus `version`-Antwortformat, 500-ms-Pause und `battlow`, je mit Status und Herkunft; die Abgrenzung zu den offenen Entscheidungen des Plans ist erklärt. *Anforderung:* DO-07.
-- [x] **T1.3** `.devcontainer/Dockerfile` – Build- und Testumgebung. *Abnahme:* Basis Temurin JDK 26, installiert `libjpeg-turbo-progs`; keine feste Architektur verdrahtet. *Anforderung:* DC-01.
-- [x] **T1.4** `.devcontainer/devcontainer.json` – Dev-Container-Definition. *Abnahme:* Verweist auf T1.3; im gestarteten Container liefern `java -version` (26) und `jpegtran -version` Ausgaben. *Anforderung:* DC-01, DC-02.
-  *Noch nicht verifiziert:* Der Container wurde nie gestartet – im Entwicklungssystem fehlt eine Container-Runtime. Die Abnahme von T1.3 und T1.4 steht damit aus und wird nachgeholt, sobald die Runtime bereitsteht.
-
-**Teil B – braucht eine laufende Container-Runtime (Tests laufen nur dort, siehe AGENTS.md):**
-
-- [ ] **T1.5** `.gitignore` – Build-Ordner ergänzen. *Abnahme:* `build/` und `.gradle/` ignoriert, `_input/` unverändert enthalten. *Anforderung:* Ergebnis 1.
-- [ ] **T1.6** `settings.gradle.kts` – Projektname `unboundair`. *Abnahme:* `./gradlew projects` zeigt den Namen.
-- [ ] **T1.7** `build.gradle.kts` – Abhängigkeiten und Linter. *Abnahme:* Alle Versionen aus der Tabelle fest gepinnt, ktlint im Build verdrahtet, `./gradlew build` im Dev Container grün. *Anforderung:* TE-03.
-- [ ] **T1.8** `gradle/wrapper/gradle-wrapper.properties` – Wrapper. *Abnahme:* `./gradlew --version` meldet Gradle 9.7.1.
-- [ ] **T1.9** `src/main/kotlin/.../UnboundAirApplication.kt` – Einstiegspunkt. *Abnahme:* Startet und beendet sich ohne Web-Server.
-- [ ] **T1.10** `src/main/kotlin/.../scanner/ScannerProtocol.kt` – Befehle und Antworten. *Abnahme:* Alle 4-Byte-Befehle aus dem Wissensstand; Präfix-Vergleich ohne Annahme über Länge oder Padding. *Anforderung:* SC-01, SC-03.
-- [ ] **T1.11** `src/main/kotlin/.../scanner/ScannerExceptions.kt` – Fehlerarten. *Abnahme:* Je eine Exception für offline, busy, no paper, battery low, protocol error, timeout. *Anforderung:* SC-05.
-- [ ] **T1.12** `src/main/kotlin/.../scanner/ScannerClient.kt` – Scan-Ablauf. *Abnahme:* Status → DPI → Scan → Größe → Daten; Pausen (200 ms / 500 ms) und Timeouts (10/60/30 s) zentral an einer Stelle; Host und Port konfigurierbar; Firmware-Check ≥ 26. *Anforderung:* SC-01, SC-02, SC-04, SC-06, SC-07.
-- [ ] **T1.13** `src/test/kotlin/.../scanner/FakeScanner.kt` – Fake-Scanner. *Abnahme:* Füllbytes, geteilte `jpegsize`-Antwort, `devbusy`, Offline und `battlow` lassen sich je einzeln einschalten. *Anforderung:* TE-01.
-- [ ] **T1.14** `src/test/kotlin/.../scanner/ScannerClientTest.kt` – Client-Tests. *Abnahme:* Abnahmekriterien SC-01 bis SC-07 sind je durch einen Test belegt; die Nutzlast kommt bytegleich an. *Anforderung:* SC-01–SC-07.
-- [ ] **T1.15** `src/main/kotlin/.../cli/StatusCommand.kt` – Befehl `status`. *Abnahme:* Gibt Status und Firmware-Version aus (gegen den Fake: `nopaper` und `NB0a.032`). *Anforderung:* BE-01.
-- [ ] **T1.16** `src/main/kotlin/.../cli/ScanCommand.kt` – Befehl `scan`. *Abnahme:* `scan [--dpi 300|600] [--out DATEI]` schreibt das Roh-JPEG; kein Zuschnitt (folgt in M2). *Anforderung:* BE-02 (Teil).
-- [ ] **T1.17** `src/test/kotlin/.../cli/CommandTest.kt` – Befehlstests. *Abnahme:* Beide Befehle laufen gegen den Fake-Scanner grün. *Anforderung:* BE-01, BE-02, DC-03.
+Diese Datei wird vor Beginn des jeweiligen Meilensteins angelegt und zur Abnahme vorgelegt.
 
 ## Offene Entscheidungen – nicht vorwegnehmen, fragen
 
@@ -289,11 +266,13 @@ Der Auftrag ist fertig, wenn alles hier stimmt – vorher nicht:
 4. **Dienst:** `run` gegen Fake-Scanner und Mock-paperless: 3 Seiten → 1 PDF mit 3 Seiten in korrekter Größe, ans paperless-Modul übergeben und hochgeladen. Scanner offline schließt den Batch. Outbox-Retry funktioniert nach Neustart.
 5. **Zuschnitt:** Das Kuvert-Testbild wird verlustfrei auf ca. 1216 × 2494 px zugeschnitten (Luma identisch); das A4-Testbild ohne schwarzen Rand bleibt unverändert (bytegleich).
 6. **Container:** Image baut für `arm64` (amd64 später), `jpegtran` ist darin verfügbar, `status` läuft im Container gegen den Fake-Scanner.
-7. **Doku:** alle Dateien in `docs/` vollständig auf Deutsch, `betrieb.md` beschreibt den Container-Betrieb, README mit Schnellstart.
+7. **Doku:** alle Dateien in `docs/` vollständig auf Deutsch, `betrieb.md` beschreibt den Container-Betrieb, README mit Schnellstart (DO-08).
 8. **Git:** alles in kleinen Commits nach Conventional Commits.
-9. **Anforderungen:** Für jede ID oben ist das Abnahmekriterium erfüllt.
+9. **Anforderungen:** Für jede ID oben ist das Abnahmekriterium erfüllt – ausgenommen die unter „Bewusst noch nicht erledigt" aufgeführten.
 
-**Bewusst noch nicht erledigt:** Test am echten Scanner, Web-UI, Drehen und Geraderücken, weitere Ausgabe-Module, Native Image, CI, Deployment-Beispiel, englische Doku.
+**Bewusst noch nicht erledigt:** Test am echten Scanner, Web-UI, Drehen und Geraderücken, **SV-04 (`normalize`)**, weitere Ausgabe-Module, Native Image, CI, Deployment-Beispiel, englische Doku.
+
+**Umfang von v1:** Die Meilensteine 1 bis 5. Meilenstein 6 (Deployment-Beispiel und CI) gehört ausdrücklich nicht dazu.
 
 ## Übergabe
 

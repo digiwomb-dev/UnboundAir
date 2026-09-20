@@ -40,7 +40,7 @@ Fachliche Grundlage ist `docs/protokoll.md` – solange es die noch nicht gibt, 
 
 ## Planung vor dem Bauen
 
-- **Aufgabenliste vor jedem Meilenstein:** Bevor du einen Meilenstein baust, legst du darunter in `docs/plan.md` eine Aufgabenliste an: je Aufgabe eine ID (z. B. `T1.1`), genau eine Datei und ein prüfbares Abnahmekriterium. Gebaut wird erst nach meinem „Go" zur Liste. Erledigte Aufgaben hakst du ab.
+- **Aufgabenliste vor jedem Meilenstein:** Bevor du einen Meilenstein baust, legst du dafür eine eigene Datei `docs/meilenstein-N.md` an: Aufgaben (je eine ID wie `T1.1`, genau eine Datei, ein prüfbares Abnahmekriterium, die umgesetzten Anforderungs-IDs), Testpunkte und Teststand. `docs/plan.md` verweist nur darauf. Gebaut wird erst nach meinem „Go" zur Liste. Abgehakt wird erst, wenn eine Aufgabe gebaut **und** abgenommen ist – geschrieben allein genügt nicht.
 - **Erst Plan, dann Verhalten:** Soll sich etwas gegenüber `docs/plan.md` ändern, passt du zuerst den Plan an – nach meinem OK – und erst dann den Code.
 
 ## Fortschritt
