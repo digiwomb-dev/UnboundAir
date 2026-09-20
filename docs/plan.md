@@ -33,11 +33,13 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
   | Java | 26 | neueste verfügbare Java-Version; Java 27 existiert noch nicht. Bewusst **kein** LTS (das wäre 25). |
   | Gradle | 9.7.1 | unterstützt laut Kompatibilitätsmatrix JVM 17–26, JVM 27+ noch nicht |
   | Spring Boot | 4.1.1 | |
-  | Kotlin | 2.3.21 | von Spring Boot 4.1.1 verwaltet – nicht überschreiben |
+  | Kotlin | 2.4.20 | **bewusst neuer** als die von Spring Boot 4.1.1 verwaltete 2.3.21 – siehe Hinweis unten |
   | Apache PDFBox | 3.0.8 | |
   | ktlint-Gradle-Plugin | 14.2.0 | siehe TE-03 |
 
   Die Obergrenze setzt jeweils der älteste Baustein der Kette: Gradle begrenzt Java, Spring Boot begrenzt Kotlin. Beim Anheben einer Version diese Tabelle mitpflegen.
+
+  **Kotlin wird bewusst hochgezogen:** Spring Boot 4.1.1 verwaltet Kotlin 2.3.21, und dessen Compiler kennt als höchstes Bytecode-Ziel `JVM_25` – mit Java 26 lässt sich damit nicht bauen. Kotlin 2.4.20 kennt `JVM_26`. Deshalb wird die von Spring Boot vorgegebene Kotlin-Version im Build überschrieben. Das ist die einzige Stelle, an der bewusst von Spring Boots verwalteten Versionen abgewichen wird; sie gehört mit Begründung nach `docs/entscheidungen.md` (DO-06). Falls daraus Probleme entstehen, ist der Rückfallweg Java 25 statt 26.
 - **Eine Anwendung,** in v1 ohne Web-Oberfläche. Den Kern (Scanner, Verarbeitung, Batch, Ausgabe) so schneiden, dass später eine Web-UI andocken kann, ohne den Kern umzubauen.
 - **Abhängigkeiten minimal:** Spring Boot, Apache PDFBox, Spring-eigener HTTP-Client. Bildanalyse mit Java-Bordmitteln (ImageIO). Systemabhängigkeit: `jpegtran` (libjpeg-turbo) als externes Programm.
 - Kein SANE, kein AirScan, kein eSCL.
@@ -163,6 +165,14 @@ Unterbefehle der Anwendung (Umsetzung entscheidest du, z. B. Startskript `unboun
   *Abnahme:* Testlauf im Dev Container ist grün.
 
 Hinweis: Wie die Tests im Dev Container gestartet werden, hängt von der Umgebung ab, in der du arbeitest, und gehört nicht ins Repo. Kannst du sie nicht selbst im Dev Container starten: sag es mir – lass sie nicht stillschweigend woanders laufen.
+
+**Aktuelle Lage:** In der Umgebung, in der der Code entsteht, gibt es keine Container-Runtime, und es wird auch keine geben. Tests werden deshalb von Hand auf einem Rechner mit Runtime ausgeführt und die Ergebnisse zurückgemeldet. Daraus folgt der Arbeitsrhythmus:
+
+1. Ein abgeschlossenes Stück bauen, committen und nach `origin/main` pushen.
+2. Anhalten und die auszuführenden Befehle nennen, samt erwartetem Ergebnis.
+3. Auf die Rückmeldung warten – erst danach weiterbauen.
+
+Eine Aufgabe gilt erst als abgenommen, wenn ihr Testergebnis im Abschnitt „Teststand" in `docs/entwicklung.md` steht. Aufgaben, die geschrieben, aber noch nicht ausgeführt wurden, werden dort ausdrücklich als „nicht verifiziert" geführt.
 
 ### Tests (TE)
 
