@@ -1,7 +1,7 @@
 ---
 description: Runs the first local UnboundAir implementation attempt with Qwen3.8 27B.
 mode: subagent
-model: lmstudio/qwen/qwen3.8-27b
+model: lmstudio/qwen_qwen3_8-27b
 temperature: 0.1
 ---
 

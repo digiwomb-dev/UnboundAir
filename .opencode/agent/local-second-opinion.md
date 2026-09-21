@@ -1,7 +1,7 @@
 ---
 description: Uses Qwen3 Coder 30B for a second local implementation attempt after the primary local model failed.
 mode: subagent
-model: lmstudio/qwen/qwen3-coder-30b
+model: lmstudio/qwen_qwen3-coder-30b
 temperature: 0.1
 ---
 
