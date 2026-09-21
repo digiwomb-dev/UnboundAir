@@ -1,11 +1,11 @@
 package dev.digiwomb.unboundair.scanner
 
-/**
+/*
  * Low-level protocol constants and a prefix-comparison helper for the Mustek
  * iScan Air (S400W) scanner.
  *
  * The device speaks a tiny TCP protocol: every command is exactly four bytes
- * (see [ScannerCommand]) and most answers are short ASCII words. Two quirks of
+ * (see ScannerCommand) and most answers are short ASCII words. Two quirks of
  * the real hardware drive the design here:
  *
  * 1. **Fill bytes.** Every status/ack answer is 11 bytes: the ASCII word,
@@ -18,7 +18,7 @@ package dev.digiwomb.unboundair.scanner
  *
  * Because of (2) a response must never be matched by assuming a fixed length or
  * a particular padding. We therefore always compare by **prefix**: check that
- * the leading bytes equal the expected word. This is [startsWithPrefix] (SC-03).
+ * the leading bytes equal the expected word. This is startsWithPrefix (SC-03).
  */
 
 /**
@@ -68,7 +68,10 @@ object ScannerResponse {
  * bytes are compared; the response is never decoded to a [String], because a
  * fill byte in the padding would otherwise interfere with a string comparison.
  */
-fun startsWithPrefix(response: ByteArray, prefix: ByteArray): Boolean {
+fun startsWithPrefix(
+    response: ByteArray,
+    prefix: ByteArray,
+): Boolean {
     if (response.size < prefix.size) return false
     for (i in prefix.indices) {
         if (response[i] != prefix[i]) return false
@@ -82,8 +85,10 @@ fun startsWithPrefix(response: ByteArray, prefix: ByteArray): Boolean {
  * The string is converted to ASCII bytes and compared by prefix exactly like
  * [startsWithPrefix]. SC-03: no length or padding is assumed.
  */
-fun startsWithPrefix(response: ByteArray, asciiPrefix: String): Boolean =
-    startsWithPrefix(response, asciiPrefix.toByteArray(Charsets.US_ASCII))
+fun startsWithPrefix(
+    response: ByteArray,
+    asciiPrefix: String,
+): Boolean = startsWithPrefix(response, asciiPrefix.toByteArray(Charsets.US_ASCII))
 
 /**
  * Parses a `jpegsize` answer into the JPEG payload size in bytes.
@@ -98,7 +103,7 @@ fun startsWithPrefix(response: ByteArray, asciiPrefix: String): Boolean =
 fun parseJpegSize(response: ByteArray): Int {
     if (response.size < 12) {
         throw IllegalArgumentException(
-            "jpegsize answer is too short: ${response.size} byte(s), need at least 12"
+            "jpegsize answer is too short: ${response.size} byte(s), need at least 12",
         )
     }
     if (!startsWithPrefix(response, ScannerResponse.JPEGSIZE)) {
