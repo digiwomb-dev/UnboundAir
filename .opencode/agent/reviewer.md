@@ -1,5 +1,5 @@
 ---
-description: Prüft den aktuellen Stand read-only gegen AGENTS.md und docs/plan.md – am Ende jedes Meilensteins oder per @pruefer
+description: Prüft den aktuellen Stand read-only gegen AGENTS.md und docs/plan.md – am Ende jedes Meilensteins oder per @reviewer
 mode: subagent
 temperature: 0.1
 permission:
