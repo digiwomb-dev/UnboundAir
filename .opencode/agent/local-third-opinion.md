@@ -1,7 +1,7 @@
 ---
-description: Uses GPT-OSS 20B for a third, independent local implementation attempt after two local attempts failed.
+description: Uses Devstral Small 2 2512 for a third, independent local implementation attempt after two local attempts failed.
 mode: subagent
-model: lmstudio/gpt-oss-20b
+model: lmstudio/mistralai/devstral-small-2-2512
 temperature: 0.1
 ---
 

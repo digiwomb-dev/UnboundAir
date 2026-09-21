@@ -1,20 +1,20 @@
-# Lokale KI fuer UnboundAir
+# Lokale KI für UnboundAir
 
-`opencode.json` gilt nur fuer dieses Repository und schaltet das Freigeben von Sitzungen ab. Die Verbindung zu LM Studio und die Modellregistrierung verwaltet das installierte LM-Studio-Plugin.
+`opencode.json` gilt nur für dieses Repository und schaltet das Freigeben von Sitzungen ab. Die Verbindung zu LM Studio und die Modellregistrierung verwaltet das installierte LM-Studio-Plugin.
 
 ## Modelle in LM Studio
 
-Starte die Hauptsession mit dem Modell deiner Wahl. Rufe danach `@local-primary` fuer den ersten lokalen Versuch auf. Die weiteren Versuche nutzen diese voneinander abweichenden Modelle:
+Starte die Hauptsession mit dem Modell deiner Wahl; es gilt für die Session selbst und `@reviewer`. `@local-primary` nutzt fest `qwen3.8-27b`. Die weiteren Versuche nutzen diese voneinander abweichenden Modelle:
 
-- `devstral-small`: zweiter, unabhaengiger Implementierungsversuch.
-- `gpt-oss-20b`: dritter, unabhaengiger Implementierungsversuch.
+- `qwen3-coder-30b`: zweiter, unabhängiger Implementierungsversuch.
+- `devstral-small-2-2512`: dritter, unabhängiger Implementierungsversuch.
 
-Die Modell-IDs muessen den vom LM-Studio-Plugin bereitgestellten IDs entsprechen. Weichen sie ab, werden nur die `model`-Werte der beiden alternativen Agent-Dateien angepasst.
+Die Modell-IDs müssen den vom LM-Studio-Plugin bereitgestellten IDs entsprechen. Weichen sie ab, werden die `model`-Werte der Agent-Dateien entsprechend angepasst.
 
 ## Eskalation
 
-Rufe `@local-primary` in der Hauptsession auf; er nutzt das dort gewaehlte Modell. Nach einem fehlgeschlagenen ersten Versuch folgt `@local-second-opinion`, danach `@local-third-opinion`. Erst nach drei erfolglosen lokalen Modellen darf ein Cloud-Fallback vorgeschlagen werden. Er braucht jedes Mal deine ausdrueckliche Freigabe.
+Rufe `@local-primary` in der Hauptsession auf; er nutzt fest `qwen3.8-27b`. Nach einem fehlgeschlagenen ersten Versuch folgt `@local-second-opinion`, danach `@local-third-opinion`. Erst nach drei erfolglosen lokalen Modellen darf ein Cloud-Fallback vorgeschlagen werden. Er braucht jedes Mal deine ausdrückliche Freigabe.
 
-`@cloud-fallback` ist absichtlich deaktiviert. Sobald Anbieter und Modell feststehen, wird er mit einem Modell eingerichtet, das von der Hauptsession abweicht.
+`@cloud-fallback` ist absichtlich deaktiviert. Sobald Anbieter und Modell feststehen, wird er mit einem Modell eingerichtet, das von den drei lokalen Modellen abweicht.
 
-OpenCode liest Konfiguration, Agents und Skills nur beim Start. Nach jeder Aenderung in `.opencode/` oder an `opencode.json` OpenCode beenden und neu starten.
+OpenCode liest Konfiguration, Agents und Skills nur beim Start. Nach jeder Änderung in `.opencode/` oder an `opencode.json` OpenCode beenden und neu starten.

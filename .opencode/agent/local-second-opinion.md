@@ -1,7 +1,7 @@
 ---
-description: Uses Devstral Small for a second local implementation attempt after the primary local model failed.
+description: Uses Qwen3 Coder 30B for a second local implementation attempt after the primary local model failed.
 mode: subagent
-model: lmstudio/devstral-small
+model: lmstudio/qwen/qwen3-coder-30b
 temperature: 0.1
 ---
 
