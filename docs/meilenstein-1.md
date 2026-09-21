@@ -12,29 +12,22 @@ Was zuletzt tatsächlich ausgeführt wurde. Eine Aufgabe gilt erst als abgenomme
 
 | Was | Stand |
 |---|---|
-| Zuletzt getesteter Commit | `3bede7d` (Testpunkt 1) |
-| Ergebnis | Testpunkt 1 bestanden – Dev Container baut und startet, Temurin 26.0.2+10 und libjpeg-turbo 2.1.5 antworten |
-| Als Nächstes zu prüfen | **Testpunkt 2**, Stand `06a91f9` – Ergebnis liegt noch nicht vor |
+| Zuletzt getesteter Commit | `96d229f` (Testpunkt 2) |
+| Ergebnis | Testpunkt 2 bestanden – `./gradlew build` läuft durch, Linter meldet nichts |
+| Als Nächstes zu prüfen | **Testpunkt 3** – Scanner-Client und Fake-Scanner, noch nicht gebaut |
 
 Ausgeführt mit der `devcontainer`-CLI 0.89.0 auf Podman (`--docker-path podman`).
 
-### Testpunkt 2 – was auszuführen ist
+Bestandene Testpunkte:
 
-Auszuführen:
+- **Testpunkt 1** bei `3bede7d`: Dev Container baut und startet, Temurin 26.0.2+10 und libjpeg-turbo 2.1.5 antworten.
+- **Testpunkt 2** bei `96d229f`: `./gradlew build` grün. Damit ist die gesamte Werkzeugkette bestätigt – Gradle 9.7.1 auf Java 26, Kotlin 2.4.20 setzt sich gegen Spring Boots 2.3.21 durch, `jvmToolchain(26)` findet das JDK im Container, und ktlint läuft über Spotless ohne Befund.
 
-```bash
-devcontainer exec --workspace-folder . --docker-path podman bash -lc "./gradlew build"
-```
+### Wie Testpunkt 2 verlief
 
-Erwartet wird `BUILD SUCCESSFUL`.
+Der erste Versuch (`06a91f9`) schlug fehl: Der Linter brach mit `Extensions storage is not registered` ab. Ursache war nicht der Linter, sondern die Versionsverwaltung von Spring Boot, die ktlint seinen eigenen Compiler entzieht – ausführlich in OF-11. Nach der Umstellung auf ktlint über Spotless (`96d229f`) läuft der Build durch.
 
-**Erster Versuch (Commit `06a91f9`): fehlgeschlagen.** Der Linter brach ab mit `Extensions storage is not registered`, beim Parsen von `build.gradle.kts` und `UnboundAirApplication.kt`. Alles davor – Gradle, Java 26, der Kotlin-Compiler – lief durch. Damit sind drei der vier ursprünglich unsicheren Punkte erledigt: Kotlin 2.4.20 setzt sich gegen Spring Boots 2.3.21 durch, `jvmToolchain(26)` findet das JDK, der Netzzugang besteht.
-
-Ursache war nicht der Linter selbst, sondern die Versionsverwaltung von Spring Boot, die ktlint dessen eigenen Compiler entzieht – ausführlich in OF-11. Umgestellt auf ktlint über Spotless.
-
-**Offen ist jetzt nur noch:** ob Spotless' `detachedConfiguration` die Überschreibung tatsächlich umgeht. Die Annahme stammt aus dem gelesenen Quelltext von Spotless, nicht aus einem Testlauf.
-
-Schlägt der Build fehl, ist die Meldung ab `* What went wrong:` das Entscheidende.
+Festgehalten, weil es sich wiederholen kann: Der Fehlschlag betraf ausschließlich den Linter. Alles davor funktionierte auf Anhieb.
 
 ## Testpunkte
 
@@ -43,7 +36,7 @@ Der Meilenstein ist in vier Testpunkte geschnitten, damit ein Fehlschlag klein u
 | # | Prüft | Aufgaben | Anforderungen | Ergebnis |
 |---|---|---|---|---|
 | 1 | Dev Container baut und startet; `java -version` meldet 26, `jpegtran -version` antwortet | T1.3, T1.4 | DC-01, DC-02 | **bestanden** (`3bede7d`) |
-| 2 | `./gradlew build` läuft durch | T1.6–T1.9 | TE-03 | *(ausstehend)* |
+| 2 | `./gradlew build` läuft durch | T1.6–T1.9 | TE-03 | **bestanden** (`96d229f`) |
 | 3 | `./gradlew test` grün: Protokoll, Client, Fake-Scanner | T1.10–T1.14 | SC-01–SC-07, TE-01 | *(ausstehend)* |
 | 4 | `./gradlew test` grün: Befehle gegen den Fake-Scanner | T1.15–T1.17 | BE-01, BE-02, DC-03 | *(ausstehend)* |
 
@@ -70,10 +63,11 @@ Verifiziert am Commit `3bede7d`: `java -version` meldet `Temurin-26.0.2+10`, `jp
 
 ### Testpunkt 2 – Gradle-Gerüst
 
-- [ ] **T1.6** `settings.gradle.kts` – Projektname `unboundair`. *Abnahme:* `./gradlew projects` zeigt den Namen. *Anforderung:* Ergebnis 1 (kein ID-Bereich betroffen).
-- [ ] **T1.7** `build.gradle.kts` – Abhängigkeiten und Linter. *Abnahme:* Alle Versionen aus der Tabelle in `plan.md` fest gepinnt, ktlint über Spotless im Build verdrahtet (`spotlessCheck` hängt an `check`), `./gradlew build` im Dev Container grün. *Anforderung:* TE-03.
-- [ ] **T1.8** `gradle/wrapper/gradle-wrapper.properties` – Wrapper. *Abnahme:* `./gradlew --version` meldet Gradle 9.7.1; die Prüfsumme des mit eingecheckten `gradle-wrapper.jar` stimmt mit der in `entwicklung.md` genannten überein. *Anforderung:* DC-01 (Gradle über den Wrapper).
+- [x] **T1.6** `settings.gradle.kts` – Projektname `unboundair`. *Abnahme:* `./gradlew projects` zeigt den Namen. *Anforderung:* Ergebnis 1 (kein ID-Bereich betroffen).
+- [x] **T1.7** `build.gradle.kts` – Abhängigkeiten und Linter. *Abnahme:* Alle Versionen aus der Tabelle in `plan.md` fest gepinnt, ktlint über Spotless im Build verdrahtet (`spotlessCheck` hängt an `check`), `./gradlew build` im Dev Container grün. *Anforderung:* TE-03.
+- [x] **T1.8** `gradle/wrapper/gradle-wrapper.properties` – Wrapper. *Abnahme:* `./gradlew --version` meldet Gradle 9.7.1; die Prüfsumme des mit eingecheckten `gradle-wrapper.jar` stimmt mit der in `entwicklung.md` genannten überein. *Anforderung:* DC-01 (Gradle über den Wrapper).
 - [ ] **T1.9** `src/main/kotlin/.../UnboundAirApplication.kt` – Einstiegspunkt. *Abnahme:* Startet und beendet sich ohne Web-Server. *Anforderung:* Ergebnis 1 (kein ID-Bereich betroffen).
+  *Teilweise belegt:* Die Klasse übersetzt fehlerfrei und der Linter hat nichts zu beanstanden. Dass sie tatsächlich startet und sich beendet, ist damit **nicht** gezeigt – `build` kompiliert nur. Der Nachweis fällt mit Testpunkt 4 an, wenn die Befehle laufen.
 
 ### Testpunkt 3 – Scanner-Client
 
