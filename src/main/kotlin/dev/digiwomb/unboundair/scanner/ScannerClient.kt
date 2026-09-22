@@ -64,6 +64,29 @@ class ScannerClient(
     }
 
     /**
+     * Queries the scanner's firmware version in one connection.
+     *
+     * Sends `version` and returns the answer as a clean string, e.g.
+     * `NB0a.032`. It runs in its own connection, so the call is
+     * independent of [queryStatus] (SC-02: one operation, one
+     * connection).
+     *
+     * @return the firmware version string, e.g. `NB0a.032`.
+     * @throws ScannerOfflineException the scanner cannot be reached or the connection drops.
+     * @throws ScannerTimeoutException the version answer did not arrive within the timeout.
+     * @throws ScannerProtocolException the version answer is empty or not printable.
+     */
+    fun fetchFirmwareVersion(): String {
+        val socket = connect()
+        try {
+            send(socket, ScannerCommand.VERSION, "version")
+            return readFirmwareVersion(socket)
+        } finally {
+            runCatching { socket.close() }
+        }
+    }
+
+    /**
      * Scans one page in a single connection (SC-02) and returns the raw
      * JPEG bytes exactly as the device sent them, unmodified (SC-01).
      *
