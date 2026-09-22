@@ -114,7 +114,7 @@ Unklar ist, ob der Scanner am Rand etwas abschneidet, ob der Einzug das Blatt st
 
 Wie lange ein 600-dpi-Scan dauert, wie groß die Datei wird und ob der JPEG-Header dann tatsächlich 600 dpi meldet, ist ungetestet. Auch das Chroma-Subsampling könnte abweichen – davon hängt die iMCU-Größe und damit der Zuschnitt ab.
 
-**So gebaut:** Die iMCU-Größe wird aus dem JPEG selbst gelesen, nicht angenommen (SV-01).
+**So gebaut:** Die iMCU-Größe wird aus dem JPEG selbst gelesen, nicht angenommen (SV-01): aus den Sampling-Faktoren des JPEG über ImageIO-Metadaten (Element `componentSpec`, Attribute `HsamplingFactor`/`VsamplingFactor`; die echten Testbilder liefern 4:2:2 → 16×8). **[Analyse]** Die Bildanalyse dekodiert das ganze Bild in den Arbeitsspeicher; bei 600 dpi (A4 ≈ 4928×6850 px) liegt die Spitze bei rund 300 MB – mit dem Default-Heap von ~1,2 GB im Dev Container unkritisch, im schlanken Container-Betrieb aber zu beobachten.
 
 **Klärt:** Ein 600-dpi-Scan am echten Gerät.
 

@@ -4,7 +4,7 @@ Macht aus einem Mustek iScan Air (S400W) einen „Einlegen und fertig"-Scanner: 
 
 Kein Knopfdruck, keine Hersteller-Software, keine Windows-Anwendung. Kotlin und Spring Boot, Betrieb als Container.
 
-> **Im Aufbau – Meilenstein 1 von 5.** Es gibt bereits ein lauffähiges Gradle-Projekt mit Scanner-Client, Fake-Scanner und den Befehlen `status` und `scan`, getestet gegen den Fake-Scanner. Der aktuelle Stand steht in [`docs/meilenstein-1.md`](docs/meilenstein-1.md).
+> **Im Aufbau – Meilenstein 2 von 5.** Aus Meilenstein 1 stehen Gradle-Projekt, Scanner-Client, Fake-Scanner und die Befehle `status` und `scan` (getestet gegen den Fake-Scanner); Meilenstein 2 ergänzt verlustfreien Zuschnitt und Graustufen. Der aktuelle Stand steht in [`docs/meilenstein-2.md`](docs/meilenstein-2.md).
 
 ## Was es können soll
 
@@ -22,7 +22,7 @@ Die Doku ist auf Deutsch. Je nachdem, was du vorhast:
 | Du willst … | Lies |
 |---|---|
 | wissen, was gebaut wird und warum | [`docs/plan.md`](docs/plan.md) – Auftrag, feste Entscheidungen, alle Anforderungen mit IDs und Abnahmekriterien, Meilensteine |
-| den aktuellen Stand sehen | [`docs/meilenstein-1.md`](docs/meilenstein-1.md) – Aufgaben, Testpunkte und was zuletzt tatsächlich getestet wurde |
+| den aktuellen Stand sehen | [`docs/meilenstein-2.md`](docs/meilenstein-2.md) – Aufgaben, Testpunkte und was zuletzt tatsächlich getestet wurde ([`docs/meilenstein-1.md`](docs/meilenstein-1.md) als Historie) |
 | selbst bauen und testen | [`docs/entwicklung.md`](docs/entwicklung.md) – Dev Container, Build, Testlauf |
 | wissen, was am Gerät noch unklar ist | [`docs/offene-fragen.md`](docs/offene-fragen.md) – offene Punkte mit Status, Herkunft und dem Umgang damit im Code |
 | am Projekt mitarbeiten | [`AGENTS.md`](AGENTS.md) – Arbeitsweise, Leitplanken, Regeln |

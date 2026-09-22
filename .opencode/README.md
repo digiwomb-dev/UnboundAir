@@ -13,7 +13,7 @@ Die Modell-IDs müssen den vom LM-Studio-Plugin bereitgestellten IDs entsprechen
 
 ## Eskalation
 
-Rufe `@local-primary` in der Hauptsession auf; er nutzt fest `qwen3.8-27b`. Nach einem fehlgeschlagenen ersten Versuch folgt `@local-second-opinion`, danach `@local-third-opinion`. Erst nach drei erfolglosen lokalen Modellen darf ein Cloud-Fallback vorgeschlagen werden. Er braucht jedes Mal deine ausdrückliche Freigabe.
+Rufe `@local-primary` in der Hauptsession auf; er nutzt fest `qwen3.8-27b`. Nach einem fehlgeschlagenen ersten Versuch folgt `@local-second-opinion` (qwen3-coder-30b), danach `@local-third-opinion` (devstral-small-2-2512). Scheitern alle drei, springt der eingebaute `general`-Agent ein – er hat kein festes Modell und nutzt das Session-Modell. Erst wenn auch das nicht hilft, darf ein Cloud-Fallback vorgeschlagen werden; er braucht jedes Mal deine ausdrückliche Freigabe.
 
 `@cloud-fallback` ist absichtlich deaktiviert. Sobald Anbieter und Modell feststehen, wird er mit einem Modell eingerichtet, das von den drei lokalen Modellen abweicht.
 
