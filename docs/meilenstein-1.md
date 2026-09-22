@@ -39,7 +39,7 @@ Der Meilenstein ist in vier Testpunkte geschnitten, damit ein Fehlschlag klein u
 | 1 | Dev Container baut und startet; `java -version` meldet 26, `jpegtran -version` antwortet | T1.3, T1.4 | DC-01, DC-02 | **bestanden** (`3bede7d`) |
 | 2 | `./gradlew build` läuft durch | T1.6–T1.9 | TE-03 | **bestanden** (`96d229f`) |
 | 3 | `./gradlew test` grün: Protokoll, Client, Fake-Scanner | T1.10–T1.14 | SC-01–SC-07, TE-01 | **bestanden** (`7879306`) |
-| 4 | `./gradlew test` grün: Befehle gegen den Fake-Scanner | T1.15–T1.17 | BE-01, BE-02, DC-03 | *(ausstehend)* |
+| 4 | `./gradlew test` grün: Befehle gegen den Fake-Scanner | T1.15–T1.17, T1.19 | BE-01, BE-02, DC-03 | *(ausstehend)* |
 
 Die Aufgaben T1.0 bis T1.2, T1.5 und T1.18 ändern nur Doku und Konfiguration und brauchen keinen Testlauf.
 
@@ -80,6 +80,7 @@ Verifiziert am Commit `3bede7d`: `java -version` meldet `Temurin-26.0.2+10`, `jp
 
 ### Testpunkt 4 – Befehle
 
+- [ ] **T1.19** `src/main/kotlin/.../scanner/ScannerClient.kt` – Firmware-Abfrage. *Abnahme:* `fetchFirmwareVersion(): String` fragt `version` in einer eigenen Verbindung ab und liefert `NB0a.032` (gegen den Fake). *Anforderung:* BE-01, SC-02.
 - [ ] **T1.15** `src/main/kotlin/.../cli/StatusCommand.kt` – Befehl `status`. *Abnahme:* Gibt Status und Firmware-Version aus (gegen den Fake: `nopaper` und `NB0a.032`). *Anforderung:* BE-01.
 - [ ] **T1.16** `src/main/kotlin/.../cli/ScanCommand.kt` – Befehl `scan`. *Abnahme:* `scan [--dpi 300|600] [--out DATEI]` schreibt das Roh-JPEG; kein Zuschnitt (folgt in Meilenstein 2). *Anforderung:* BE-02 (Teil).
 - [ ] **T1.17** `src/test/kotlin/.../cli/CommandTest.kt` – Befehlstests. *Abnahme:* Beide Befehle laufen gegen den Fake-Scanner grün. *Anforderung:* BE-01, BE-02, DC-03.
