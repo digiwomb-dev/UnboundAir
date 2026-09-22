@@ -4,7 +4,7 @@ Macht aus einem Mustek iScan Air (S400W) einen „Einlegen und fertig"-Scanner: 
 
 Kein Knopfdruck, keine Hersteller-Software, keine Windows-Anwendung. Kotlin und Spring Boot, Betrieb als Container.
 
-> **Im Aufbau – Meilenstein 1 von 5.** Es gibt bisher nur Dokumentation und die Dev-Container-Definition. Noch kein lauffähiges Programm, kein Gradle-Projekt, keine Installationsanleitung. Der aktuelle Stand steht in [`docs/meilenstein-1.md`](docs/meilenstein-1.md).
+> **Im Aufbau – Meilenstein 1 von 5.** Es gibt bereits ein lauffähiges Gradle-Projekt mit Scanner-Client, Fake-Scanner und den Befehlen `status` und `scan`, getestet gegen den Fake-Scanner. Der aktuelle Stand steht in [`docs/meilenstein-1.md`](docs/meilenstein-1.md).
 
 ## Was es können soll
 

@@ -2,7 +2,7 @@
 
 Wie man `UnboundAir` baut und testet. Gearbeitet wird ausschließlich im Dev Container – auf dem Rechner selbst muss außer einer Container-Runtime und dem Dev-Container-Tooling nichts installiert sein, insbesondere kein JDK und kein Gradle.
 
-> **Stand: Meilenstein 1, im Aufbau.** Das Gradle-Projekt existiert noch nicht. Abschnitte, die es voraussetzen, sind als „noch nicht vorhanden" gekennzeichnet. Was heute schon geht, steht unter „Dev Container starten".
+> **Stand: Meilenstein 1, im Aufbau.** Das Gradle-Projekt, der Scanner-Client, der Fake-Scanner und die Befehle `status` und `scan` existieren und sind gegen den Fake-Scanner getestet.
 
 ## Voraussetzungen
 
@@ -50,8 +50,6 @@ Das ist folgenlos: Die Meldung stammt aus einer Metadaten-Abfrage der CLI, nicht
 
 ## Bauen und testen
 
-> **Noch nicht vorhanden.** Das Gradle-Projekt entsteht in den Aufgaben T1.5 bis T1.9, siehe `meilenstein-1.md`. Die folgenden Befehle funktionieren erst danach.
-
 Alles im Dev Container ausführen:
 
 ```bash
@@ -72,8 +70,6 @@ Eine Netzwerkverbindung braucht trotzdem, wer zum ersten Mal baut: Der Wrapper l
 **Der echte Scanner wird nie für Tests verwendet.** Er ist nur nach ausdrücklicher Freigabe und nur für Messläufe (`measure`) im Spiel.
 
 ## Gradle-Wrapper
-
-> **Noch nicht vorhanden.** Der Wrapper wird in T1.8 eingecheckt.
 
 Der Wrapper gehört mit ins Repository, inklusive `gradle-wrapper.jar`. Die Datei stammt aus der offiziellen Gradle-Veröffentlichung; ihre Prüfsumme ist vorab gegen die von Gradle publizierte Angabe abgeglichen worden:
 
