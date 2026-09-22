@@ -12,9 +12,9 @@ Was zuletzt tatsächlich ausgeführt wurde. Eine Aufgabe gilt erst als abgenomme
 
 | Was | Stand |
 |---|---|
-| Zuletzt getesteter Commit | `96d229f` (Testpunkt 2) |
-| Ergebnis | Testpunkt 2 bestanden – `./gradlew build` läuft durch, Linter meldet nichts |
-| Als Nächstes zu prüfen | **Testpunkt 3** – Scanner-Client und Fake-Scanner, noch nicht gebaut |
+| Zuletzt getesteter Commit | `7879306` (Testpunkt 3) |
+| Ergebnis | Testpunkt 3 bestanden – `./gradlew build` grün, 7 Tests (SC-01–SC-07) ohne Fehler, Linter sauber |
+| Als Nächstes zu prüfen | **Testpunkt 4** – Befehle `status` und `scan` gegen den Fake-Scanner |
 
 Ausgeführt mit der `devcontainer`-CLI 0.89.0 auf Podman (`--docker-path podman`).
 
@@ -22,6 +22,7 @@ Bestandene Testpunkte:
 
 - **Testpunkt 1** bei `3bede7d`: Dev Container baut und startet, Temurin 26.0.2+10 und libjpeg-turbo 2.1.5 antworten.
 - **Testpunkt 2** bei `96d229f`: `./gradlew build` grün. Damit ist die gesamte Werkzeugkette bestätigt – Gradle 9.7.1 auf Java 26, Kotlin 2.4.20 setzt sich gegen Spring Boots 2.3.21 durch, `jvmToolchain(26)` findet das JDK im Container, und ktlint läuft über Spotless ohne Befund.
+- **Testpunkt 3** bei `7879306`: `./gradlew build` grün. `ScannerClientTest` führt 7 Tests aus (je einer für SC-01–SC-07, inklusive des bewussten 10-Sekunden-Timeouts), alle ohne Fehler; `spotlessCheck` meldet nichts. Zwei Korrekturen waren nötig: der Antwortkonstanten-Name hieß an einer Stelle `DEBUSY` statt `DEVBUSY`, und der Präfix-Vergleich wurde als Extension statt als Top-Level-Funktion aufgerufen; beides ist in `7879306` behoben.
 
 ### Wie Testpunkt 2 verlief
 
@@ -37,7 +38,7 @@ Der Meilenstein ist in vier Testpunkte geschnitten, damit ein Fehlschlag klein u
 |---|---|---|---|---|
 | 1 | Dev Container baut und startet; `java -version` meldet 26, `jpegtran -version` antwortet | T1.3, T1.4 | DC-01, DC-02 | **bestanden** (`3bede7d`) |
 | 2 | `./gradlew build` läuft durch | T1.6–T1.9 | TE-03 | **bestanden** (`96d229f`) |
-| 3 | `./gradlew test` grün: Protokoll, Client, Fake-Scanner | T1.10–T1.14 | SC-01–SC-07, TE-01 | *(ausstehend)* |
+| 3 | `./gradlew test` grün: Protokoll, Client, Fake-Scanner | T1.10–T1.14 | SC-01–SC-07, TE-01 | **bestanden** (`7879306`) |
 | 4 | `./gradlew test` grün: Befehle gegen den Fake-Scanner | T1.15–T1.17 | BE-01, BE-02, DC-03 | *(ausstehend)* |
 
 Die Aufgaben T1.0 bis T1.2, T1.5 und T1.18 ändern nur Doku und Konfiguration und brauchen keinen Testlauf.
@@ -71,11 +72,11 @@ Verifiziert am Commit `3bede7d`: `java -version` meldet `Temurin-26.0.2+10`, `jp
 
 ### Testpunkt 3 – Scanner-Client
 
-- [ ] **T1.10** `src/main/kotlin/.../scanner/ScannerProtocol.kt` – Befehle und Antworten. *Abnahme:* Alle 4-Byte-Befehle aus dem Wissensstand; Präfix-Vergleich ohne Annahme über Länge oder Padding. *Anforderung:* SC-01, SC-03.
-- [ ] **T1.11** `src/main/kotlin/.../scanner/ScannerExceptions.kt` – Fehlerarten. *Abnahme:* Je eine Exception für offline, busy, no paper, battery low, protocol error, timeout. *Anforderung:* SC-05.
-- [ ] **T1.12** `src/main/kotlin/.../scanner/ScannerClient.kt` – Scan-Ablauf. *Abnahme:* Status → DPI → Scan → Größe → Daten; Pausen und Timeouts zentral an einer Stelle; Host und Port konfigurierbar; Firmware-Check ≥ 26. *Anforderung:* SC-01, SC-02, SC-04, SC-06, SC-07.
-- [ ] **T1.13** `src/test/kotlin/.../scanner/FakeScanner.kt` – Fake-Scanner. *Abnahme:* Füllbytes, geteilte `jpegsize`-Antwort, `devbusy`, Offline und `battlow` lassen sich je einzeln einschalten. *Anforderung:* TE-01.
-- [ ] **T1.14** `src/test/kotlin/.../scanner/ScannerClientTest.kt` – Client-Tests. *Abnahme:* Die Abnahmekriterien SC-01 bis SC-07 sind je durch einen Test belegt; die Nutzlast kommt bytegleich an. *Anforderung:* SC-01–SC-07.
+- [x] **T1.10** `src/main/kotlin/.../scanner/ScannerProtocol.kt` – Befehle und Antworten. *Abnahme:* Alle 4-Byte-Befehle aus dem Wissensstand; Präfix-Vergleich ohne Annahme über Länge oder Padding. *Anforderung:* SC-01, SC-03.
+- [x] **T1.11** `src/main/kotlin/.../scanner/ScannerExceptions.kt` – Fehlerarten. *Abnahme:* Je eine Exception für offline, busy, no paper, battery low, protocol error, timeout. *Anforderung:* SC-05.
+- [x] **T1.12** `src/main/kotlin/.../scanner/ScannerClient.kt` – Scan-Ablauf. *Abnahme:* Status → DPI → Scan → Größe → Daten; Pausen und Timeouts zentral an einer Stelle; Host und Port konfigurierbar; Firmware-Check ≥ 26. *Anforderung:* SC-01, SC-02, SC-04, SC-06, SC-07.
+- [x] **T1.13** `src/test/kotlin/.../scanner/FakeScanner.kt` – Fake-Scanner. *Abnahme:* Füllbytes, geteilte `jpegsize`-Antwort, `devbusy`, Offline und `battlow` lassen sich je einzeln einschalten. *Anforderung:* TE-01.
+- [x] **T1.14** `src/test/kotlin/.../scanner/ScannerClientTest.kt` – Client-Tests. *Abnahme:* Die Abnahmekriterien SC-01 bis SC-07 sind je durch einen Test belegt; die Nutzlast kommt bytegleich an. *Anforderung:* SC-01–SC-07.
 
 ### Testpunkt 4 – Befehle
 
