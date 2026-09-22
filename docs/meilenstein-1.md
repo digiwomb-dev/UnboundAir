@@ -12,9 +12,9 @@ Was zuletzt tatsächlich ausgeführt wurde. Eine Aufgabe gilt erst als abgenomme
 
 | Was | Stand |
 |---|---|
-| Zuletzt getesteter Commit | `7879306` (Testpunkt 3) |
-| Ergebnis | Testpunkt 3 bestanden – `./gradlew build` grün, 7 Tests (SC-01–SC-07) ohne Fehler, Linter sauber |
-| Als Nächstes zu prüfen | **Testpunkt 4** – Befehle `status` und `scan` gegen den Fake-Scanner |
+| Zuletzt getesteter Commit | `0ccb058` (Testpunkt 4) |
+| Ergebnis | Testpunkt 4 bestanden – `./gradlew build` grün, 12 Tests (SC-01–SC-07, BE-01, BE-02, T1.9) ohne Fehler, Linter sauber |
+| Als Nächstes zu prüfen | *(kein Testpunkt offen)* – Prüfer (Subagent `reviewer`) aufrufen |
 
 Ausgeführt mit der `devcontainer`-CLI 0.89.0 auf Podman (`--docker-path podman`).
 
@@ -23,6 +23,7 @@ Bestandene Testpunkte:
 - **Testpunkt 1** bei `3bede7d`: Dev Container baut und startet, Temurin 26.0.2+10 und libjpeg-turbo 2.1.5 antworten.
 - **Testpunkt 2** bei `96d229f`: `./gradlew build` grün. Damit ist die gesamte Werkzeugkette bestätigt – Gradle 9.7.1 auf Java 26, Kotlin 2.4.20 setzt sich gegen Spring Boots 2.3.21 durch, `jvmToolchain(26)` findet das JDK im Container, und ktlint läuft über Spotless ohne Befund.
 - **Testpunkt 3** bei `7879306`: `./gradlew build` grün. `ScannerClientTest` führt 7 Tests aus (je einer für SC-01–SC-07, inklusive des bewussten 10-Sekunden-Timeouts), alle ohne Fehler; `spotlessCheck` meldet nichts. Zwei Korrekturen waren nötig: der Antwortkonstanten-Name hieß an einer Stelle `DEBUSY` statt `DEVBUSY`, und der Präfix-Vergleich wurde als Extension statt als Top-Level-Funktion aufgerufen; beides ist in `7879306` behoben.
+- **Testpunkt 4** bei `0ccb058`: `./gradlew build` grün. `CommandTest` führt 5 Tests aus (BE-01 `status`, BE-02 `scan` bytegleich, 600-dpi-Umschaltung, Default-Dateiname, T1.9-In-JVM-Boot), `ScannerClientTest` weiterhin 7 (SC-01–SC-07) — zusammen 12 Tests ohne Fehler, `spotlessCheck` sauber. Zwei Korrekturen waren nötig: in `UnboundAirApplication` fehlte der Import `SpringApplication`, und `spotlessApply` formatierte die vier neuen Dateien um; beides ist in `0ccb058` behoben.
 
 ### Wie Testpunkt 2 verlief
 
@@ -39,7 +40,7 @@ Der Meilenstein ist in vier Testpunkte geschnitten, damit ein Fehlschlag klein u
 | 1 | Dev Container baut und startet; `java -version` meldet 26, `jpegtran -version` antwortet | T1.3, T1.4 | DC-01, DC-02 | **bestanden** (`3bede7d`) |
 | 2 | `./gradlew build` läuft durch | T1.6–T1.9 | TE-03 | **bestanden** (`96d229f`) |
 | 3 | `./gradlew test` grün: Protokoll, Client, Fake-Scanner | T1.10–T1.14 | SC-01–SC-07, TE-01 | **bestanden** (`7879306`) |
-| 4 | `./gradlew test` grün: Befehle gegen den Fake-Scanner | T1.15–T1.17, T1.19 | BE-01, BE-02, DC-03 | *(ausstehend)* |
+| 4 | `./gradlew test` grün: Befehle gegen den Fake-Scanner | T1.15–T1.17, T1.19 | BE-01, BE-02, DC-03 | **bestanden** (`0ccb058`) |
 
 Die Aufgaben T1.0 bis T1.2, T1.5 und T1.18 ändern nur Doku und Konfiguration und brauchen keinen Testlauf.
 
@@ -67,8 +68,8 @@ Verifiziert am Commit `3bede7d`: `java -version` meldet `Temurin-26.0.2+10`, `jp
 - [x] **T1.6** `settings.gradle.kts` – Projektname `unboundair`. *Abnahme:* `./gradlew projects` zeigt den Namen. *Anforderung:* Ergebnis 1 (kein ID-Bereich betroffen).
 - [x] **T1.7** `build.gradle.kts` – Abhängigkeiten und Linter. *Abnahme:* Alle Versionen aus der Tabelle in `plan.md` fest gepinnt, ktlint über Spotless im Build verdrahtet (`spotlessCheck` hängt an `check`), `./gradlew build` im Dev Container grün. *Anforderung:* TE-03.
 - [x] **T1.8** `gradle/wrapper/gradle-wrapper.properties` – Wrapper. *Abnahme:* `./gradlew --version` meldet Gradle 9.7.1; die Prüfsumme des mit eingecheckten `gradle-wrapper.jar` stimmt mit der in `entwicklung.md` genannten überein. *Anforderung:* DC-01 (Gradle über den Wrapper).
-- [ ] **T1.9** `src/main/kotlin/.../UnboundAirApplication.kt` – Einstiegspunkt. *Abnahme:* Startet und beendet sich ohne Web-Server. *Anforderung:* Ergebnis 1 (kein ID-Bereich betroffen).
-  *Teilweise belegt:* Die Klasse übersetzt fehlerfrei und der Linter hat nichts zu beanstanden. Dass sie tatsächlich startet und sich beendet, ist damit **nicht** gezeigt – `build` kompiliert nur. Der Nachweis fällt mit Testpunkt 4 an, wenn die Befehle laufen.
+- [x] **T1.9** `src/main/kotlin/.../UnboundAirApplication.kt` – Einstiegspunkt. *Abnahme:* Startet und beendet sich ohne Web-Server. *Anforderung:* Ergebnis 1 (kein ID-Bereich betroffen).
+  *Belegt mit Testpunkt 4:* Der In-JVM-Test in `CommandTest` bootet die Anwendung mit `WebApplicationType.NONE`, führt `status` gegen den Fake-Scanner aus und prüft, dass der Lauf mit Exit-Code 0 zurückkehrt — die App startet, führt einen Befehl aus und beendet sich ohne Web-Server.
 
 ### Testpunkt 3 – Scanner-Client
 
@@ -80,7 +81,7 @@ Verifiziert am Commit `3bede7d`: `java -version` meldet `Temurin-26.0.2+10`, `jp
 
 ### Testpunkt 4 – Befehle
 
-- [ ] **T1.19** `src/main/kotlin/.../scanner/ScannerClient.kt` – Firmware-Abfrage. *Abnahme:* `fetchFirmwareVersion(): String` fragt `version` in einer eigenen Verbindung ab und liefert `NB0a.032` (gegen den Fake). *Anforderung:* BE-01, SC-02.
-- [ ] **T1.15** `src/main/kotlin/.../cli/StatusCommand.kt` – Befehl `status`. *Abnahme:* Gibt Status und Firmware-Version aus (gegen den Fake: `nopaper` und `NB0a.032`). *Anforderung:* BE-01.
-- [ ] **T1.16** `src/main/kotlin/.../cli/ScanCommand.kt` – Befehl `scan`. *Abnahme:* `scan [--dpi 300|600] [--out DATEI]` schreibt das Roh-JPEG; kein Zuschnitt (folgt in Meilenstein 2). *Anforderung:* BE-02 (Teil).
-- [ ] **T1.17** `src/test/kotlin/.../cli/CommandTest.kt` – Befehlstests. *Abnahme:* Beide Befehle laufen gegen den Fake-Scanner grün. *Anforderung:* BE-01, BE-02, DC-03.
+- [x] **T1.19** `src/main/kotlin/.../scanner/ScannerClient.kt` – Firmware-Abfrage. *Abnahme:* `fetchFirmwareVersion(): String` fragt `version` in einer eigenen Verbindung ab und liefert `NB0a.032` (gegen den Fake). *Anforderung:* BE-01, SC-02.
+- [x] **T1.15** `src/main/kotlin/.../cli/StatusCommand.kt` – Befehl `status`. *Abnahme:* Gibt Status und Firmware-Version aus (gegen den Fake: `nopaper` und `NB0a.032`). *Anforderung:* BE-01.
+- [x] **T1.16** `src/main/kotlin/.../cli/ScanCommand.kt` – Befehl `scan`. *Abnahme:* `scan [--dpi 300|600] [--out DATEI]` schreibt das Roh-JPEG; kein Zuschnitt (folgt in Meilenstein 2). *Anforderung:* BE-02 (Teil).
+- [x] **T1.17** `src/test/kotlin/.../cli/CommandTest.kt` – Befehlstests. *Abnahme:* Beide Befehle laufen gegen den Fake-Scanner grün. *Anforderung:* BE-01, BE-02, DC-03.
