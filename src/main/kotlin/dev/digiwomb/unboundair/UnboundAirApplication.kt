@@ -4,13 +4,14 @@ import dev.digiwomb.unboundair.cli.ScanCommand
 import dev.digiwomb.unboundair.cli.StatusCommand
 import dev.digiwomb.unboundair.scanner.ScannerClient
 import dev.digiwomb.unboundair.scanner.ScannerException
-import java.nio.file.Path
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.boot.ExitCodeGenerator
+import org.springframework.boot.SpringApplication
 import org.springframework.boot.WebApplicationType
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.builder.SpringApplicationBuilder
+import java.nio.file.Path
 
 /**
  * Command line entry point and subcommand dispatcher.
@@ -21,7 +22,9 @@ import org.springframework.boot.builder.SpringApplicationBuilder
  * alive.
  */
 @SpringBootApplication
-class UnboundAirApplication : ApplicationRunner, ExitCodeGenerator {
+class UnboundAirApplication :
+    ApplicationRunner,
+    ExitCodeGenerator {
     private var commandExitCode = 0
 
     /**
@@ -47,11 +50,15 @@ class UnboundAirApplication : ApplicationRunner, ExitCodeGenerator {
     private fun dispatch(cli: CliArgs) {
         val client = ScannerClient(cli.host, cli.port) { warning -> System.err.println(warning) }
         when (cli.command) {
-            "status" -> println(StatusCommand(client).run())
+            "status" -> {
+                println(StatusCommand(client).run())
+            }
+
             "scan" -> {
                 val result = ScanCommand(client).run(cli.dpi, cli.out?.let { Path.of(it) })
                 println("Saved: ${result.path} (${result.size} bytes)")
             }
+
             else -> {
                 System.err.println(USAGE)
                 commandExitCode = 1
@@ -73,18 +80,22 @@ class UnboundAirApplication : ApplicationRunner, ExitCodeGenerator {
                     host = valueAfter(raw, i, "--host")
                     i++
                 }
+
                 "--port" -> {
                     port = intAfter(raw, i, "--port")
                     i++
                 }
+
                 "--dpi" -> {
                     dpi = intAfter(raw, i, "--dpi")
                     i++
                 }
+
                 "--out" -> {
                     out = valueAfter(raw, i, "--out")
                     i++
                 }
+
                 else -> {
                     if (token.startsWith("--")) {
                         throw IllegalArgumentException("Unknown option: $token")
@@ -136,8 +147,9 @@ class UnboundAirApplication : ApplicationRunner, ExitCodeGenerator {
 }
 
 fun main(args: Array<String>) {
-    val context = SpringApplicationBuilder(UnboundAirApplication::class.java)
-        .web(WebApplicationType.NONE)
-        .run(*args)
+    val context =
+        SpringApplicationBuilder(UnboundAirApplication::class.java)
+            .web(WebApplicationType.NONE)
+            .run(*args)
     System.exit(SpringApplication.exit(context))
 }

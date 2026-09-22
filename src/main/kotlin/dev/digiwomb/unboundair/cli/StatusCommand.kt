@@ -5,7 +5,9 @@ import dev.digiwomb.unboundair.scanner.ScannerClient
 /**
  * The `status` command: reports the scanner's status and firmware version.
  */
-class StatusCommand(private val client: ScannerClient) {
+class StatusCommand(
+    private val client: ScannerClient,
+) {
     /**
      * Queries the scanner's status and firmware version.
      *

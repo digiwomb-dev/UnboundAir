@@ -9,11 +9,16 @@ import java.time.format.DateTimeFormatter
 /**
  * The `scan` command: scans one page and writes the raw JPEG to a file.
  */
-class ScanCommand(private val client: ScannerClient) {
+class ScanCommand(
+    private val client: ScannerClient,
+) {
     /**
      * Outcome of a scan: where the raw JPEG was written and how big it is.
      */
-    data class Result(val path: Path, val size: Int)
+    data class Result(
+        val path: Path,
+        val size: Int,
+    )
 
     /**
      * Scans one page and writes the raw JPEG to a file.
@@ -27,7 +32,10 @@ class ScanCommand(private val client: ScannerClient) {
      * @param out target file, or null to use the default file name.
      * @return the target path and the number of raw bytes written.
      */
-    fun run(dpi: Int, out: Path?): Result {
+    fun run(
+        dpi: Int,
+        out: Path?,
+    ): Result {
         val bytes = client.scan(dpi)
         val target = out ?: Path.of(defaultFileName(dpi))
         Files.write(target, bytes)
@@ -44,7 +52,9 @@ class ScanCommand(private val client: ScannerClient) {
          * @param now the timestamp to use; defaults to the current time, injectable for tests.
          * @return the file name, e.g. `iscan_20260922-143500_300dpi.jpg`.
          */
-        fun defaultFileName(dpi: Int, now: LocalDateTime = LocalDateTime.now()): String =
-            "iscan_${TIMESTAMP.format(now)}_${dpi}dpi.jpg"
+        fun defaultFileName(
+            dpi: Int,
+            now: LocalDateTime = LocalDateTime.now(),
+        ): String = "iscan_${TIMESTAMP.format(now)}_${dpi}dpi.jpg"
     }
 }

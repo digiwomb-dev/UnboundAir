@@ -3,9 +3,6 @@ package dev.digiwomb.unboundair.cli
 import dev.digiwomb.unboundair.UnboundAirApplication
 import dev.digiwomb.unboundair.scanner.FakeScanner
 import dev.digiwomb.unboundair.scanner.ScannerClient
-import java.nio.file.Files
-import java.nio.file.Path
-import java.time.LocalDateTime
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -15,6 +12,9 @@ import org.junit.jupiter.api.io.TempDir
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.WebApplicationType
 import org.springframework.boot.builder.SpringApplicationBuilder
+import java.nio.file.Files
+import java.nio.file.Path
+import java.time.LocalDateTime
 
 /**
  * Tests for the `status` and `scan` commands against the [FakeScanner].
@@ -44,7 +44,9 @@ class CommandTest {
     }
 
     @Test
-    fun `scan writes the raw JPEG byte-identical`(@TempDir dir: Path) {
+    fun `scan writes the raw JPEG byte-identical`(
+        @TempDir dir: Path,
+    ) {
         val fake = FakeScanner()
         fake.payload = ByteArray(1234) { index -> (index * 17 + 5).toByte() }
         fake.start()
@@ -61,7 +63,9 @@ class CommandTest {
     }
 
     @Test
-    fun `scan requests 600 dpi when the firmware allows it`(@TempDir dir: Path) {
+    fun `scan requests 600 dpi when the firmware allows it`(
+        @TempDir dir: Path,
+    ) {
         val fake = FakeScanner()
         fake.version = "NB0a.032"
         fake.start()
@@ -89,9 +93,10 @@ class CommandTest {
         fake.statusWord = "nopaper"
         fake.start()
         try {
-            val context = SpringApplicationBuilder(UnboundAirApplication::class.java)
-                .web(WebApplicationType.NONE)
-                .run("status", "--host", "127.0.0.1", "--port", fake.port.toString())
+            val context =
+                SpringApplicationBuilder(UnboundAirApplication::class.java)
+                    .web(WebApplicationType.NONE)
+                    .run("status", "--host", "127.0.0.1", "--port", fake.port.toString())
 
             try {
                 assertEquals(0, SpringApplication.exit(context), "a successful command must exit with code 0")
