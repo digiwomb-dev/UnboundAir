@@ -2,7 +2,7 @@
 
 Wie man `UnboundAir` baut und testet. Gearbeitet wird ausschließlich im Dev Container – auf dem Rechner selbst muss außer einer Container-Runtime und dem Dev-Container-Tooling nichts installiert sein, insbesondere kein JDK und kein Gradle.
 
-> **Stand: Meilenstein 1, im Aufbau.** Das Gradle-Projekt, der Scanner-Client, der Fake-Scanner und die Befehle `status` und `scan` existieren und sind gegen den Fake-Scanner getestet.
+> **Stand: Meilenstein 2, in Arbeit.** Aus Meilenstein 1 stehen Gradle-Projekt, Scanner-Client, Fake-Scanner und die Befehle `status` und `scan` (getestet gegen den Fake-Scanner); Meilenstein 2 ergänzt Zuschnitt und Graustufen. Den aktuellen Stand zeigt die Datei des laufenden Meilensteins.
 
 ## Voraussetzungen
 
@@ -87,26 +87,25 @@ sha256sum gradle/wrapper/gradle-wrapper.jar
 
 ## Zusammenarbeit am Repository
 
-Gearbeitet wird derzeit direkt auf `main`, ohne Branches und Pull Requests – der Stand muss nach jedem abgeschlossenen Schritt sofort abholbar sein, weil Tests auf einem anderen Rechner von Hand ausgeführt werden. Commits folgen trotzdem den Conventional Commits und bleiben klein.
+Gearbeitet wird derzeit direkt auf `main`, ohne Branches und Pull Requests. Commits folgen den Conventional Commits und bleiben klein; gepusht wird nach jedem bestandenen Testpunkt.
 
 ## Warum der Umweg über den Dev Container
 
 Der Container enthält dieselben Systemabhängigkeiten wie das spätere Laufzeit-Image: dieselbe JDK-Hauptversion, dasselbe `jpegtran`. Driften die beiden auseinander, laufen die Tests grün und der Dienst fällt im Betrieb um. Deshalb gilt: gebaut und getestet wird im Container, nicht daneben.
 
-## Wie getestet wird, solange keine Runtime da ist
+## Lokaler Testlauf
 
-Die Umgebung, in der der Code entsteht, hat keine Container-Runtime und bekommt auch keine. Das blockiert nichts, verschiebt aber die Ausführung: Gebaut und committet wird dort, ausgeführt auf einem Rechner mit Runtime.
+Die Entwicklungsumgebung ist selbst eine Container-Umgebung; ein Bind-Mount des Workspace-Ordners in den Dev Container schlägt dort fehl. Deshalb liegt außerhalb des Repos ein Wrapper (`unboundair-devcontainer`), der den Dev Container über die `devcontainer`-CLI startet: Der Workspace ist ein Named Volume, das beim Anlegen per `docker cp` mit dem Repo befüllt wird; `--fresh` legt Container und Repo-Volume neu an, das Gradle-Cache-Volume bleibt erhalten. Der Wrapper gehört nicht ins Repo – er ist an diese Umgebung gebunden; das portable Gegenstück bleibt `.devcontainer/`.
 
-Der Ablauf je Schritt:
+Der Ablauf je Testlauf:
 
-1. Ein abgeschlossenes Stück wird gebaut, committet und nach `origin/main` gepusht.
-2. Es folgt eine Ansage, welche Befehle auszuführen sind und was dabei herauskommen soll.
-3. Die Ausgabe wird zurückgemeldet – auch im Fehlerfall.
-4. Das Ergebnis wird im Fortschritt des jeweiligen Meilensteins festgehalten, erst dann geht es weiter.
+1. Container starten bzw. erneuern: `unboundair-devcontainer` (bei Bedarf `--fresh`).
+2. Container-Namen ermitteln: `docker ps --filter label=devcontainer.local_folder=/workspace/repos/UnboundAir --format '{{.Names}}'`.
+3. Repo hineinspiegeln: `docker cp /workspace/repos/UnboundAir/. <NAME>:/workspaces/UnboundAir/`.
+4. Stand gegenprüfen: `docker exec -u ubuntu -w /workspaces/UnboundAir <NAME> git status --short` – die Kopie muss dem Commit entsprechen.
+5. Bauen: `docker exec -u ubuntu -w /workspaces/UnboundAir <NAME> ./gradlew build`.
 
-Eine Aufgabe gilt erst als abgenommen, wenn ihr Testergebnis dort steht. Aufgaben, die geschrieben, aber noch nicht ausgeführt wurden, werden ausdrücklich als „nicht verifiziert" geführt.
-
-Den aktuellen Teststand und die Testpunkte des laufenden Meilensteins findest du in `meilenstein-1.md`.
+Beim Arbeiten an einzelnen Dateien genügt es, nur `src/` zu spiegeln; nach `spotlessApply` im Container werden die formatierten Dateien zurückkopiert.
 
 ### Bekannte Eigenheiten der Testumgebung
 
@@ -120,10 +119,10 @@ Wer hier neu dazukommt, liest in dieser Reihenfolge:
 
 1. `AGENTS.md` – wie gearbeitet wird, Leitplanken, Regeln
 2. `docs/plan.md` – Auftrag, feste Entscheidungen, Anforderungen mit IDs, Meilensteine
-3. `docs/meilenstein-1.md` – Aufgaben, Testpunkte und der aktuelle Teststand
+3. die Datei des laufenden Meilensteins (`docs/meilenstein-N.md`) – Aufgaben, Testpunkte und der aktuelle Teststand
 4. diese Datei – Bauen und Testen
 5. `docs/offene-fragen.md` – was am Gerät noch unklar ist
 
-Weitergearbeitet wird bei der ersten offenen Aufgabe in `meilenstein-1.md`. Steht dort ein Testpunkt ohne Ergebnis, ist zuerst dieses Ergebnis einzuholen – nicht weiterbauen und das Testen aufschieben.
+Weitergearbeitet wird bei der ersten offenen Aufgabe in der Datei des laufenden Meilensteins. Steht dort ein Testpunkt ohne Ergebnis, ist zuerst dieses Ergebnis einzuholen – nicht weiterbauen und das Testen aufschieben.
 
 Das Verzeichnis `_input/` (Wissensstand, Python-Referenzcode, Testbilder) liegt nur lokal vor und ist nicht Teil des Repositorys. Mehrere Anforderungen verweisen darauf.
