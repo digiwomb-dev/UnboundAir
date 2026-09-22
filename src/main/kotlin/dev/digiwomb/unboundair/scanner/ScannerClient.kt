@@ -139,7 +139,10 @@ class ScannerClient(
      * @return 600 if requested and supported by the firmware, 300 otherwise.
      * @throws IllegalArgumentException [requestedDpi] is neither 300 nor 600.
      */
-    fun resolveDpi(requestedDpi: Int, firmwareVersion: String): Int {
+    fun resolveDpi(
+        requestedDpi: Int,
+        firmwareVersion: String,
+    ): Int {
         require(requestedDpi == 300 || requestedDpi == 600) { "requestedDpi must be 300 or 600, was $requestedDpi" }
         if (requestedDpi != 600) {
             return 300
@@ -167,7 +170,12 @@ class ScannerClient(
      * Sends one 4-byte command with the reference client's pacing (SC-02):
      * 200 ms before the write and [pauseAfterMillis] after it.
      */
-    private fun send(socket: Socket, command: ByteArray, step: String, pauseAfterMillis: Long = SEND_PAUSE_AFTER_MILLIS) {
+    private fun send(
+        socket: Socket,
+        command: ByteArray,
+        step: String,
+        pauseAfterMillis: Long = SEND_PAUSE_AFTER_MILLIS,
+    ) {
         pause(SEND_PAUSE_MILLIS)
         try {
             val output = socket.getOutputStream()
@@ -186,7 +194,11 @@ class ScannerClient(
      * so a single read is enough; only [readJpegSizeAnswer] and
      * [readBulkData] have to loop.
      */
-    private fun readAnswer(socket: Socket, step: String, timeoutMillis: Long): ByteArray {
+    private fun readAnswer(
+        socket: Socket,
+        step: String,
+        timeoutMillis: Long,
+    ): ByteArray {
         val buffer = ByteArray(SHORT_ANSWER_BUFFER_SIZE)
         val read = readChunk(socket, buffer, 0, buffer.size, step, timeoutMillis)
         if (read == -1) {
@@ -220,7 +232,10 @@ class ScannerClient(
      * read is allowed [timeoutMillis] — 60 s, because the device feeds
      * the page through the scanner before it reports the size.
      */
-    private fun readJpegSizeAnswer(socket: Socket, timeoutMillis: Long): ByteArray {
+    private fun readJpegSizeAnswer(
+        socket: Socket,
+        timeoutMillis: Long,
+    ): ByteArray {
         val answer = ByteArray(JPEGSIZE_ANSWER_LENGTH)
         var read = 0
         while (read < JPEGSIZE_ANSWER_LENGTH) {
@@ -241,7 +256,11 @@ class ScannerClient(
      * announced by `jpegsize` is reached, and returns the bytes
      * untouched (SC-01). Each read is allowed [timeoutMillis].
      */
-    private fun readBulkData(socket: Socket, size: Int, timeoutMillis: Long): ByteArray {
+    private fun readBulkData(
+        socket: Socket,
+        size: Int,
+        timeoutMillis: Long,
+    ): ByteArray {
         val data = ByteArray(size)
         val buffer = ByteArray(BULK_READ_CHUNK_SIZE)
         var offset = 0
@@ -264,12 +283,19 @@ class ScannerClient(
      *
      * @return the number of bytes read, or -1 if the connection was closed.
      */
-    private fun readChunk(socket: Socket, buffer: ByteArray, offset: Int, length: Int, step: String, timeoutMillis: Long): Int {
+    private fun readChunk(
+        socket: Socket,
+        buffer: ByteArray,
+        offset: Int,
+        length: Int,
+        step: String,
+        timeoutMillis: Long,
+    ): Int {
         socket.soTimeout = timeoutMillis.toInt()
         return try {
             socket.getInputStream().read(buffer, offset, length)
         } catch (e: SocketTimeoutException) {
-            throw ScannerTimeoutException("Timed out after ${timeoutMillis} ms reading the '$step' answer", e)
+            throw ScannerTimeoutException("Timed out after $timeoutMillis ms reading the '$step' answer", e)
         } catch (e: IOException) {
             throw ScannerOfflineException("Lost the connection to $host:$port while reading the '$step' answer", e)
         }
@@ -285,16 +311,20 @@ class ScannerClient(
         listOf(
             ScannerResponse.SCANREADY,
             ScannerResponse.NOPAPER,
-            ScannerResponse.DEBUSY,
+            ScannerResponse.DEVBUSY,
             ScannerResponse.BATTLOW,
-        ).firstNotNullOfOrNull { if (answer.startsWithPrefix(it)) it.toString(Charsets.US_ASCII) else null }
+        ).firstNotNullOfOrNull { if (startsWithPrefix(answer, it)) it.toString(Charsets.US_ASCII) else null }
 
     /**
      * Checks one answer against the expected word, throwing
      * [ScannerProtocolException] if the prefixes do not match (SC-03).
      */
-    private fun expectPrefix(answer: ByteArray, expected: ByteArray, step: String) {
-        if (!answer.startsWithPrefix(expected)) {
+    private fun expectPrefix(
+        answer: ByteArray,
+        expected: ByteArray,
+        step: String,
+    ) {
+        if (!startsWithPrefix(answer, expected)) {
             val actual = describe(answer)
             val expectedWord = describe(expected)
             throw ScannerProtocolException("'$step' answered '$actual' from $host:$port, expected '$expectedWord'")
@@ -348,28 +378,36 @@ class ScannerClient(
 
         // Pause before every send (SC-02).
         const val SEND_PAUSE_MILLIS = 200L
+
         // Pause after every send, except where noted (SC-02).
         const val SEND_PAUSE_AFTER_MILLIS = 200L
+
         // [queryStatus] is a status query, so the reference client waits
         // 500 ms instead of 200 ms after its single `status` send.
         const val STATUS_QUERY_PAUSE_AFTER_MILLIS = 500L
+
         // The bulk JPEG read starts 500 ms after the `jpegdata` send,
         // because the device needs a moment to start streaming.
         const val BULK_READ_PAUSE_MILLIS = 500L
 
         // Timeout for connects and short answers such as `status` or `scan` (SC-02).
         const val NORMAL_TIMEOUT_MILLIS = 10_000L
+
         // The device feeds the page through the scanner before `jpegsize` (SC-02).
         const val JPEGSIZE_TIMEOUT_MILLIS = 60_000L
+
         // Timeout for each read of the streamed JPEG data (SC-02).
         const val BULK_READ_TIMEOUT_MILLIS = 30_000L
 
         // 600 dpi is only sent from firmware number 26 on (SC-07).
         const val MIN_FIRMWARE_NUMBER_FOR_600_DPI = 26
+
         // Room for the 11-byte padded answers and the 12-byte `jpegsize` one.
         const val SHORT_ANSWER_BUFFER_SIZE = 16
+
         // Read window for the streamed JPEG; the device's 1460-byte chunks fit in it.
         const val BULK_READ_CHUNK_SIZE = 65536
+
         // `jpegsize` answer: 8-byte word + 4-byte little-endian size (SC-04).
         const val JPEGSIZE_ANSWER_LENGTH = 12
     }

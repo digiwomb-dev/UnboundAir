@@ -143,24 +143,25 @@ class FakeScanner : AutoCloseable {
         serverSocket = socket
         boundPort = socket.localPort
         isRunning.set(true)
-        acceptThread = thread(isDaemon = true, name = "fake-scanner-accept") {
-            while (isRunning.get()) {
-                try {
-                    val clientSocket = socket.accept()
-                    connectionCounter.incrementAndGet()
-                    activeSockets.add(clientSocket)
-                    thread(isDaemon = true, name = "fake-scanner-client") {
-                        try {
-                            handleClient(clientSocket)
-                        } finally {
-                            activeSockets.remove(clientSocket)
+        acceptThread =
+            thread(isDaemon = true, name = "fake-scanner-accept") {
+                while (isRunning.get()) {
+                    try {
+                        val clientSocket = socket.accept()
+                        connectionCounter.incrementAndGet()
+                        activeSockets.add(clientSocket)
+                        thread(isDaemon = true, name = "fake-scanner-client") {
+                            try {
+                                handleClient(clientSocket)
+                            } finally {
+                                activeSockets.remove(clientSocket)
+                            }
                         }
+                    } catch (e: IOException) {
+                        if (isRunning.get()) continue else break
                     }
-                } catch (e: IOException) {
-                    if (isRunning.get()) continue else break
                 }
             }
-        }
     }
 
     /**
@@ -218,11 +219,26 @@ class FakeScanner : AutoCloseable {
                 if (hang) continue
 
                 when (commandName) {
-                    "status" -> write(output, paddedAnswer(statusWord))
-                    "version" -> write(output, versionAnswer())
-                    "dpi300" -> write(output, paddedAnswer("dpistd"))
-                    "dpi600" -> write(output, paddedAnswer("dpifine"))
-                    "scan" -> write(output, paddedAnswer("scango"))
+                    "status" -> {
+                        write(output, paddedAnswer(statusWord))
+                    }
+
+                    "version" -> {
+                        write(output, versionAnswer())
+                    }
+
+                    "dpi300" -> {
+                        write(output, paddedAnswer("dpistd"))
+                    }
+
+                    "dpi600" -> {
+                        write(output, paddedAnswer("dpifine"))
+                    }
+
+                    "scan" -> {
+                        write(output, paddedAnswer("scango"))
+                    }
+
                     "jpegsize" -> {
                         if (scanDelayMillis > 0) Thread.sleep(scanDelayMillis)
                         val answer = jpegSizeAnswer()
@@ -236,6 +252,7 @@ class FakeScanner : AutoCloseable {
                             write(output, answer)
                         }
                     }
+
                     "jpegdata" -> {
                         var offset = 0
                         while (offset < payload.size) {
@@ -245,7 +262,10 @@ class FakeScanner : AutoCloseable {
                         }
                         output.flush()
                     }
-                    else -> return
+
+                    else -> {
+                        return
+                    }
                 }
             }
         } catch (e: IOException) {
@@ -289,8 +309,7 @@ class FakeScanner : AutoCloseable {
      * Builds the special `version` answer: version string + single `\x00`,
      * no `H`, no 11-byte padding (OF-07).
      */
-    private fun versionAnswer(): ByteArray =
-        "$version\u0000".toByteArray(Charsets.US_ASCII)
+    private fun versionAnswer(): ByteArray = "$version\u0000".toByteArray(Charsets.US_ASCII)
 
     /**
      * Builds the 12-byte `jpegsize` answer: the ASCII word followed by the
@@ -307,7 +326,10 @@ class FakeScanner : AutoCloseable {
         return answer
     }
 
-    private fun write(output: OutputStream, bytes: ByteArray) {
+    private fun write(
+        output: OutputStream,
+        bytes: ByteArray,
+    ) {
         output.write(bytes)
         output.flush()
     }

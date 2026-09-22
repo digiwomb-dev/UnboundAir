@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test
  * second time.
  */
 class ScannerClientTest {
-
     @Test
     fun `SC-01 the payload arrives byte-identical through the whole flow`() {
         val fake = FakeScanner()
@@ -248,6 +247,5 @@ class ScannerClientTest {
      * body, stop in a finally block) stays visible in every test, because one fresh fake
      * per test is part of what the tests show.
      */
-    private fun clientFor(fake: FakeScanner): ScannerClient =
-        ScannerClient(host = "127.0.0.1", port = fake.port)
+    private fun clientFor(fake: FakeScanner): ScannerClient = ScannerClient(host = "127.0.0.1", port = fake.port)
 }
