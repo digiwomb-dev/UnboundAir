@@ -180,7 +180,7 @@ Unterbefehle der Anwendung (Umsetzung entscheidest du, z. B. Startskript `unboun
 
 Hinweis: Wie die Tests im Dev Container gestartet werden, hängt von der Umgebung ab, in der du arbeitest, und gehört nicht ins Repo. Kannst du sie nicht selbst im Dev Container starten: sag es mir – lass sie nicht stillschweigend woanders laufen.
 
-**Aktuelle Lage:** In der Umgebung, in der der Code entsteht, gibt es keine Container-Runtime, und es wird dauerhaft keine geben. Das blockiert die Arbeit nicht, verschiebt aber die Ausführung: Gebaut wird dort, ausgeführt auf einem Rechner mit Runtime, die Ergebnisse kommen zurück. Der Ablauf steht in `docs/entwicklung.md`, Abschnitt „Wie getestet wird, solange keine Runtime da ist".
+**Aktuelle Lage:** Der Dev Container läuft lokal – es gibt keinen Umweg mehr über einen anderen Rechner. Ein Wrapper außerhalb des Repos startet ihn, das Repo wird per `docker cp` hineingespiegelt, und `./gradlew build` läuft darin. Der Ablauf steht in `docs/entwicklung.md`.
 
 Eine Aufgabe gilt erst als abgenommen, wenn ihr Testergebnis im Teststand des jeweiligen Meilensteins steht (`docs/meilenstein-N.md`). Aufgaben, die geschrieben, aber noch nicht ausgeführt wurden, werden dort ausdrücklich als „nicht verifiziert" geführt und bekommen keinen Haken.
 
@@ -223,7 +223,7 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
 
 ## Meilensteine
 
-**Aktuell:** Meilenstein 1 abgeschlossen. Nächster: Meilenstein 2, noch nicht begonnen.
+**Aktuell:** Meilenstein 2 in Arbeit, noch nicht abgenommen. Nächster: Meilenstein 3, noch nicht begonnen.
 
 - [x] **1.** Grundgerüst: Gradle mit Kotlin DSL und Wrapper, Spring Boot, Linter, JUnit; `.gitignore` um Build-Ordner ergänzen. Dev Container, Scanner-Client, Fake-Scanner, `offene-fragen.md`, Befehle `status` und `scan` (vorerst nur Roh-Datei). *Anforderungen:* SC-01–SC-07, DC-01–DC-03, TE-01, TE-03, BE-01, BE-02 (Teil: nur Roh-Datei, Zuschnitt folgt in M2), DO-07, DO-08 (Wegweiser-Teil).
 - [ ] **2.** Zuschnitt, Graustufen, Befehl `crop`, `scan` speichert zusätzlich die beschnittene Datei, Tests mit echtem und synthetischen Bildern. *Anforderungen:* SV-01–SV-03, SV-06, SV-07, TE-02, BE-02, BE-03. (**SV-04 nicht**, solange `normalize` offen ist – siehe „Offene Entscheidungen".)
@@ -237,6 +237,7 @@ Pflege: Den Haken setzt du, wenn ein Meilenstein fertig und vom Prüfer ohne blo
 Die Aufgaben eines Meilensteins stehen in einer eigenen Datei, zusammen mit seinen Testpunkten und seinem Teststand:
 
 - Meilenstein 1: `docs/meilenstein-1.md`
+- Meilenstein 2: `docs/meilenstein-2.md`
 
 Diese Datei wird vor Beginn des jeweiligen Meilensteins angelegt und zur Abnahme vorgelegt.
 
