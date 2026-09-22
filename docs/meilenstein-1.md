@@ -48,6 +48,8 @@ Die Aufgaben T1.0 bis T1.2, T1.5 und T1.18 ändern nur Doku und Konfiguration un
 
 Je Aufgabe: eine ID, genau eine Datei, ein prüfbares Abnahmekriterium und die Anforderungs-IDs, die sie umsetzt. Ein Haken bedeutet: gebaut **und** abgenommen. Geschrieben, aber noch nicht ausgeführt, ist kein Haken.
 
+Das Projekt-Grundgerüst (T1.0, T1.5, T1.6) hat im Plan keine eigene Anforderungs-ID — es setzt den Abnahmepunkt **„Ergebnis 1"** um, T1.0 zusätzlich **„Ergebnis 8"** (kleine Commits nach Conventional Commits). T1.0 erzeugt als einzige Aufgabe keine Datei, sondern nur den ersten Commit; daher die Markierung „(Commit, keine Datei)".
+
 ### Ohne Testlauf
 
 - [x] **T1.0** *(Commit, keine Datei)* – Rahmen als erster Commit. *Abnahme:* `git log --oneline` zeigt `chore: add project framework`; `git ls-files _input` ist leer. *Anforderung:* Ergebnis 1 und 8 (kein ID-Bereich betroffen).
@@ -68,7 +70,7 @@ Verifiziert am Commit `3bede7d`: `java -version` meldet `Temurin-26.0.2+10`, `jp
 - [x] **T1.6** `settings.gradle.kts` – Projektname `unboundair`. *Abnahme:* `./gradlew projects` zeigt den Namen. *Anforderung:* Ergebnis 1 (kein ID-Bereich betroffen).
 - [x] **T1.7** `build.gradle.kts` – Abhängigkeiten und Linter. *Abnahme:* Alle Versionen aus der Tabelle in `plan.md` fest gepinnt, ktlint über Spotless im Build verdrahtet (`spotlessCheck` hängt an `check`), `./gradlew build` im Dev Container grün. *Anforderung:* TE-03.
 - [x] **T1.8** `gradle/wrapper/gradle-wrapper.properties` – Wrapper. *Abnahme:* `./gradlew --version` meldet Gradle 9.7.1; die Prüfsumme des mit eingecheckten `gradle-wrapper.jar` stimmt mit der in `entwicklung.md` genannten überein. *Anforderung:* DC-01 (Gradle über den Wrapper).
-- [x] **T1.9** `src/main/kotlin/.../UnboundAirApplication.kt` – Einstiegspunkt. *Abnahme:* Startet und beendet sich ohne Web-Server. *Anforderung:* Ergebnis 1 (kein ID-Bereich betroffen).
+- [x] **T1.9** `src/main/kotlin/.../UnboundAirApplication.kt` – Einstiegspunkt und Unterbefehls-Dispatch. *Abnahme:* Startet und beendet sich ohne Web-Server; dispatcht `status`/`scan` mit `--host`/`--port`/`--dpi`/`--out`; unbekannter Befehl zeigt die Usage und endet mit Exit-Code 1. *Anforderung:* BE-01, BE-02 (Unterbefehls-Aufruf).
   *Belegt mit Testpunkt 4:* Der In-JVM-Test in `CommandTest` bootet die Anwendung mit `WebApplicationType.NONE`, führt `status` gegen den Fake-Scanner aus und prüft, dass der Lauf mit Exit-Code 0 zurückkehrt — die App startet, führt einen Befehl aus und beendet sich ohne Web-Server.
 
 ### Testpunkt 3 – Scanner-Client
