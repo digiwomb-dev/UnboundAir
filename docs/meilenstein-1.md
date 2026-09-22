@@ -4,7 +4,7 @@ Gradle mit Kotlin DSL und Wrapper, Spring Boot, Linter, JUnit, Dev Container, Sc
 
 **Anforderungen:** SC-01–SC-07, DC-01–DC-03, TE-01, TE-03, BE-01, BE-02 (Teil: nur Roh-Datei, Zuschnitt folgt in Meilenstein 2), DO-07, DO-08.
 
-**Status:** in Arbeit.
+**Status:** abgeschlossen.
 
 ## Teststand
 

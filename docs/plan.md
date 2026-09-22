@@ -223,9 +223,9 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
 
 ## Meilensteine
 
-**Aktuell:** Meilenstein 1, in Arbeit. Einzelheiten und Fortschritt: `docs/meilenstein-1.md`.
+**Aktuell:** Meilenstein 1 abgeschlossen. Nächster: Meilenstein 2, noch nicht begonnen.
 
-- [ ] **1.** Grundgerüst: Gradle mit Kotlin DSL und Wrapper, Spring Boot, Linter, JUnit; `.gitignore` um Build-Ordner ergänzen. Dev Container, Scanner-Client, Fake-Scanner, `offene-fragen.md`, Befehle `status` und `scan` (vorerst nur Roh-Datei). *Anforderungen:* SC-01–SC-07, DC-01–DC-03, TE-01, TE-03, BE-01, BE-02 (Teil: nur Roh-Datei, Zuschnitt folgt in M2), DO-07, DO-08 (Wegweiser-Teil).
+- [x] **1.** Grundgerüst: Gradle mit Kotlin DSL und Wrapper, Spring Boot, Linter, JUnit; `.gitignore` um Build-Ordner ergänzen. Dev Container, Scanner-Client, Fake-Scanner, `offene-fragen.md`, Befehle `status` und `scan` (vorerst nur Roh-Datei). *Anforderungen:* SC-01–SC-07, DC-01–DC-03, TE-01, TE-03, BE-01, BE-02 (Teil: nur Roh-Datei, Zuschnitt folgt in M2), DO-07, DO-08 (Wegweiser-Teil).
 - [ ] **2.** Zuschnitt, Graustufen, Befehl `crop`, `scan` speichert zusätzlich die beschnittene Datei, Tests mit echtem und synthetischen Bildern. *Anforderungen:* SV-01–SV-03, SV-06, SV-07, TE-02, BE-02, BE-03. (**SV-04 nicht**, solange `normalize` offen ist – siehe „Offene Entscheidungen".)
 - [ ] **3.** Dienst-Loop und Batch-Logik, PDF-Erzeugung, Konfiguration und Logging, Befehl `measure`. *Anforderungen:* DL-01–DL-06, SV-05, AU-01, KL-01, KL-02, BE-04.
 - [ ] **4.** Ausgabe-Modul-Schnittstelle, Outbox und Retry, erstes Modul paperless-ngx. *Anforderungen:* AU-02–AU-06.
