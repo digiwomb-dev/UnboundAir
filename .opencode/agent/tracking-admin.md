@@ -22,7 +22,7 @@ Milestones are managed through `gh api repos/digiwomb-dev/UnboundAir/milestones`
 
 Your jobs in this project:
 
-1. Create GitHub milestones mirroring docs/plan.md (1..6) plus one `test-offensive`.
+1. Create GitHub milestones mirroring docs/plan.md (1..6) plus one `top tier testing`.
    Milestones for completed work (e.g. 1, and 2 if finished) are created as closed;
    in-progress and future milestones are open. Each description lists the requirement IDs.
 2. Create the label convention: `unit`, `property`, `slice`, `integration`, `contract`,
