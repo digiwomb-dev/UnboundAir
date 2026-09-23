@@ -1,6 +1,6 @@
 # Plan: `UnboundAir`
 
-Dieser Plan ist der Auftrag für das Projekt: Ziel, feste Entscheidungen, Anforderungen und Meilensteine mit Status. Wie gearbeitet wird, steht in `AGENTS.md`. Fachliche Grundlage ist `docs/protokoll.md` – solange es die noch nicht gibt, `_input/iscan-air-wissen.md`.
+Dieser Plan ist der Auftrag für das Projekt: Ziel, feste Entscheidungen und Anforderungen. Der Fortschritt (Meilensteine, Aufgaben) lebt in GitHub – siehe „Arbeit wird in GitHub getrackt". Wie gearbeitet wird, steht in `AGENTS.md`. Fachliche Grundlage ist `docs/protokoll.md` – solange es die noch nicht gibt, `_input/iscan-air-wissen.md`.
 
 Der Dienst verwandelt einen Mustek iScan Air (S400W) in einen „Einlegen und fertig"-Scanner. Die fertigen Dokumente gehen an konfigurierbare Ausgabe-Module; das erste Modul ist paperless-ngx.
 
@@ -57,7 +57,7 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
 
 ## Anforderungen
 
-Jede Anforderung hat eine feste ID und ein Abnahmekriterium. IDs werden nie umnummeriert; neue Anforderungen bekommen die nächste freie Nummer ihres Bereichs. Aufgaben in den Aufgabenlisten verweisen auf die IDs, die sie umsetzen.
+Jede Anforderung hat eine feste ID und ein Abnahmekriterium. IDs werden nie umnummeriert; neue Anforderungen bekommen die nächste freie Nummer ihres Bereichs. Issues verweisen auf die IDs, die sie umsetzen.
 
 **Zu den Verweisen auf `_input/`:** Einige Anforderungen nennen als Vorlage Dateien unter `_input/` – den Wissensstand, den Python-Referenzcode, die Testbilder. Dieses Verzeichnis liegt nur lokal vor und wird nie committet. Wer das Repository klont, hat es nicht. Diese Anforderungen sind deshalb für Außenstehende erst dann vollständig nachprüfbar, wenn das Wissen nach `docs/protokoll.md` (DO-01) überführt und die Testbilder als Test-Ressourcen abgelegt sind (TE-02).
 
@@ -182,7 +182,7 @@ Hinweis: Wie die Tests im Dev Container gestartet werden, hängt von der Umgebun
 
 **Aktuelle Lage:** Der Dev Container läuft lokal – es gibt keinen Umweg mehr über einen anderen Rechner. Ein Wrapper außerhalb des Repos startet ihn, das Repo wird per `docker cp` hineingespiegelt, und `./gradlew build` läuft darin. Der Ablauf steht in `docs/entwicklung.md`.
 
-Eine Aufgabe gilt erst als abgenommen, wenn ihr Testergebnis im Teststand des jeweiligen Meilensteins steht (`docs/meilenstein-N.md`). Aufgaben, die geschrieben, aber noch nicht ausgeführt wurden, werden dort ausdrücklich als „nicht verifiziert" geführt und bekommen keinen Haken.
+Eine Aufgabe gilt erst als abgenommen, wenn ihr Testergebnis im zugehörigen Issue dokumentiert ist (Test-Checkliste abgehakt, Lauf im Dev Container grün mit Commit-SHA). Aufgaben, die geschrieben, aber noch nicht ausgeführt wurden, gelten als „nicht verifiziert" und werden nicht abgehakt.
 
 ### Tests (TE)
 
@@ -221,25 +221,11 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
 - **DO-08** `README.md` im Wurzelverzeichnis – Einstieg und Wegweiser. Entsteht **bereits in Meilenstein 1**, damit von Anfang an erkennbar ist, welche Datei wofür da ist; in Meilenstein 5 kommt der Schnellstart dazu.
   *Abnahme:* Erklärt, was `UnboundAir` ist, nennt den Aufbaustand und verweist auf jede Datei in `docs/` mit einem Satz, wofür sie da ist. Ab Meilenstein 5 zusätzlich: Schnellstart.
 
-## Meilensteine
+## Arbeit wird in GitHub getrackt
 
-**Aktuell:** Meilenstein 2 in Arbeit, noch nicht abgenommen. Nächster: Meilenstein 3, noch nicht begonnen.
+Der Fortschritt lebt nicht mehr in dieser Datei, sondern in GitHub: [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues). Jeder Meilenstein aus „Umfang von v1" ist ein Milestone, jede Aufgabe ein Issue – Impl+Test-Paare als Eltern-Issue (Typ `Task`) mit zwei Sub-Issues. Welche Anforderungen ein Meilenstein umsetzt, steht in seiner Milestone-Beschreibung.
 
-- [x] **1.** Grundgerüst: Gradle mit Kotlin DSL und Wrapper, Spring Boot, Linter, JUnit; `.gitignore` um Build-Ordner ergänzen. Dev Container, Scanner-Client, Fake-Scanner, `offene-fragen.md`, Befehle `status` und `scan` (vorerst nur Roh-Datei). *Anforderungen:* SC-01–SC-07, DC-01–DC-03, TE-01, TE-03, BE-01, BE-02 (Teil: nur Roh-Datei, Zuschnitt folgt in M2), DO-07, DO-08 (Wegweiser-Teil).
-- [ ] **2.** Zuschnitt, Graustufen, Befehl `crop`, `scan` speichert zusätzlich die beschnittene Datei, Tests mit echtem und synthetischen Bildern. *Anforderungen:* SV-01–SV-03, SV-06, SV-07, TE-02, BE-02, BE-03. (**SV-04 nicht**, solange `normalize` offen ist – siehe „Offene Entscheidungen".)
-- [ ] **3.** Dienst-Loop und Batch-Logik, PDF-Erzeugung, Konfiguration und Logging, Befehl `measure`. *Anforderungen:* DL-01–DL-06, SV-05, AU-01, KL-01, KL-02, BE-04.
-- [ ] **4.** Ausgabe-Modul-Schnittstelle, Outbox und Retry, erstes Modul paperless-ngx. *Anforderungen:* AU-02–AU-06.
-- [ ] **5.** `run` (Dienst), Signal-Handling, Container-Image (mit `jpegtran`), `betrieb.md` für den Container-Betrieb, Doku vollständig auf Deutsch. *Anforderungen:* BE-05, DL-07, CT-01, DO-01–DO-06, DO-08 (Schnellstart-Teil).
-- [ ] **6.** Erst nach meiner Entscheidung: Deployment-Beispiel und CI.
-
-Pflege: Den Haken setzt du, wenn ein Meilenstein fertig und vom Prüfer ohne blockierende Befunde abgenommen ist. „Aktuell" hältst du immer auf dem Stand.
-
-Die Aufgaben eines Meilensteins stehen in einer eigenen Datei, zusammen mit seinen Testpunkten und seinem Teststand:
-
-- Meilenstein 1: `docs/meilenstein-1.md`
-- Meilenstein 2: `docs/meilenstein-2.md`
-
-Diese Datei wird vor Beginn des jeweiligen Meilensteins angelegt und zur Abnahme vorgelegt.
+Der Fortschritt von Meilenstein 2 liegt ab jetzt im Milestone [`2`](https://github.com/digiwomb-dev/UnboundAir/milestones/2).
 
 ## Offene Entscheidungen – nicht vorwegnehmen, fragen
 
