@@ -1,0 +1,61 @@
+name: Testaufgabe
+description: Eine Testaufgabe mit fester Checkliste (KI-Lauf: genau eine Datei; Mensch: eine Datei-Liste).
+title: "test: "
+labels: []
+body:
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Anforderungs-ID(s)
+      description: "z. B. SV-01, SC-03 – die umgesetzten IDs aus docs/plan.md"
+    validations:
+      required: true
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Test-Schicht
+      description: Wird zusätzlich als Label gesetzt.
+      options:
+        - unit
+        - property
+        - slice
+        - integration
+        - contract
+        - e2e
+        - golden-master
+        - mutation
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Datei bzw. Datei-Liste
+      description: "KI-Lauf: genau eine Datei. Mensch: eine Liste der betroffenen Dateien."
+    validations:
+      required: true
+  - type: textarea
+    id: criterion
+    attributes:
+      label: Abnahmekriterium
+      description: Woran die Abnahme festgemacht wird (prüfbar).
+    validations:
+      required: true
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Test-Checkliste
+      options:
+        - label: Anforderungs-ID(s) referenziert
+          required: false
+        - label: Test-Schicht(en) als Label gesetzt
+          required: false
+        - label: genau eine Datei (KI-Lauf) bzw. Datei-Liste (Mensch); Abnahmekriterium benannt
+          required: false
+        - label: Test läuft im Dev Container grün (Commit-SHA verlinkt)
+          required: false
+        - label: Standard eingehalten (AssertJ, Backtick-Name mit Anforderungs-ID)
+          required: false
+        - label: Mutation-Lauf (nur Kernpaket) dokumentiert
+          required: false
+        - label: kein Verstoß gegen DC-03 (offline)
+          required: false
