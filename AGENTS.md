@@ -5,8 +5,8 @@ Dienst, der einen Mustek iScan Air (S400W) in einen „Einlegen und fertig"-Scan
 ## Zu Beginn jeder Session
 
 1. Diese Datei lesen.
-2. `docs/plan.md` lesen: Auftrag, feste Entscheidungen, Meilensteine mit Status.
-3. Beim ersten offenen Punkt im Plan weitermachen. Gibt es den Plan noch nicht: nachfragen.
+2. `docs/plan.md` lesen: Auftrag, feste Entscheidungen, Anforderungen.
+3. Offene Arbeit in GitHub nachschlagen: [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues). Beim ersten offenen Issue im aktuellen Meilenstein weitermachen. Gibt es weder Plan noch Issues: nachfragen.
 
 Fachliche Grundlage ist `docs/protokoll.md` – solange es die noch nicht gibt, `_input/iscan-air-wissen.md`.
 
@@ -42,12 +42,12 @@ Kurzfassung. Maßgeblich sind die ausführlichen Formulierungen in `docs/plan.md
 
 ## Planung vor dem Bauen
 
-- **Aufgabenliste vor jedem Meilenstein:** Bevor du einen Meilenstein baust, legst du dafür eine eigene Datei `docs/meilenstein-N.md` an: Aufgaben (je eine ID wie `T1.1`, genau eine Datei, ein prüfbares Abnahmekriterium, die umgesetzten Anforderungs-IDs), Testpunkte und Teststand. `docs/plan.md` verweist nur darauf. Gebaut wird erst nach meinem „Go" zur Liste. Abgehakt wird erst, wenn eine Aufgabe gebaut **und** abgenommen ist – geschrieben allein genügt nicht.
+- **Issues vor jedem Meilenstein:** Bevor du einen Meilenstein baust, legst du die Arbeit als GitHub-Issues im zugehörigen Milestone an: je Aufgabe genau eine Datei, ein prüfbares Abnahmekriterium und die umgesetzten Anforderungs-IDs. Impl+Test-Paare werden als Eltern-Issue (Typ `Task`) mit zwei Sub-Issues (`feat(…)`/`test(…)`) angelegt; Test-Issues bekommen die feste Checkliste aus `.github/ISSUE_TEMPLATE/testaufgabe.yml` und ihr Schicht-Label. Gebaut wird erst nach meinem „Go" zu den Issues. Abgehakt (Issue geschlossen) wird erst, wenn eine Aufgabe gebaut **und** abgenommen ist – geschrieben allein genügt nicht.
 - **Erst Plan, dann Verhalten:** Soll sich etwas gegenüber `docs/plan.md` ändern, passt du zuerst den Plan an – nach meinem OK – und erst dann den Code.
 
 ## Fortschritt
 
-- Status der Meilensteine in `docs/plan.md` aktuell halten, spätestens am Ende jedes Meilensteins.
+- Fortschritt in GitHub pflegen: Issues abhaken, Milestone schließen, sobald der Meilenstein abgenommen ist.
 - Am Ende jedes Meilensteins: Tests im Dev Container grün, kurze Zusammenfassung auf Deutsch (was, warum, offene Punkte), dann den Prüfer aufrufen.
 
 ## Prüfer
