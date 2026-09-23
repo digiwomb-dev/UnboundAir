@@ -6,7 +6,7 @@ Verlustfreier Auto-Zuschnitt nach `_input/reference/autocrop_reference.py` (`jpe
 
 **Ausdrücklich nicht Teil dieses Meilensteins:** SV-04 (`normalize`, offen – OF-09), SV-05 (Seitengröße, folgt in Meilenstein 3).
 
-**Status:** in Arbeit – Aufgabenliste vorgelegt, noch kein Code gebaut.
+**Status:** in Arbeit – Testpunkt 1 bestanden, Testpunkt 2 in Bau.
 
 ## Festgehaltene Entscheidungen dieser Liste
 
@@ -17,12 +17,13 @@ Diese Punkte wurden vor dem Bau mit dem Auftraggeber geklärt und gelten für de
 3. **`scan` schreibt ohne Flag nur die verarbeitete Seite.** `--keep-raw` legt das Roh-JPEG zusätzlich ab (SV-06). Default `keep-raw=false` gilt überall gleich (in Meilenstein 3 über die Property `unboundair.keep-raw`).
 4. **Synthetische Testbilder werden als Dateien committet** (TE-02 wörtlich: „liegen als Test-Ressourcen vor"). Erzeugt im Dev Container per ImageIO; Parameter stehen unten bei T2.8/T2.9.
 5. **Der Dev Container läuft lokal.** Der alte Umweg über einen anderen Rechner ist weg; der lokale Ablauf steht im Teststand und wird in `entwicklung.md` nachgezogen (T2.3). Deshalb auch T2.2: die „Aktuelle Lage" in `plan.md` ist veraltet.
+6. **Luma-Gleichheit beim Zuschnitt ist mit den echten Scanner-Bildern verlustfrei nicht erreichbar.** Beide echten JPEGs tragen Restart-Marker (DRI); beim verlustfreien Zuschnitt mit `jpegtran` verankert das die DC-Prädiktion des ersten Blocks neu und lässt die erste Pixelspalte um **max. eine Luma-Stufe** abweichen (gemessen 340 von 3,03 Mio Pixeln = 0,011 %, Rest bitgenau). Der SV-01-Abnahmepunkt ist deshalb auf dieses Messergebnis gefasst (siehe Testdefinitionen); es wird **nicht** neu komprimiert, die Leitplanke bleibt unverletzt. Alternativen (andere `jpegtran`-Version, `-perfect`, Restart-Marker entfernen) wurden geprüft und verworfen.
 
 ## Testdefinitionen
 
 Wie die zentralen Abnahmepunkte konkret gemessen werden – vorab festgelegt, damit es beim Testen nichts zu interpretieren gibt:
 
-- **Kuvert (SV-01):** `envelope_dl_300dpi_raw.jpg` (roh 1776×2769) wird auf **exakt 1216×2494 px** mit Ursprung **+560+56** zugeschnitten (iMCU 16×8, nach innen gerundet; entspricht 103,0 × 211,2 mm). Die Luma-Werte der Ausgabe sind **exakt** identisch mit dem Original-Ausschnitt – verglichen über denselben Dekodierpfad (ImageIO → ganzzahliges BT.601-Luma). Vorab per Nachbau des Algorithmus in `jshell` im Dev Container verifiziert.
+- **Kuvert (SV-01):** `envelope_dl_300dpi_raw.jpg` (roh 1776×2769) wird auf **exakt 1216×2494 px** mit Ursprung **+560+56** zugeschnitten (iMCU 16×8, nach innen gerundet; entspricht 103,0 × 211,2 mm). Die Luma-Ausgabe gleicht dem Original-Ausschnitt **bis auf die erste Pixelspalte** (erste Block-Spalte, x<8): dort ist **max. 1 Luma-Stufe** Abweichung erlaubt, **alle übrigen Pixel müssen bitgenau** sein; zusätzlich wird die Zahl abweichender Pixel auf < 1 % der Fläche begrenzt. Gemessen: 340 von 3,03 Mio Pixeln (0,011 %), alle in x=0. Ursache ist die DC-Prädiktions-Verankerung beim verlustfreien Zuschnitt von JPEGs **mit Restart-Markern** (DRI) – keine Neukomprimierung. Vorab per Nachbau des Algorithmus in `jshell` und per direktem `jpegtran`-Lauf im Dev Container verifiziert.
 - **A4 (SV-01):** `din_a4_300dpi_raw.jpg` hat keine schwarzen Zeilen/Spalten; die Papier-Bbox ist das volle Bild (wird schon in Testpunkt 1 geprüft). Der Zuschnitt-Schritt reicht die Datei dann unverändert durch; am `crop`-Befehl ist die Ausgabe **bytegleich** zur Eingabe. Mit Graustufen (Default von `scan`) ist die Ausgabe bewusst **nicht** bytegleich – es läuft `jpegtran -grayscale`, das weiterhin nicht neu komprimiert, aber die Farbkanäle entfernt.
 - **Graustufen-Luma (SV-03):** `gray` ergibt genau eine Komponente; ihre Werte werden gegen die Luma des Originals verglichen. Beim Zuschnitt ist Identität exakt (Koeffizienten werden kopiert). Beim Graustufen-Ergebnis wird zuerst gemessen, ob die Abweichung exakt 0 ist; falls der RGB-Rückweg des Originals ±1 verursacht, wird die Assertion auf „maximale Abweichung 1, Mittelwert < 0,01" gesetzt und begründet – **nie** stillschweigend gelockert.
 - **SV-02-Schwellen:** `minPaperAreaFraction = 0.10` (Beispielwert aus SV-02), `maxAspectRatio = 6.0` (gewählt; DL-Kuvert ≈ 2,0, A4 ≈ 1,41). Beide sind benannte, einstellbare Konstanten in `PageSettings` und werden als reine Funktion getestet – dafür braucht es kein weiteres Testbild.
