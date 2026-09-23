@@ -47,9 +47,9 @@ Der Dev Container wird lokal betrieben: der Wrapper `unboundair-devcontainer` (l
 
 | Was | Stand |
 |---|---|
-| Zuletzt getesteter Commit | `6fd6221` (Testpunkt 1) |
-| Ergebnis | Testpunkt 1 bestanden – `./gradlew clean build` grün, 26 Tests ohne Fehler (`JpegInfoTest` 5, `PaperDetectorTest` 9, dazu die 12 aus Meilenstein 1), Linter sauber |
-| Als Nächstes zu prüfen | Testpunkt 2, nach dem Bau der Aufgaben T2.16–T2.21 |
+| Zuletzt getesteter Commit | `1fbedae` (Testpunkt 2) |
+| Ergebnis | Testpunkt 2 bestanden – `./gradlew clean build` grün, 33 Tests ohne Fehler (`JpegTranTest` 3, `CropStepTest` 4, dazu 26 aus Testpunkt 1), Linter sauber |
+| Als Nächstes zu prüfen | Testpunkt 3, nach dem Bau der Aufgaben T2.22–T2.25 |
 | Fixtures, bytegleich (T2.6/T2.7) | `envelope_dl_300dpi_raw.jpg` sha256 `f87c6028ccb63987127b33b905803c64123a51ce8364864c14336ef05fceaf34` · `din_a4_300dpi_raw.jpg` sha256 `78477b4f58d78e442e240ef1a801e420027adcf5dfbac288dded8c76651204e2` |
 
 ## Testpunkte
@@ -60,7 +60,7 @@ Jeder Testpunkt schließt eine Gruppe von Aufgaben ab; ein Fehlschlag bleibt kle
 |---|---|---|---|---|
 | 0 | Basislauf im frisch angelegten Dev Container: `clean build` auf dem Stand von Meilenstein 1 | – | – | **bestanden** (`1c57ce2`) |
 | 1 | Testbilder als Ressourcen; Maße und iMCU werden aus der Datei gelesen; Papier-Bbox an echten und synthetischen Bildern | T2.6–T2.15 | TE-02, SV-01, SV-02 | **bestanden** (`6fd6221`) |
-| 2 | `jpegtran` läuft als externes Programm; Zuschnitt: Kuvert exakt 1216×2494 mit Luma-Identität, A4 unverändert (bytegleich), dunkles Bild unbeschnitten mit Warnung, Streifen unten abgeschnitten | T2.16–T2.21 | SV-01, SV-02 | *offen* |
+| 2 | `jpegtran` läuft als externes Programm; Zuschnitt: Kuvert exakt 1216×2494 mit Luma-Identität, A4 unverändert (bytegleich), dunkles Bild unbeschnitten mit Warnung, Streifen unten abgeschnitten | T2.16–T2.21 | SV-01, SV-02 | **bestanden** (`1fbedae`) |
 | 3 | Graustufen (eine Komponente, Luma unverändert); Schritt-Kette: Dummy-Schritt einhängbar, Reihenfolge, Aufräumen | T2.22–T2.25 | SV-03, SV-07 | *offen* |
 | 4 | Befehle: `scan` gegen den Fake-Scanner (nur verarbeitete Seite, mit `--keep-raw` zusätzlich roh), `crop IN OUT` ergibt dasselbe wie SV-01 | T2.26–T2.30 | BE-02, BE-03, SV-06, DC-03 | *offen* |
 
