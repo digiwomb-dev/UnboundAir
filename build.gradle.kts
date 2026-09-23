@@ -44,6 +44,24 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation(kotlin("test"))
+
+    // Test tooling, pinned to the newest stable release and test-scope only so
+    // the runtime classpath stays untouched (DC-03, "Abhängigkeiten minimal").
+    // See docs/plan.md (test-dependency table) and docs/entscheidungen.md for
+    // the selection rationale.
+    //
+    // Property-based tests. jqwik (>= 1.10) forbids use by AI coding agents,
+    // which this project relies on; kotest-property has no such clause and no
+    // engine of its own (it is called from plain @Test methods).
+    testImplementation("io.kotest:kotest-property:6.2.5")
+
+    // Contract tests against the paperless-ngx HTTP API. 4.x is still beta,
+    // so 3.13.2 is the newest stable line.
+    testImplementation("org.wiremock:wiremock-standalone:3.13.2")
+
+    // Architecture guard (Wächter). The junit6 artifact carries JUnit Platform 6
+    // support, introduced in ArchUnit 1.5.0.
+    testImplementation("com.tngtech.archunit:archunit-junit6:1.5.0")
 }
 
 spotless {
@@ -60,7 +78,11 @@ spotless {
 }
 
 tasks.withType<Test> {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // Explicit engine whitelist: Jupiter for the regular tests, ArchUnit
+        // for the guard (Wächter) tests. kotest-property brings no engine.
+        includeEngines("junit-jupiter", "archunit")
+    }
 }
 
 // Predictable artifact name, so scripts and the container image do not
