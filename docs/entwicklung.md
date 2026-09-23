@@ -2,7 +2,7 @@
 
 Wie man `UnboundAir` baut und testet. Gearbeitet wird ausschließlich im Dev Container – auf dem Rechner selbst muss außer einer Container-Runtime und dem Dev-Container-Tooling nichts installiert sein, insbesondere kein JDK und kein Gradle.
 
-> **Stand: Meilenstein 2, in Arbeit.** Aus Meilenstein 1 stehen Gradle-Projekt, Scanner-Client, Fake-Scanner und die Befehle `status` und `scan` (getestet gegen den Fake-Scanner); Meilenstein 2 ergänzt Zuschnitt und Graustufen. Den aktuellen Stand zeigt die Datei des laufenden Meilensteins.
+> **Stand: Meilenstein 2, in Arbeit.** Aus Meilenstein 1 stehen Gradle-Projekt, Scanner-Client, Fake-Scanner und die Befehle `status` und `scan` (getestet gegen den Fake-Scanner); Meilenstein 2 ergänzt Zuschnitt und Graustufen. Den aktuellen Stand zeigen die [GitHub-Issues](https://github.com/digiwomb-dev/UnboundAir/issues) im [Milestone 2](https://github.com/digiwomb-dev/UnboundAir/milestones/2).
 
 ## Voraussetzungen
 
@@ -87,7 +87,7 @@ sha256sum gradle/wrapper/gradle-wrapper.jar
 
 ## Zusammenarbeit am Repository
 
-Gearbeitet wird derzeit direkt auf `main`, ohne Branches und Pull Requests. Commits folgen den Conventional Commits und bleiben klein; gepusht wird nach jedem bestandenen Testpunkt.
+Arbeit wird über GitHub-Issues organisiert: je Aufgabe ein Issue, je Issue ein Branch (`gh issue develop`), Commits referenzieren das Issue (`(#n)`/`Closes #n`), der Abschluss läuft über einen Pull Request. Commits folgen den Conventional Commits und bleiben klein.
 
 ## Warum der Umweg über den Dev Container
 
@@ -118,11 +118,11 @@ Beim Arbeiten an einzelnen Dateien genügt es, nur `src/` zu spiegeln; nach `spo
 Wer hier neu dazukommt, liest in dieser Reihenfolge:
 
 1. `AGENTS.md` – wie gearbeitet wird, Leitplanken, Regeln
-2. `docs/plan.md` – Auftrag, feste Entscheidungen, Anforderungen mit IDs, Meilensteine
-3. die Datei des laufenden Meilensteins (`docs/meilenstein-N.md`) – Aufgaben, Testpunkte und der aktuelle Teststand
+2. `docs/plan.md` – Auftrag, feste Entscheidungen, Anforderungen mit IDs
+3. die GitHub-Milestones und -Issues – offene Aufgaben, was in Arbeit und was erledigt ist
 4. diese Datei – Bauen und Testen
 5. `docs/offene-fragen.md` – was am Gerät noch unklar ist
 
-Weitergearbeitet wird bei der ersten offenen Aufgabe in der Datei des laufenden Meilensteins. Steht dort ein Testpunkt ohne Ergebnis, ist zuerst dieses Ergebnis einzuholen – nicht weiterbauen und das Testen aufschieben.
+Weitergearbeitet wird beim ersten offenen Issue im aktuellen Milestone. Ein Test-Issue ohne grünen Lauf im Dev Container ist zuerst abzunehmen – nicht weiterbauen und das Testen aufschieben.
 
 Das Verzeichnis `_input/` (Wissensstand, Python-Referenzcode, Testbilder) liegt nur lokal vor und ist nicht Teil des Repositorys. Mehrere Anforderungen verweisen darauf.
