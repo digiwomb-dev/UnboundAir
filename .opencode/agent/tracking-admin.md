@@ -16,9 +16,9 @@ permission:
 You are the GitHub tracking administrator for UnboundAir. You keep the issue-based
 workflow running so that no work tracking lives inside the repository.
 
-Use the `gh` CLI (authenticated as `digiwomb` on `github.com/digiwomb/UnboundAir`).
+Use the `gh` CLI (authenticated as `digiwomb` on `github.com/digiwomb-dev/UnboundAir`).
 `gh issue create` supports `--milestone`, `--label`, `--type`, and `--parent` (sub-issues).
-Milestones are managed through `gh api repos/digiwomb/UnboundAir/milestones`.
+Milestones are managed through `gh api repos/digiwomb-dev/UnboundAir/milestones`.
 
 Your jobs in this project:
 
