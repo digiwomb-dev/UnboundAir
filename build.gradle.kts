@@ -18,6 +18,10 @@ plugins {
     // through a detached configuration, which that mechanism does not touch.
     // See docs/plan.md, "Entschieden", and OF-11.
     id("com.diffplug.spotless") version "8.10.2"
+
+    // Mutation testing (own task, never part of `build`/`check`). Verified on
+    // JUnit Platform 6 with pitest 1.25.5 - see docs/entscheidungen.md (Spike B).
+    id("info.solidsoft.pitest") version "1.19.0"
 }
 
 group = "dev.digiwomb.unboundair"
@@ -89,4 +93,33 @@ tasks.withType<Test> {
 // have to track the version number.
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     archiveFileName.set("unboundair.jar")
+}
+
+// Mutation testing (Spike B, docs/entscheidungen.md). PIT is not wired into
+// `build` or `check`; run it explicitly with `./gradlew pitest`. Versions are
+// pinned: gradle-pitest-plugin 1.19.0 defaults to pitest 1.22.1, which predates
+// the JUnit Platform 6 fix, so pitest 1.25.5 is set explicitly together with the
+// matching pitest-junit5-plugin. The core packages are the mutation target; the
+// scanner tests are timing-sensitive, so the per-test timeout is raised.
+pitest {
+    pitestVersion.set("1.25.5")
+    junit5PluginVersion.set("1.2.2")
+    targetClasses.set(
+        setOf(
+            "dev.digiwomb.unboundair.scanner.*",
+            "dev.digiwomb.unboundair.image.*",
+            "dev.digiwomb.unboundair.processing.*",
+        ),
+    )
+    targetTests.set(
+        setOf(
+            "dev.digiwomb.unboundair.scanner.*",
+            "dev.digiwomb.unboundair.image.*",
+            "dev.digiwomb.unboundair.processing.*",
+        ),
+    )
+    outputFormats.set(setOf("HTML"))
+    threads.set(1)
+    timestampedReports.set(false)
+    timeoutConstInMillis.set(60000)
 }
