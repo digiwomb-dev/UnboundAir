@@ -1,8 +1,8 @@
 package dev.digiwomb.unboundair.image
 
 import dev.digiwomb.unboundair.TestImages
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertThrows
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
@@ -24,33 +24,32 @@ class JpegInfoTest {
     lateinit var dir: Path
 
     @Test
-    fun `the real DL envelope reads as 1776x2769 with 3 components and a 16x8 imcu`() {
+    fun `SV-01 the real DL envelope reads as 1776x2769 with 3 components and a 16x8 imcu`() {
         expectStructure("envelope_dl_300dpi_raw.jpg", JpegInfo(1776, 2769, 3, 16, 8))
     }
 
     @Test
-    fun `the real A4 scan reads as 2464x3425 with 3 components and a 16x8 imcu`() {
+    fun `SV-01 the real A4 scan reads as 2464x3425 with 3 components and a 16x8 imcu`() {
         expectStructure("din_a4_300dpi_raw.jpg", JpegInfo(2464, 3425, 3, 16, 8))
     }
 
     @Test
-    fun `the synthetic bottom stripe reads as 1240x1754 with 3 components and a 16x16 imcu`() {
+    fun `SV-01 the synthetic bottom stripe reads as 1240x1754 with 3 components and a 16x16 imcu`() {
         expectStructure("a4_bottom_stripe.jpg", JpegInfo(1240, 1754, 3, 16, 16))
     }
 
     @Test
-    fun `the synthetic dark page reads as 600x800 with 3 components and a 16x16 imcu`() {
+    fun `SV-01 the synthetic dark page reads as 600x800 with 3 components and a 16x16 imcu`() {
         expectStructure("dark_page.jpg", JpegInfo(600, 800, 3, 16, 16))
     }
 
     @Test
-    fun `a file that is not a JPEG raises IllegalArgumentException`() {
+    fun `SV-01 a file that is not a JPEG raises IllegalArgumentException`() {
         val path = dir.resolve("not_a_jpeg.bin")
         Files.write(path, byteArrayOf(0, 1, 2, 3, 4, 5, 6, 7))
 
-        assertThrows(IllegalArgumentException::class.java) {
-            JpegInfo.read(path)
-        }
+        assertThatThrownBy { JpegInfo.read(path) }
+            .isInstanceOf(IllegalArgumentException::class.java)
     }
 
     /**
@@ -64,10 +63,10 @@ class JpegInfoTest {
         val file = TestImages.copy(fileName, dir)
         val info = JpegInfo.read(file)
 
-        assertEquals(expected.width, info.width, "width of $fileName")
-        assertEquals(expected.height, info.height, "height of $fileName")
-        assertEquals(expected.components, info.components, "component count of $fileName")
-        assertEquals(expected.imcuWidth, info.imcuWidth, "iMCU width of $fileName")
-        assertEquals(expected.imcuHeight, info.imcuHeight, "iMCU height of $fileName")
+        assertThat(info.width).`as`("width of $fileName").isEqualTo(expected.width)
+        assertThat(info.height).`as`("height of $fileName").isEqualTo(expected.height)
+        assertThat(info.components).`as`("component count of $fileName").isEqualTo(expected.components)
+        assertThat(info.imcuWidth).`as`("iMCU width of $fileName").isEqualTo(expected.imcuWidth)
+        assertThat(info.imcuHeight).`as`("iMCU height of $fileName").isEqualTo(expected.imcuHeight)
     }
 }

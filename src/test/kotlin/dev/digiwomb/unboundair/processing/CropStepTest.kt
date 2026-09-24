@@ -3,9 +3,7 @@ package dev.digiwomb.unboundair.processing
 import dev.digiwomb.unboundair.TestImages
 import dev.digiwomb.unboundair.image.JpegInfo
 import dev.digiwomb.unboundair.image.LumaImage
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertSame
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Files
@@ -58,19 +56,19 @@ class CropStepTest {
      * area so that systematic corruption is caught.
      */
     @Test
-    fun `the DL envelope is cropped to 1216x2494 at +560+56 and keeps its luma`() {
+    fun `SV-01 the DL envelope is cropped to 1216x2494 at +560+56 and keeps its luma`() {
         val src = TestImages.copy("envelope_dl_300dpi_raw.jpg", tempDir)
         val image = PageImage(src, JpegInfo.read(src))
         val warnings = mutableListOf<String>()
         val result = crop.apply(image, workDir) { warnings += it }
 
-        assertEquals(1216, JpegInfo.read(result.file).width)
-        assertEquals(2494, JpegInfo.read(result.file).height)
+        assertThat(JpegInfo.read(result.file).width).isEqualTo(1216)
+        assertThat(JpegInfo.read(result.file).height).isEqualTo(2494)
 
         val sourceLuma = LumaImage.read(src)
         val croppedLuma = LumaImage.read(result.file)
-        assertEquals(1216, croppedLuma.width)
-        assertEquals(2494, croppedLuma.height)
+        assertThat(croppedLuma.width).isEqualTo(1216)
+        assertThat(croppedLuma.height).isEqualTo(2494)
         var deviations = 0
         for (y in 0 until croppedLuma.height) {
             for (x in 0 until croppedLuma.width) {
@@ -83,24 +81,21 @@ class CropStepTest {
                 if (x < 8) {
                     // First block column of the new JPEG file: see the
                     // documented DC re-anchoring deviation above.
-                    assertTrue(
-                        deviation <= 1,
-                        "luma of pixel ($x, $y) in the first block column of the cropped envelope " +
-                            "deviates by $deviation level(s) (expected $expected, got $actual)",
-                    )
+                    assertThat(deviation)
+                        .`as`(
+                            "luma of pixel ($x, $y) in the first block column of the cropped envelope " +
+                                "deviates by $deviation level(s) (expected $expected, got $actual)",
+                        ).isLessThanOrEqualTo(1)
                 } else {
-                    assertEquals(
-                        expected,
-                        actual,
-                        "luma of pixel ($x, $y) of the cropped envelope differs from the source window",
-                    )
+                    assertThat(actual)
+                        .`as`("luma of pixel ($x, $y) of the cropped envelope differs from the source window")
+                        .isEqualTo(expected)
                 }
             }
         }
-        assertTrue(
-            deviations < croppedLuma.width * croppedLuma.height / 100,
-            "$deviations pixels deviate from the source window; expected fewer than 1 %",
-        )
+        assertThat(deviations)
+            .`as`("$deviations pixels deviate from the source window; expected fewer than 1 %")
+            .isLessThan(croppedLuma.width * croppedLuma.height / 100)
     }
 
     /**
@@ -110,14 +105,14 @@ class CropStepTest {
      * instance, no output file written into the working directory.
      */
     @Test
-    fun `a page whose paper fills the whole frame is passed through unchanged`() {
+    fun `SV-01 a page whose paper fills the whole frame is passed through unchanged`() {
         val src = TestImages.copy("din_a4_300dpi_raw.jpg", tempDir)
         val image = PageImage(src, JpegInfo.read(src))
         val warnings = mutableListOf<String>()
         val result = crop.apply(image, workDir) { warnings += it }
 
-        assertSame(image, result)
-        assertEquals(0L, Files.list(workDir).use { it.count() })
+        assertThat(result).isSameAs(image)
+        assertThat(Files.list(workDir).use { it.count() }).isEqualTo(0L)
     }
 
     /**
@@ -126,15 +121,15 @@ class CropStepTest {
      * names the missing paper.
      */
     @Test
-    fun `a page without paper is passed through unchanged with a warning`() {
+    fun `SV-02 a page without paper is passed through unchanged with a warning`() {
         val src = TestImages.copy("dark_page.jpg", tempDir)
         val image = PageImage(src, JpegInfo.read(src))
         val warnings = mutableListOf<String>()
         val result = crop.apply(image, workDir) { warnings += it }
 
-        assertSame(image, result)
-        assertTrue(warnings.isNotEmpty())
-        assertTrue(warnings.any { it.contains("no paper") })
+        assertThat(result).isSameAs(image)
+        assertThat(warnings).isNotEmpty()
+        assertThat(warnings).anySatisfy { assertThat(it).contains("no paper") }
     }
 
     /**
@@ -145,13 +140,13 @@ class CropStepTest {
      * (1716 - 162 = 1554).
      */
     @Test
-    fun `a dark bottom stripe is cut while the sides and top edge are kept`() {
+    fun `SV-01 a dark bottom stripe is cut while the sides and top edge are kept`() {
         val src = TestImages.copy("a4_bottom_stripe.jpg", tempDir)
         val image = PageImage(src, JpegInfo.read(src))
         val warnings = mutableListOf<String>()
         val result = crop.apply(image, workDir) { warnings += it }
 
-        assertEquals(1240, JpegInfo.read(result.file).width)
-        assertEquals(1554, JpegInfo.read(result.file).height)
+        assertThat(JpegInfo.read(result.file).width).isEqualTo(1240)
+        assertThat(JpegInfo.read(result.file).height).isEqualTo(1554)
     }
 }

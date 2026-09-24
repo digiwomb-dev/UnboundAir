@@ -1,10 +1,7 @@
 package dev.digiwomb.unboundair.image
 
 import dev.digiwomb.unboundair.TestImages
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
@@ -25,66 +22,66 @@ class PaperDetectorTest {
     lateinit var dir: Path
 
     @Test
-    fun `a two pixel dark border detects the bright rectangle inside it`() {
+    fun `SV-01 a two pixel dark border detects the bright rectangle inside it`() {
         val image = withBorder(20, 10, border = 2, borderLuma = 0, paperLuma = 200)
 
-        assertEquals(PaperBox(2, 2, 17, 7), PaperDetector.detect(image))
+        assertThat(PaperDetector.detect(image)).isEqualTo(PaperBox(2, 2, 17, 7))
     }
 
     @Test
-    fun `a fully bright image detects the whole frame`() {
+    fun `SV-01 a fully bright image detects the whole frame`() {
         val image = flat(20, 10, 200)
 
-        assertEquals(PaperBox(0, 0, 19, 9), PaperDetector.detect(image))
+        assertThat(PaperDetector.detect(image)).isEqualTo(PaperBox(0, 0, 19, 9))
     }
 
     @Test
-    fun `a fully dark image detects no paper`() {
+    fun `SV-01 a fully dark image detects no paper`() {
         val image = flat(20, 10, 5)
 
-        assertNull(PaperDetector.detect(image))
+        assertThat(PaperDetector.detect(image)).isNull()
     }
 
     @Test
-    fun `a box covering only one percent of the image fails the minimum area`() {
+    fun `SV-02 a box covering only one percent of the image fails the minimum area`() {
         val box = PaperBox(0, 0, 9, 9)
 
-        assertFalse(PaperDetector.isPlausible(box, 100, 100, 0.10, 6.0))
+        assertThat(PaperDetector.isPlausible(box, 100, 100, 0.10, 6.0)).isFalse()
     }
 
     @Test
-    fun `a box covering the whole image is plausible`() {
+    fun `SV-02 a box covering the whole image is plausible`() {
         val box = PaperBox(0, 0, 9, 9)
 
-        assertTrue(PaperDetector.isPlausible(box, 10, 10, 0.10, 6.0))
+        assertThat(PaperDetector.isPlausible(box, 10, 10, 0.10, 6.0)).isTrue()
     }
 
     @Test
-    fun `a box with a 50 to 1 side ratio fails the aspect ratio limit`() {
+    fun `SV-02 a box with a 50 to 1 side ratio fails the aspect ratio limit`() {
         val box = PaperBox(0, 0, 99, 1)
 
-        assertFalse(PaperDetector.isPlausible(box, 100, 100, 0.10, 6.0))
+        assertThat(PaperDetector.isPlausible(box, 100, 100, 0.10, 6.0)).isFalse()
     }
 
     @Test
-    fun `the real a4 scan detects the whole frame`() {
+    fun `SV-01 the real a4 scan detects the whole frame`() {
         val image = LumaImage.read(TestImages.copy("din_a4_300dpi_raw.jpg", dir))
 
-        assertEquals(PaperBox(0, 0, 2463, 3424), PaperDetector.detect(image))
+        assertThat(PaperDetector.detect(image)).isEqualTo(PaperBox(0, 0, 2463, 3424))
     }
 
     @Test
-    fun `the real dl envelope detects the box from the test definitions`() {
+    fun `SV-01 the real dl envelope detects the box from the test definitions`() {
         val image = LumaImage.read(TestImages.copy("envelope_dl_300dpi_raw.jpg", dir))
 
-        assertEquals(PaperBox(546, 50, 1775, 2549), PaperDetector.detect(image))
+        assertThat(PaperDetector.detect(image)).isEqualTo(PaperBox(546, 50, 1775, 2549))
     }
 
     @Test
-    fun `the synthetic dark page detects no paper`() {
+    fun `SV-01 the synthetic dark page detects no paper`() {
         val image = LumaImage.read(TestImages.copy("dark_page.jpg", dir))
 
-        assertNull(PaperDetector.detect(image))
+        assertThat(PaperDetector.detect(image)).isNull()
     }
 
     /**
