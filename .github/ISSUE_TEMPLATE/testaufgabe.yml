@@ -24,6 +24,7 @@ body:
         - e2e
         - golden-master
         - mutation
+        - guard
     validations:
       required: true
   - type: textarea
