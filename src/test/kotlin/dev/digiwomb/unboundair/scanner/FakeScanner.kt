@@ -11,6 +11,37 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
 /**
+ * The direction of one [TranscriptEntry] within the scanner protocol.
+ */
+enum class TranscriptDirection {
+    /** A 4-byte command read from the client. */
+    FROM_CLIENT,
+
+    /** An answer or payload written to the client. */
+    TO_CLIENT,
+}
+
+/**
+ * One recorded protocol exchange of the [FakeScanner] [transcript][FakeScanner.transcript]
+ * (Session 5, requirement SC-01).
+ *
+ * @property connection the 1-based number of the TCP connection the bytes belong to.
+ * @property direction whether the bytes were read from the client or written to it.
+ * @property hex lowercase hex of the exact bytes, e.g. `7363616e` for the `scan` command.
+ * @property decoded human-readable decoding: the command name (`status`, `version`,
+ *   `dpi300`, `dpi600`, `scan`, `jpegsize`, `jpegdata`) or `unknown` when the 4 bytes
+ *   map to no known command; for answers, the bare word (`scanready`, `dpistd`,
+ *   `dpifine`, `scango`, `jpegdata`) or the version string without its trailing NUL
+ *   (`NB0a.032`).
+ */
+data class TranscriptEntry(
+    val connection: Int,
+    val direction: TranscriptDirection,
+    val hex: String,
+    val decoded: String,
+)
+
+/**
  * A TCP server that mimics the Mustek iScan Air (S400W) scanner protocol.
  *
  * The fake reproduces the protocol quirks observed on the real device:
@@ -23,6 +54,15 @@ import kotlin.concurrent.thread
  * handles each connection in its own daemon thread, so tests run against it
  * exactly like against the real device.
  *
+ * Every protocol exchange is additionally recorded in [transcript]: one
+ * [TranscriptDirection.FROM_CLIENT] entry per 4-byte command read and one
+ * [TranscriptDirection.TO_CLIENT] entry per answer written, in the order
+ * they happen within each connection. That transcript is the golden source
+ * for the SC-01 protocol contract (Session 5): a contract test compares a
+ * client session against the recorded bytes byte-exact. One [FakeScanner]
+ * instance records one append-only transcript; a fresh instance per test is
+ * the norm, matching how the class is used today.
+ *
  * @see ScannerCommand
  * @see ScannerResponse
  */
@@ -34,6 +74,7 @@ class FakeScanner : AutoCloseable {
     private val connectionCounter = AtomicInteger(0)
     private val activeSockets = ConcurrentLinkedQueue<Socket>()
     private val receivedCommandQueue = ConcurrentLinkedQueue<String>()
+    private val transcriptQueue = ConcurrentLinkedQueue<TranscriptEntry>()
 
     /**
      * The actual port the server socket is bound to.
@@ -63,6 +104,34 @@ class FakeScanner : AutoCloseable {
      */
     val receivedCommands: List<String>
         get() = receivedCommandQueue.toList()
+
+    /**
+     * An ordered record of every command and answer exchanged on every
+     * connection, as [TranscriptEntry] snapshots.
+     *
+     * One entry per logical protocol exchange, in the order it happens:
+     * [TranscriptDirection.FROM_CLIENT] for every 4-byte command read
+     * (`decoded` is the command name, or `unknown`), and
+     * [TranscriptDirection.TO_CLIENT] for every answer written. Answers are
+     * recorded at the point their bytes are decided, so a split `jpegsize`
+     * answer is one 12-byte entry (the split into two TCP segments is a
+     * transport artifact, not part of the protocol exchange) and the
+     * `jpegdata` payload is one entry with the full payload bytes (not one
+     * per 1460-byte chunk). In the [hang] case commands are still recorded
+     * as FROM_CLIENT, but nothing is answered, so no TO_CLIENT entries
+     * appear.
+     *
+     * [hex] is the lowercase hex of the exact bytes exchanged.
+     *
+     * The queue is a [ConcurrentLinkedQueue] like [receivedCommandQueue], so
+     * the per-client threads may append concurrently; within one connection
+     * the entries are strictly ordered, because a single thread serves it.
+     * Entries of different connections may interleave. One [FakeScanner]
+     * instance records one append-only transcript — a fresh instance per
+     * test is the norm.
+     */
+    val transcript: List<TranscriptEntry>
+        get() = transcriptQueue.toList()
 
     /**
      * Whether status/ack answers carry the real device's fill bytes.
@@ -148,11 +217,11 @@ class FakeScanner : AutoCloseable {
                 while (isRunning.get()) {
                     try {
                         val clientSocket = socket.accept()
-                        connectionCounter.incrementAndGet()
+                        val connection = connectionCounter.incrementAndGet()
                         activeSockets.add(clientSocket)
                         thread(isDaemon = true, name = "fake-scanner-client") {
                             try {
-                                handleClient(clientSocket)
+                                handleClient(clientSocket, connection)
                             } finally {
                                 activeSockets.remove(clientSocket)
                             }
@@ -192,10 +261,18 @@ class FakeScanner : AutoCloseable {
      * Serves one client connection: reads 4-byte commands and answers
      * according to the scanner protocol.
      *
+     * [connection] is the 1-based number of this TCP connection (the value
+     * [connectionCounter] reached when the connection was accepted); every
+     * [TranscriptEntry] recorded for it carries this number, so a transcript
+     * of multiple connections can be told apart.
+     *
      * The connection ends when the client closes it, when an unknown command
      * arrives (the real device hangs up), or when the server is stopped.
      */
-    private fun handleClient(socket: Socket) {
+    private fun handleClient(
+        socket: Socket,
+        connection: Int,
+    ) {
         try {
             val input = socket.getInputStream()
             val output = socket.getOutputStream()
@@ -209,6 +286,10 @@ class FakeScanner : AutoCloseable {
                     offset += bytesRead
                 }
 
+                // One FROM_CLIENT entry per command read, also for commands
+                // the device does not know (recorded as `unknown`).
+                recordFromClient(connection, command)
+
                 val commandName = commandName(command)
                 if (commandName != null) {
                     receivedCommandQueue.add(commandName)
@@ -220,28 +301,45 @@ class FakeScanner : AutoCloseable {
 
                 when (commandName) {
                     "status" -> {
-                        write(output, paddedAnswer(statusWord))
+                        val answer = paddedAnswer(statusWord)
+                        recordToClient(connection, answer, statusWord)
+                        write(output, answer)
                     }
 
                     "version" -> {
-                        write(output, versionAnswer())
+                        val answer = versionAnswer()
+                        // The answer carries a trailing NUL; the decoded form
+                        // is the version string without it, e.g. `NB0a.032`.
+                        val decoded = answer.toString(Charsets.US_ASCII).trimEnd('\u0000')
+                        recordToClient(connection, answer, decoded)
+                        write(output, answer)
                     }
 
                     "dpi300" -> {
-                        write(output, paddedAnswer("dpistd"))
+                        val answer = paddedAnswer("dpistd")
+                        recordToClient(connection, answer, "dpistd")
+                        write(output, answer)
                     }
 
                     "dpi600" -> {
-                        write(output, paddedAnswer("dpifine"))
+                        val answer = paddedAnswer("dpifine")
+                        recordToClient(connection, answer, "dpifine")
+                        write(output, answer)
                     }
 
                     "scan" -> {
-                        write(output, paddedAnswer("scango"))
+                        val answer = paddedAnswer("scango")
+                        recordToClient(connection, answer, "scango")
+                        write(output, answer)
                     }
 
                     "jpegsize" -> {
                         if (scanDelayMillis > 0) Thread.sleep(scanDelayMillis)
                         val answer = jpegSizeAnswer()
+                        // One entry for the full 12 bytes: the optional split
+                        // into two TCP segments is a transport artifact and not
+                        // part of the protocol exchange.
+                        recordToClient(connection, answer, "jpegsize")
                         if (splitJpegsize) {
                             output.write(answer, 0, 10)
                             output.flush()
@@ -254,6 +352,10 @@ class FakeScanner : AutoCloseable {
                     }
 
                     "jpegdata" -> {
+                        // One entry for the full payload: the 1460-byte
+                        // chunking is a transport artifact, not a protocol
+                        // exchange.
+                        recordToClient(connection, payload, "jpegdata")
                         var offset = 0
                         while (offset < payload.size) {
                             val end = minOf(offset + JPEG_CHUNK_SIZE, payload.size)
@@ -333,6 +435,58 @@ class FakeScanner : AutoCloseable {
         output.write(bytes)
         output.flush()
     }
+
+    /**
+     * Records the 4-byte command [command] read from connection
+     * [connection] as a [TranscriptDirection.FROM_CLIENT] [TranscriptEntry].
+     *
+     * A command the device does not know is still recorded, with
+     * [TranscriptEntry.decoded] = `unknown`; the connection then ends, as on
+     * the real device.
+     */
+    private fun recordFromClient(
+        connection: Int,
+        command: ByteArray,
+    ) {
+        transcriptQueue.add(
+            TranscriptEntry(
+                connection = connection,
+                direction = TranscriptDirection.FROM_CLIENT,
+                hex = toHex(command),
+                decoded = commandName(command) ?: "unknown",
+            ),
+        )
+    }
+
+    /**
+     * Records [bytes] written to connection [connection] as a
+     * [TranscriptDirection.TO_CLIENT] [TranscriptEntry].
+     *
+     * Callers record at the point the answer bytes are decided, so a split
+     * `jpegsize` answer and the chunked `jpegdata` payload each become one
+     * entry of the full logical bytes (see [transcript]).
+     */
+    private fun recordToClient(
+        connection: Int,
+        bytes: ByteArray,
+        decoded: String,
+    ) {
+        transcriptQueue.add(
+            TranscriptEntry(
+                connection = connection,
+                direction = TranscriptDirection.TO_CLIENT,
+                hex = toHex(bytes),
+                decoded = decoded,
+            ),
+        )
+    }
+
+    /**
+     * Renders [bytes] as lowercase hex, byte-exact for arbitrary bytes: each
+     * byte is masked with `0xFF` before formatting, so values above `0x7F`
+     * print as two hex digits (`80` to `ff`) rather than signed values.
+     */
+    private fun toHex(bytes: ByteArray): String = bytes.joinToString(separator = "") { byte -> "%02x".format(byte.toInt() and 0xFF) }
 
     private companion object {
         /** Total length of a padded status/ack answer (word + padding + H). */
