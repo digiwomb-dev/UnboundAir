@@ -1,7 +1,7 @@
 ---
 description: Runs the first local UnboundAir implementation or test attempt with Qwen3.8 27B.
 mode: subagent
-model: lmstudio/qwen_qwen3_8-27b
+model: lmstudio/qwen/qwen3.8-27b
 temperature: 0.1
 ---
 
@@ -14,9 +14,10 @@ AGENTS.md, docs/plan.md and — for anything test-related — docs/teststrategie
 Test work must honour the test strategy: AssertJ instead of JUnit assertions, backtick
 names carrying the requirement ID, @Nested for case groups, and the assigned layer
 (unit / property / slice / integration / contract / e2e / golden-master / mutation).
-Every test must stay offline (DC-03). Verify in the dev container (docker cp, then
-`./gradlew spotlessApply test --tests '<Klasse>'`), copy formatted sources back, and
-reference the issue number in the report.
+Every test must stay offline (DC-03). Verify in the dev container
+(`devcontainer exec --workspace-folder . ./gradlew spotlessApply test --tests '<Klasse>'`);
+the workspace is bind-mounted, so no copying is needed. Reference the issue number in
+the report.
 
 If the attempt is unsuccessful, report the model used, approach, relevant errors, and
 the concrete blocker. Do not use a cloud model or delegate to the cloud fallback.

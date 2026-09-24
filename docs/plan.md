@@ -193,7 +193,7 @@ Unterbefehle der Anwendung (Umsetzung entscheidest du, z. B. Startskript `unboun
 
 Hinweis: Wie die Tests im Dev Container gestartet werden, hängt von der Umgebung ab, in der du arbeitest, und gehört nicht ins Repo. Kannst du sie nicht selbst im Dev Container starten: sag es mir – lass sie nicht stillschweigend woanders laufen.
 
-**Aktuelle Lage:** Der Dev Container läuft lokal – es gibt keinen Umweg mehr über einen anderen Rechner. Ein Wrapper außerhalb des Repos startet ihn, das Repo wird per `docker cp` hineingespiegelt, und `./gradlew build` läuft darin. Der Ablauf steht in `docs/entwicklung.md`.
+**Aktuelle Lage:** Der Dev Container läuft lokal – es gibt keinen Umweg mehr über einen anderen Rechner. `devcontainer up` startet ihn, der Arbeitsordner ist direkt eingehängt (Änderungen sind sofort beidseitig sichtbar), und `./gradlew build` läuft darin. Das funktioniert auch aus einem Git-Worktree heraus. Der Ablauf steht in `docs/entwicklung.md`.
 
 Eine Aufgabe gilt erst als abgenommen, wenn ihr Testergebnis im zugehörigen Issue dokumentiert ist (Test-Checkliste abgehakt, Lauf im Dev Container grün mit Commit-SHA). Aufgaben, die geschrieben, aber noch nicht ausgeführt wurden, gelten als „nicht verifiziert" und werden nicht abgehakt.
 

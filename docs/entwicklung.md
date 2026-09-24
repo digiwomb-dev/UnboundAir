@@ -20,11 +20,21 @@ Repository klonen und im Dev Container öffnen. In VS Code: Ordner öffnen, dann
 devcontainer up --workspace-folder .
 ```
 
+Ohne `--workspace-folder` nimmt die CLI das aktuelle Verzeichnis – im Repository genügt also `devcontainer up`.
+
 Wer Podman statt Docker verwendet, hängt `--docker-path podman` an – die CLI sucht sonst nach einer ausführbaren Datei namens `docker` und bricht mit `spawn docker ENOENT` ab:
 
 ```bash
 devcontainer up --workspace-folder . --docker-path podman
 ```
+
+### Arbeiten aus einem Git-Worktree
+
+Das Repository lässt sich auch aus einem [Worktree](https://git-scm.com/docs/git-worktree) heraus im Dev Container bauen; der Ordner muss dafür nicht „UnboundAir" heißen. Die CLI hängt den Arbeitsordner unter `/workspaces/<Ordnername>` ein, und `devcontainer.json` leitet `workspaceFolder` aus demselben Namen ab.
+
+Eine Einschränkung gibt es: **Git-Befehle funktionieren im Dev Container nur im normalen Klon, nicht im Worktree.** Ein Worktree enthält statt eines `.git`-Verzeichnisses nur eine Datei, die auf das gemeinsame Git-Verzeichnis des Hauptklons zeigt – und das liegt außerhalb des eingehängten Ordners. Zum Bauen und Testen spielt das keine Rolle: Der Gradle-Build braucht kein Git. Git-Befehle gehören ohnehin neben den Container, nicht hinein.
+
+Die `devcontainer`-CLI kann das gemeinsame Git-Verzeichnis mitmounten (`--mount-git-worktree-common-dir`), verlangt dafür aber mit relativen Pfaden angelegte Worktrees (`git worktree add --relative-paths`, ab Git 2.48). Siehe OF-12 in `offene-fragen.md`.
 
 Beim ersten Start wird das Image gebaut, das dauert einige Minuten. Die Ausgabe wirkt dabei streckenweise wie eingefroren, weil die Fortschrittsanzeige der Container-Runtime gepuffert durchgereicht wird. `--log-level debug` zeigt stattdessen jeden Schritt einzeln.
 
@@ -93,25 +103,12 @@ Arbeit wird über GitHub-Issues organisiert: je Aufgabe ein Issue, je Issue ein 
 
 Der Container enthält dieselben Systemabhängigkeiten wie das spätere Laufzeit-Image: dieselbe JDK-Hauptversion, dasselbe `jpegtran`. Driften die beiden auseinander, laufen die Tests grün und der Dienst fällt im Betrieb um. Deshalb gilt: gebaut und getestet wird im Container, nicht daneben.
 
-## Lokaler Testlauf
-
-Die Entwicklungsumgebung ist selbst eine Container-Umgebung; ein Bind-Mount des Workspace-Ordners in den Dev Container schlägt dort fehl. Deshalb liegt außerhalb des Repos ein Wrapper (`unboundair-devcontainer`), der den Dev Container über die `devcontainer`-CLI startet: Der Workspace ist ein Named Volume, das beim Anlegen per `docker cp` mit dem Repo befüllt wird; `--fresh` legt Container und Repo-Volume neu an, das Gradle-Cache-Volume bleibt erhalten. Der Wrapper gehört nicht ins Repo – er ist an diese Umgebung gebunden; das portable Gegenstück bleibt `.devcontainer/`.
-
-Der Ablauf je Testlauf:
-
-1. Container starten bzw. erneuern: `unboundair-devcontainer` (bei Bedarf `--fresh`).
-2. Container-Namen ermitteln: `docker ps --filter label=devcontainer.local_folder=/workspace/repos/UnboundAir --format '{{.Names}}'`.
-3. Repo hineinspiegeln: `docker cp /workspace/repos/UnboundAir/. <NAME>:/workspaces/UnboundAir/`.
-4. Stand gegenprüfen: `docker exec -u ubuntu -w /workspaces/UnboundAir <NAME> git status --short` – die Kopie muss dem Commit entsprechen.
-5. Bauen: `docker exec -u ubuntu -w /workspaces/UnboundAir <NAME> ./gradlew build`.
-
-Beim Arbeiten an einzelnen Dateien genügt es, nur `src/` zu spiegeln; nach `spotlessApply` im Container werden die formatierten Dateien zurückkopiert.
-
-### Bekannte Eigenheiten der Testumgebung
+### Bekannte Eigenheiten
 
 - Die `devcontainer`-CLI ruft fest `docker` auf. Mit Podman muss `--docker-path podman` mitgegeben werden, sonst bricht sie mit `spawn docker ENOENT` ab.
 - Die Ausgabe langer Läufe wirkt eingefroren, weil Fortschrittsanzeigen gepuffert durchgereicht werden. `--log-level debug` zeigt die einzelnen Schritte.
 - Der Digest-Pin des Basis-Image erzeugt eine Warnung der CLI („Could not parse image name"). Folgenlos, siehe oben.
+- Läuft der Dev Container in einer Umgebung, die selbst nur eine Benutzerkennung kennt (verschachtelte Container ohne eigene UID-Bereiche), schlägt jedes Ändern von Dateibesitz fehl. Das `Dockerfile` ist darauf eingestellt: Der Download-Sandkasten von `apt` läuft als `root`, und das `chown` auf das Gradle-Verzeichnis darf fehlschlagen – nötig ist es dort ohnehin nicht, weil alle Dateien derselben Kennung gehören.
 
 ## Einstieg für eine neue Arbeitssitzung
 
