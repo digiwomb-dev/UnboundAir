@@ -2,6 +2,7 @@
 description: Migrates work tracking from repo files to GitHub issues/milestones/labels and maintains the GitHub workflow via the gh CLI.
 mode: subagent
 temperature: 0.1
+model: opencode-go/deepseek-v4-pro
 permission:
   bash:
     "gh issue *": allow

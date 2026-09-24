@@ -2,6 +2,7 @@
 description: Prüft den aktuellen Stand read-only gegen AGENTS.md, docs/plan.md und docs/teststrategie.md – am Ende jedes Meilensteins oder per @reviewer
 mode: subagent
 temperature: 0.1
+model: cpa-gui/claude-opus-5
 permission:
   edit: deny
   webfetch: deny
