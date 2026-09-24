@@ -136,8 +136,7 @@ class ScannerClient(
             send(socket, ScannerCommand.SCAN, "scan")
             expectPrefix(readAnswer(socket, "scan", NORMAL_TIMEOUT_MILLIS), ScannerResponse.SCANGO, "scan")
             send(socket, ScannerCommand.JPEGSIZE, "jpegsize")
-            val sizeAnswer = readJpegSizeAnswer(socket, JPEGSIZE_TIMEOUT_MILLIS)
-            val size = sizeOf(sizeAnswer)
+            val size = readJpegSizeAnswer(socket, JPEGSIZE_TIMEOUT_MILLIS)
             send(socket, ScannerCommand.JPEGDATA, "jpegdata", BULK_READ_PAUSE_MILLIS)
             return readBulkData(socket, size, BULK_READ_TIMEOUT_MILLIS)
         } finally {
@@ -248,27 +247,37 @@ class ScannerClient(
     }
 
     /**
-     * Reads the `jpegsize` answer until its full 12 bytes arrived (SC-04).
+     * Reads the `jpegsize` answer until its full 12 bytes arrived (SC-04)
+     * and returns the parsed payload size.
      *
      * The device splits the answer (8-byte word + 4-byte little-endian
      * size) across TCP segments, so a single read is not enough. Each
      * read is allowed [timeoutMillis] — 60 s, because the device feeds
-     * the page through the scanner before it reports the size.
+     * the page through the scanner before it reports the size; the chunks
+     * are assembled by a [JpegSizeAssembler] and the size parsed from the
+     * complete answer. An answer that does not parse is a protocol
+     * violation (SC-05).
      */
     private fun readJpegSizeAnswer(
         socket: Socket,
         timeoutMillis: Long,
-    ): ByteArray {
-        val answer = ByteArray(JPEGSIZE_ANSWER_LENGTH)
-        var read = 0
-        while (read < JPEGSIZE_ANSWER_LENGTH) {
-            val chunk = readChunk(socket, answer, read, JPEGSIZE_ANSWER_LENGTH - read, "jpegsize", timeoutMillis)
-            if (chunk == -1) {
-                throw ScannerOfflineException("Connection to $host:$port closed after $read/$JPEGSIZE_ANSWER_LENGTH bytes of 'jpegsize'")
+    ): Int {
+        val assembler = JpegSizeAssembler()
+        val window = ByteArray(JPEGSIZE_ANSWER_LENGTH)
+        while (!assembler.isComplete) {
+            val read = readChunk(socket, window, 0, JPEGSIZE_ANSWER_LENGTH - assembler.bytesReceived, "jpegsize", timeoutMillis)
+            if (read == -1) {
+                throw ScannerOfflineException(
+                    "Connection to $host:$port closed after ${assembler.bytesReceived}/$JPEGSIZE_ANSWER_LENGTH bytes of 'jpegsize'",
+                )
             }
-            read += chunk
+            assembler.feed(window, 0, read)
         }
-        return answer
+        return try {
+            assembler.parse()
+        } catch (e: IllegalArgumentException) {
+            throw ScannerProtocolException("Malformed 'jpegsize' answer from $host:$port: ${describe(assembler.snapshot())}", e)
+        }
     }
 
     /**
@@ -355,18 +364,6 @@ class ScannerClient(
     }
 
     /**
-     * Parses the 12-byte `jpegsize` answer into the payload size, mapping
-     * a malformed answer (short buffer, NUL word) to
-     * [ScannerProtocolException] (SC-05).
-     */
-    private fun sizeOf(sizeAnswer: ByteArray): Int =
-        try {
-            parseJpegSize(sizeAnswer)
-        } catch (e: IllegalArgumentException) {
-            throw ScannerProtocolException("Malformed 'jpegsize' answer from $host:$port: ${describe(sizeAnswer)}", e)
-        }
-
-    /**
      * Sleeps for [millis]; an interruption restores the interrupt flag
      * and aborts the operation instead of swallowing it.
      */
@@ -430,8 +427,5 @@ class ScannerClient(
 
         // Read window for the streamed JPEG; the device's 1460-byte chunks fit in it.
         const val BULK_READ_CHUNK_SIZE = 65536
-
-        // `jpegsize` answer: 8-byte word + 4-byte little-endian size (SC-04).
-        const val JPEGSIZE_ANSWER_LENGTH = 12
     }
 }

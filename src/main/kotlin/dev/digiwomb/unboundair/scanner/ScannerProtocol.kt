@@ -91,6 +91,12 @@ fun startsWithPrefix(
 ): Boolean = startsWithPrefix(response, asciiPrefix.toByteArray(Charsets.US_ASCII))
 
 /**
+ * The fixed length of the `jpegsize` answer: the 8-byte word plus the
+ * 4-byte little-endian size (SC-04).
+ */
+const val JPEGSIZE_ANSWER_LENGTH = 12
+
+/**
  * Parses a `jpegsize` answer into the JPEG payload size in bytes.
  *
  * The `jpegsize` answer is 12 bytes: the ASCII word `jpegsize` (8 bytes)
@@ -101,9 +107,9 @@ fun startsWithPrefix(
  *   real-device answer always passes both).
  */
 fun parseJpegSize(response: ByteArray): Int {
-    if (response.size < 12) {
+    if (response.size < JPEGSIZE_ANSWER_LENGTH) {
         throw IllegalArgumentException(
-            "jpegsize answer is too short: ${response.size} byte(s), need at least 12",
+            "jpegsize answer is too short: ${response.size} byte(s), need at least $JPEGSIZE_ANSWER_LENGTH",
         )
     }
     if (!startsWithPrefix(response, ScannerResponse.JPEGSIZE)) {
@@ -114,4 +120,67 @@ fun parseJpegSize(response: ByteArray): Int {
         ((response[9].toInt() and 0xFF) shl 8) or
         ((response[10].toInt() and 0xFF) shl 16) or
         ((response[11].toInt() and 0xFF) shl 24)
+}
+
+/**
+ * Accumulates the fragments of a 12-byte `jpegsize` answer and parses the
+ * size once the full answer has arrived (SC-04).
+ *
+ * The device splits the answer across TCP segments, so a client reads it in
+ * chunks and feeds each chunk to [feed] until [isComplete], then calls
+ * [parse]. The class holds no socket, no clock, and no other I/O: it only
+ * buffers bytes and delegates the parsing to [parseJpegSize], so a test can
+ * feed any segmentation of the 12 bytes through it without a connection.
+ *
+ * One instance serves one `jpegsize` answer; create a fresh one per answer.
+ */
+class JpegSizeAssembler {
+    private val buffer = ByteArray(JPEGSIZE_ANSWER_LENGTH)
+    private var received = 0
+
+    /**
+     * The number of answer bytes fed so far (0 to [JPEGSIZE_ANSWER_LENGTH]).
+     */
+    val bytesReceived: Int
+        get() = received
+
+    /**
+     * Whether the full 12-byte answer has been fed.
+     */
+    val isComplete: Boolean
+        get() = received >= JPEGSIZE_ANSWER_LENGTH
+
+    /**
+     * Appends [length] bytes from [source] starting at [offset] to the
+     * buffered answer.
+     *
+     * Bytes beyond the 12-byte answer are ignored, so a chunk that overruns
+     * the end of the answer is accepted and trimmed.
+     *
+     * @return [isComplete] after the feed.
+     */
+    fun feed(
+        source: ByteArray,
+        offset: Int = 0,
+        length: Int = source.size - offset,
+    ): Boolean {
+        val toCopy = minOf(length, JPEGSIZE_ANSWER_LENGTH - received)
+        source.copyInto(buffer, received, offset, offset + toCopy)
+        received += toCopy
+        return isComplete
+    }
+
+    /**
+     * A copy of the bytes fed so far, for diagnostics.
+     */
+    fun snapshot(): ByteArray = buffer.copyOf(received)
+
+    /**
+     * Parses the buffered answer into the JPEG payload size in bytes.
+     *
+     * @throws IllegalArgumentException fewer than 12 bytes were fed, or the
+     *   bytes do not start with the `jpegsize` prefix — the same error
+     *   semantics as [parseJpegSize].
+     */
+    fun parse(): Int = parseJpegSize(buffer.copyOf(received))
 }
