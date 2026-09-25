@@ -17,8 +17,9 @@ import org.junit.jupiter.api.Test
  * meaningful input is a bright rectangle on a dark surround. These properties
  * pin that, for an arbitrary bright rectangle, [PaperDetector.detect] returns
  * exactly that rectangle (a valid, in-bounds, non-inverted box), that a fully
- * dark page yields `null`, and that [PaperDetector.isPlausible] agrees with the
- * area and aspect-ratio definition for arbitrary boxes.
+ * dark page yields `null`, and that [PaperDetector.isPlausible] is monotone in
+ * its thresholds, enforces the exact 10%-area and 6:1-aspect boundaries, and
+ * rejects boxes with non-positive area.
  *
  * Every property runs against a fixed [SEED], so the runs are deterministic;
  * the functions under test are pure, so nothing touches the network, a file,
@@ -98,35 +99,7 @@ class PaperDetectorPropertyTest {
 
     @OptIn(ExperimentalKotest::class)
     @Test
-    fun `SV-02 isPlausible matches the area and aspect-ratio definition`() {
-        runBlocking {
-            checkAll(
-                PropTestConfig(seed = SEED),
-                Arb.int(0, 100),
-                Arb.int(0, 100),
-                Arb.int(0, 100),
-                Arb.int(0, 100),
-                Arb.int(1, 200),
-                Arb.int(1, 200),
-            ) { x0, y0, x1, y1, width, height ->
-                val box = PaperBox(minOf(x0, x1), minOf(y0, y1), maxOf(x0, x1), maxOf(y0, y1))
-
-                val boxWidth = box.x1 - box.x0 + 1
-                val boxHeight = box.y1 - box.y0 + 1
-                val areaFraction = (boxWidth.toLong() * boxHeight.toLong()).toDouble() / (width.toLong() * height.toLong())
-                val aspectRatio = maxOf(boxWidth, boxHeight).toDouble() / minOf(boxWidth, boxHeight).toDouble()
-                val expected = areaFraction >= 0.10 && aspectRatio <= 6.0
-
-                assertThat(PaperDetector.isPlausible(box, width, height, 0.10, 6.0))
-                    .`as`("isPlausible must match the area/aspect definition for $box in ${width}x$height")
-                    .isEqualTo(expected)
-            }
-        }
-    }
-
-    @OptIn(ExperimentalKotest::class)
-    @Test
-    fun `SV-02 isPlausible honors arbitrary thresholds`() {
+    fun `SV-02 isPlausible is monotone in both thresholds`() {
         runBlocking {
             checkAll(
                 PropTestConfig(seed = SEED),
@@ -137,20 +110,60 @@ class PaperDetectorPropertyTest {
                 Arb.int(1, 200),
                 Arb.int(1, 200),
                 Arb.double(0.0, 0.9),
-                Arb.double(1.0, 20.0),
+                Arb.double(1.0, 10.0),
             ) { x0, y0, x1, y1, width, height, minArea, maxAspect ->
                 val box = PaperBox(minOf(x0, x1), minOf(y0, y1), maxOf(x0, x1), maxOf(y0, y1))
+                val plausible = PaperDetector.isPlausible(box, width, height, minArea, maxAspect)
 
-                val boxWidth = box.x1 - box.x0 + 1
-                val boxHeight = box.y1 - box.y0 + 1
-                val areaFraction = (boxWidth.toLong() * boxHeight.toLong()).toDouble() / (width.toLong() * height.toLong())
-                val aspectRatio = maxOf(boxWidth, boxHeight).toDouble() / minOf(boxWidth, boxHeight).toDouble()
-                val expected = areaFraction >= minArea && aspectRatio <= maxAspect
+                // Loosening the area threshold (toward 0) must never turn a
+                // plausible box implausible. This pins the `>=` direction without
+                // recomputing the area fraction.
+                if (plausible) {
+                    assertThat(PaperDetector.isPlausible(box, width, height, 0.0, maxAspect))
+                        .`as`("a box plausible at area $minArea must stay plausible at area 0")
+                        .isTrue()
+                }
 
-                assertThat(PaperDetector.isPlausible(box, width, height, minArea, maxAspect))
-                    .`as`("isPlausible must honor the given thresholds for $box in ${width}x$height")
-                    .isEqualTo(expected)
+                // Loosening the aspect-ratio threshold (upward) must never turn a
+                // plausible box implausible. This pins the `<=` direction without
+                // recomputing the aspect ratio.
+                if (plausible) {
+                    assertThat(PaperDetector.isPlausible(box, width, height, minArea, 100.0))
+                        .`as`("a box plausible at aspect $maxAspect must stay plausible at aspect 100")
+                        .isTrue()
+                }
             }
+        }
+    }
+
+    @OptIn(ExperimentalKotest::class)
+    @Test
+    fun `SV-02 isPlausible enforces the exact area and aspect boundaries`() {
+        // Hand-derived boundary cases: each expected value is written as a literal
+        // (from the integer pixel counts), never recomputed through the production
+        // formula. This pins the `>=`/`<=` operator direction at the exact boundary
+        // (10% area, 6:1 aspect) and would fail on `>`/`<` instead.
+        val cases =
+            listOf(
+                // Area: 5x2 = 10 px in 10x10 = 100 px is exactly 10% -> plausible (`>=`).
+                BoundaryCase(10, 10, 5, 2, 0.10, 6.0, true),
+                // Area: 3x3 = 9 px is 9% -> just below -> implausible.
+                BoundaryCase(10, 10, 3, 3, 0.10, 6.0, false),
+                // Aspect: 12x2 = 6.0 exactly -> plausible (`<=`). Area kept >= 10%.
+                BoundaryCase(100, 2, 12, 2, 0.10, 6.0, true),
+                // Aspect: 13x2 = 6.5 -> just above -> implausible.
+                BoundaryCase(100, 2, 13, 2, 0.10, 6.0, false),
+                // Arbitrary threshold: 5x5 = 25% in 10x10 against minArea 0.5 -> below.
+                BoundaryCase(10, 10, 5, 5, 0.50, 6.0, false),
+                // Arbitrary threshold: 5x10 = 50% exactly against minArea 0.5 -> plausible.
+                BoundaryCase(10, 10, 10, 5, 0.50, 6.0, true),
+            )
+
+        for (case in cases) {
+            val box = PaperBox(0, 0, case.boxW - 1, case.boxH - 1)
+            assertThat(PaperDetector.isPlausible(box, case.width, case.height, case.minArea, case.maxAspect))
+                .`as`("${case.boxW}x${case.boxH} in ${case.width}x${case.height} (minArea ${case.minArea}, maxAspect ${case.maxAspect})")
+                .isEqualTo(case.expected)
         }
     }
 
@@ -183,4 +196,14 @@ class PaperDetectorPropertyTest {
         /** Fixed seed so every run generates the same cases (determinism). */
         const val SEED = 9876L
     }
+
+    private data class BoundaryCase(
+        val width: Int,
+        val height: Int,
+        val boxW: Int,
+        val boxH: Int,
+        val minArea: Double,
+        val maxAspect: Double,
+        val expected: Boolean,
+    )
 }

@@ -64,6 +64,14 @@ class PaperDetectorTest {
     }
 
     @Test
+    fun `SV-02 a zero-area image rejects every box`() {
+        val box = PaperBox(0, 0, 9, 9)
+
+        assertThat(PaperDetector.isPlausible(box, 0, 100, 0.10, 6.0)).isFalse()
+        assertThat(PaperDetector.isPlausible(box, 100, 0, 0.10, 6.0)).isFalse()
+    }
+
+    @Test
     fun `SV-01 the real a4 scan detects the whole frame`() {
         val image = LumaImage.read(TestImages.copy("din_a4_300dpi_raw.jpg", dir))
 
