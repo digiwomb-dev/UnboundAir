@@ -122,4 +122,12 @@ pitest {
     threads.set(1)
     timestampedReports.set(false)
     timeoutConstInMillis.set(60000)
+
+    // Floor, not a target. 73 % is exactly what the first full run over all
+    // three core packages measured (280/386 killed, 25.09.2026); pinning it
+    // here makes a later drop in assertion quality fail the task instead of
+    // passing unnoticed. No previous value was lowered - there was none.
+    // Raise this number when the score improves; never lower it silently.
+    // Per-package numbers and the weak spots are in docs/entscheidungen.md.
+    mutationThreshold.set(73)
 }

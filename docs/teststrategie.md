@@ -81,6 +81,9 @@ Byte-genaue Referenzartefakte unter `golden/` mit einem **sha256-Manifest**. Erg
 
 - **Warum:** Mutation deckt Lücken in der Assertion-Qualität auf, die Coverage allein nicht zeigt.
 - **Grenzen (gemessen, Spike B):** PIT funktioniert auf JUnit Platform 6 (das bekannte Problem 0 %-Coverage ist mit pitest 1.25.5 behoben). Die zeitgesteuerten Scanner-Tests machen Läufe über den ganzen Kern langsam; deshalb `timeoutConstInMillis` erhöht. Zahlen und Entscheidung in `docs/entscheidungen.md`.
+- **Stand (erster voller Lauf, 25.09.2026):** gesamt **73 %** Mutation Coverage (280/386), Test Strength 76 %, Dauer 23 min. Je Paket: `image` 74 %, `scanner` 72 %, `processing` 68 %.
+- **Schwelle:** `mutationThreshold = 73` in `build.gradle.kts` — der gemessene Wert als **Boden**, damit ein Rückgang den Task rot macht. Anheben, wenn der Score steigt; **nie stillschweigend senken**. Schwächste Klassen und Begründung in `docs/entscheidungen.md`.
+- **Netz:** Die `org.pitest`-Artefakte sind nicht im warmen Cache; der erste `pitest`-Lauf löst sie online auf. DC-03 bleibt unberührt, weil es `./gradlew test` betrifft — der läuft weiterhin offline.
 
 ### Wächter (Guard)
 
