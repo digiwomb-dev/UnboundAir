@@ -5,6 +5,7 @@ import com.tngtech.archunit.core.domain.JavaAnnotation
 import com.tngtech.archunit.core.domain.JavaClasses
 import com.tngtech.archunit.core.importer.ClassFileImporter
 import com.tngtech.archunit.lang.ArchRule
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
 import com.tngtech.archunit.library.Architectures
 import org.junit.jupiter.api.Tag
@@ -17,10 +18,12 @@ import org.junit.jupiter.api.Test
  *
  * The rules:
  *
- * 1. **No `@ConditionalOn*` annotations (AU-03).** Which output modules are active is
- *    decided at runtime from the `unboundair.output.modules` property; Spring's
- *    `@ConditionalOn*` annotations are not supported in GraalVM Native Images, so the
- *    code must not contain them at all (fixed decision in docs/plan.md).
+ * 1. **No `@ConditionalOn*` annotations (AU-03), on classes or methods.** Which output
+ *    modules are active is decided at runtime from the `unboundair.output.modules`
+ *    property; Spring's `@ConditionalOn*` annotations are not supported in GraalVM
+ *    Native Images, so the code must not contain them at all (fixed decision in
+ *    docs/plan.md). The check covers both classes and methods, because
+ *    `@ConditionalOnProperty` commonly sits on a `@Bean` method rather than a class.
  *
  * 2. **Layered package dependencies.** `scanner` and `image` are leaves, `processing`
  *    may only use `image`, `output` only `processing` and `image`, and `cli` only
@@ -30,7 +33,12 @@ import org.junit.jupiter.api.Test
  *
  * 3. **No Spring stereotypes in `..output..` (AU-03).** Modules are registered
  *    deliberately and selected at runtime; a stereotype annotation would wire them
- *    through component scanning instead.
+ *    through component scanning instead. This rule is deliberately inert today: the
+ *    `output` package is empty until the paperless-ngx module lands in a later
+ *    milestone, so `allowEmptyShould(true)` tolerates exactly that one situation.
+ *    The moment a class appears in `dev.digiwomb.unboundair.output..`, the rule checks
+ *    it in full. It is kept (not removed) so the AU-03 "Laufzeit-Registrierung"
+ *    decision stays guarded as an executable rule even while nothing implements it yet.
  *
  * The classes are imported from the classpath, which contains the compiled main and
  * test classes alike (same package namespace); the rules apply to all of them, and
@@ -128,11 +136,17 @@ class ArchitectureRulesTest {
      * AU-03: output modules are selected at runtime from `unboundair.output.modules`,
      * never through Spring conditionals, which GraalVM Native Images do not support.
      * Protects the fixed decision "Module per Laufzeit-Auswahl" from creeping back in
-     * as annotations.
+     * as annotations — on classes and on methods alike, because `@ConditionalOnProperty`
+     * commonly sits on a `@Bean` method rather than on a class.
      */
     @Test
     fun `AU-03 no class is annotated with a ConditionalOn-style annotation`() {
         noClasses().should().beAnnotatedWith(conditionalOnAnnotations).check(classes)
+    }
+
+    @Test
+    fun `AU-03 no method is annotated with a ConditionalOn-style annotation`() {
+        methods().should().notBeAnnotatedWith(conditionalOnAnnotations).check(classes)
     }
 
     /**
