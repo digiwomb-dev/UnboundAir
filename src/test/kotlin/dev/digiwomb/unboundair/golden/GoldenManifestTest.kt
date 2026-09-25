@@ -122,7 +122,8 @@ class GoldenManifestTest {
      */
     private fun manifestLines(): List<String> {
         val text =
-            javaClass.getResourceAsStream(MANIFEST)
+            javaClass
+                .getResourceAsStream(MANIFEST)
                 ?.use { it.readAllBytes().decodeToString() }
                 ?: throw IllegalStateException("golden manifest not found on the classpath: $MANIFEST")
         return text.lineSequence().filter { it.isNotBlank() }.toList()
@@ -132,8 +133,7 @@ class GoldenManifestTest {
      * Returns the bytes of the classpath resource at [path], or `null` when
      * it does not exist.
      */
-    private fun resourceBytes(path: String): ByteArray? =
-        javaClass.getResourceAsStream(path)?.use { it.readAllBytes() }
+    private fun resourceBytes(path: String): ByteArray? = javaClass.getResourceAsStream(path)?.use { it.readAllBytes() }
 
     /**
      * Enumerates every regular file under `golden/`, relative to it, except
@@ -143,7 +143,9 @@ class GoldenManifestTest {
         val root =
             javaClass.getResource(GOLDEN_DIR)
                 ?: throw IllegalStateException("golden directory not found on the classpath: $GOLDEN_DIR")
-        val golden = java.nio.file.Path.of(root.toURI())
+        val golden =
+            java.nio.file.Path
+                .of(root.toURI())
         return Files.walk(golden).use { walk ->
             walk
                 .filter { Files.isRegularFile(it) }
