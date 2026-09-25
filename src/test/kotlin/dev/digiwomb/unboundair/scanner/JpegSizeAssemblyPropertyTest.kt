@@ -60,21 +60,21 @@ class JpegSizeAssemblyPropertyTest {
     @Test
     fun `SC-04 short answer is rejected`() {
         runBlocking {
+            // The generator yields 0..11, i.e. always shorter than the required
+            // 12 bytes, so no extra length guard is needed here.
             checkAll(PropTestConfig(seed = SEED), Arb.int(0, 11)) { length ->
-                if (length < 12) {
-                    val answer = ByteArray(length)
-                    // Test parseJpegSize
-                    assertThatThrownBy { parseJpegSize(answer) }
-                        .isInstanceOf(IllegalArgumentException::class.java)
-                        .hasMessageContaining("jpegsize answer is too short")
+                val answer = ByteArray(length)
+                // Test parseJpegSize
+                assertThatThrownBy { parseJpegSize(answer) }
+                    .isInstanceOf(IllegalArgumentException::class.java)
+                    .hasMessageContaining("jpegsize answer is too short")
 
-                    // Test JpegSizeAssembler
-                    val assembler = JpegSizeAssembler()
-                    assembler.feed(answer)
-                    assertThatThrownBy { assembler.parse() }
-                        .isInstanceOf(IllegalArgumentException::class.java)
-                        .hasMessageContaining("jpegsize answer is too short")
-                }
+                // Test JpegSizeAssembler
+                val assembler = JpegSizeAssembler()
+                assembler.feed(answer)
+                assertThatThrownBy { assembler.parse() }
+                    .isInstanceOf(IllegalArgumentException::class.java)
+                    .hasMessageContaining("jpegsize answer is too short")
             }
         }
     }
