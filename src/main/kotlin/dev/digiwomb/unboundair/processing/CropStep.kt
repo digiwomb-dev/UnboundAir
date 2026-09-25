@@ -77,10 +77,19 @@ class CropStep(
 
         // Round the origin inwards (up) to the iMCU grid; a misaligned
         // origin would be shifted by `jpegtran` and bring background back.
-        val ax0 = ((box.x0 + info.imcuWidth - 1) / info.imcuWidth) * info.imcuWidth
-        val ay0 = ((box.y0 + info.imcuHeight - 1) / info.imcuHeight) * info.imcuHeight
-        val cropWidth = box.x1 - ax0 + 1
-        val cropHeight = box.y1 - ay0 + 1
+        val cropWindow =
+            roundOriginInwards(
+                x0 = box.x0,
+                y0 = box.y0,
+                imcuWidth = info.imcuWidth,
+                imcuHeight = info.imcuHeight,
+                x1 = box.x1,
+                y1 = box.y1,
+            )
+        val ax0 = cropWindow.ax0
+        val ay0 = cropWindow.ay0
+        val cropWidth = cropWindow.cropWidth
+        val cropHeight = cropWindow.cropHeight
         if (ax0 == 0 && ay0 == 0 && cropWidth >= info.width && cropHeight >= info.height) {
             // The window covers the whole image (the A4 case): nothing to
             // cut, so the page passes through unchanged. No `jpegtran`
