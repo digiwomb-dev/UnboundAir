@@ -1,6 +1,6 @@
 # Entscheidungen
 
-Begründungen zu den festen Entscheidungen. Grundlage ist `docs/plan.md` („Feste Entscheidungen" und „Entschieden – nicht mehr offen"); diese Datei füllt sich nach und nach (DO-06). Stand dieser Session: Test-Dependency-Set, Verzicht auf Testcontainers, Wahl des Mutationswerkzeugs und PDF-Metadaten-Determinismus.
+Begründungen zu den festen Entscheidungen. Grundlage ist `docs/plan.md` („Feste Entscheidungen" und „Entschieden – nicht mehr offen"); diese Datei füllt sich nach und nach (DO-06).
 
 ## Test-Dependency-Set
 
@@ -106,6 +106,51 @@ Golden-Master-Tests brauchen bytegleiche PDFs. PDF-Metadaten (insbesondere `Crea
 - Die Produktion behält echte Zeitstempel (Dateiname `scan-YYYYMMDD-HHMMSS.pdf` und Metadaten bleiben sinnvoll).
 
 Damit entfällt die Alternative „festes CreationDate" (z. B. Epoche), die zwar einfach und stabil wäre, aber PDFs ohne sinnvolle Zeitangabe erzeugte. Ein rein struktureller Vergleich ohne Voll-Byte-Golden-Master würde die Aussagekraft des Golden Masters schwächen.
+
+## Paketschichten: eigene Schichten `config` und `service`
+
+Mit Meilenstein 3 kommen Dienst-Loop, Batch und PDF-Erzeugung dazu. Für keines davon gab es einen Platz: Der Wächter kannte `scanner`, `image`, `processing`, `output` und `cli`, wobei `cli` **nicht** auf `output` zugreifen darf. Eine Schleife, die scannt, verarbeitet und ein PDF baut, hätte in keine dieser Schichten gepasst, ohne eine Regel zu brechen oder eine Schicht zu ihrem Gegenteil zu machen.
+
+**Entscheidung: zwei neue Schichten.** `config` als Blatt ohne eigene Abhängigkeiten, `service` als Orchestrierung darüber. Die vollständige Richtungstabelle steht in `docs/plan.md`.
+
+Drei Punkte, die dabei bewusst so und nicht anders entschieden sind:
+
+- **`scanner`, `image` und `processing` bleiben frei von `config`.** Naheliegend wäre, die neuen `@ConfigurationProperties` überall direkt zu injizieren. Das würde den Kern aber an Spring binden: Die Klassen sind heute ohne Kontext konstruierbar und damit als reine Unit-Tests prüfbar. Sie bekommen ihre Werte weiter über Konstruktor-Parameter mit Defaults (Muster `PageSettings`); das Umsetzen von Properties auf diese Parameter ist Aufgabe der Kompositionswurzel. Dass die drei Pakete Blätter sind, ist damit eine vom Wächter geprüfte Regel und keine Absichtserklärung.
+- **`cli` darf `service` sehen, aber weiterhin nicht `output`.** Der Befehl `run` startet den Dienst, deshalb braucht die CLI Zugriff auf `service`. Der Weg zur Ausgabe führt aber weiter ausschließlich über `service` – die CLI soll kein PDF bauen und kein Modul ansprechen.
+- **Der Wächter bekommt erstmals auch eingehende Regeln.** Bisher prüfte er nur, worauf eine Schicht zugreifen darf. Eine Schicht, die niemand deklariert, wäre damit völlig ungeprüft geblieben. Mit `service` als oberster Nutzschicht kommt die Gegenrichtung dazu: Auf `service` darf nur `cli` zugreifen, nicht der Kern.
+
+## Logging: SLF4J mit Logback, Senken bleiben Lambdas
+
+Bis Meilenstein 2 gab es kein Logging-Framework – Ausgaben liefen über `println`/`System.err.println` in der Kompositionswurzel, Meldungen aus dem Kern über `warn: (String) -> Unit`-Lambdas. Für KL-02 (Zeile je Seite mit vier Messwerten) und DL-02 („nur beim Zustandswechsel loggen") reicht das nicht: Es fehlen Level, Zeitstempel und ein sauberer Zugriff im Test.
+
+**Entscheidung: SLF4J als Fassade, Logback als Implementierung.** Beide bringt `spring-boot-starter` bereits mit – die Entscheidung kostet **keine** neue Abhängigkeit und verletzt „Abhängigkeiten minimal" nicht. Logback schreibt per Default auf stdout, was KL-02 ohnehin verlangt (journald-freundlich). Im Test hängt sich ein `ListAppender` an den Logger, statt stdout abzufangen.
+
+**Was ausdrücklich bleibt:** Kommandos, Verarbeitungsschritte und der Scanner-Client loggen **nicht** selbst. Sie melden weiter über ihre `warn`-Senke nach oben; nur `service` und die Kompositionswurzel schreiben Log-Zeilen. Das ist kein Schönheitsprinzip: Der Kern bleibt dadurch ohne Logger-Attrappe testbar, und ein Aufrufer entscheidet, ob eine Meldung ein Log-Eintrag, eine CLI-Zeile oder später eine Web-UI-Benachrichtigung wird.
+
+Verworfen wurde `kotlin-logging`. Es ist bequemer, aber eine zusätzliche Abhängigkeit für syntaktischen Zucker über derselben Fassade.
+
+## Batch-Übergabe: eine Senke statt einer vorgezogenen Outbox
+
+DL-04 verlangt, dass ein geschlossener Batch „an die Outbox" geht. Die Outbox ist aber AU-04 und gehört zu Meilenstein 4 – in Meilenstein 3 gibt es sie noch nicht.
+
+**Entscheidung: Der Batch übergibt an eine Senke vom Typ `(ScannedDocument) -> Unit`.** In Meilenstein 3 schreibt diese Senke das PDF in ein Verzeichnis. In Meilenstein 4 wird die Outbox eingehängt – **ohne eine Zeile am Batch zu ändern**.
+
+Die beiden Alternativen waren schlechter:
+
+- **Die Outbox in Meilenstein 3 vorziehen** hieße, AU-04 (Persistenz, Retry mit Backoff, Neustart-Festigkeit) zu bauen, bevor es überhaupt ein Modul gibt, an das zugestellt werden könnte. Das verschiebt Arbeit, ohne sie zu verkleinern, und macht den Meilenstein unscharf.
+- **Eine eigene Schnittstelle mit einer Wegwerf-Implementierung** wäre mehr Zeremonie für dasselbe Ergebnis. Das Projekt verwendet das Lambda-Muster bereits an derselben Stelle im Code (`warn: (String) -> Unit`); eine zweite Konvention für denselben Zweck wäre unnötig.
+
+Nebeneffekt: Damit ist AU-02 („neue Module lassen sich ergänzen, ohne den Kern zu ändern") an einer echten Stelle belegt, statt nur behauptet zu werden.
+
+## `scan` liefert die effektive Auflösung mit (SC-08)
+
+`ScannerClient.scan(dpi)` gab bisher nur die JPEG-Bytes zurück. Fällt der Firmware-Check nach SC-07 aus – Gerät kann kein 600 dpi –, stuft der Client still auf 300 zurück und meldet das nur als Warnung an die `warn`-Senke. Der Aufrufer bekommt die tatsächlich verwendete Auflösung nicht.
+
+Bis Meilenstein 2 war das folgenlos: Die DPI landete nur im Dateinamen. Mit SV-05 (Seitengröße im PDF = Pixel ÷ DPI) wird sie zu einer **maßgeblichen Größe**. Ein Scan, der mit 600 angefordert und mit 300 geliefert wird, ergäbe eine PDF-Seite in halber Kantenlänge – ein Fehler, den niemand im Log sucht, weil das Dokument ansonsten unauffällig aussieht.
+
+**Entscheidung: `scan` liefert Bytes und effektive Auflösung gemeinsam zurück.** Damit ist die Zahl, die die Seitengröße bestimmt, dieselbe, die das Gerät tatsächlich benutzt hat. Die Warnung bleibt zusätzlich bestehen – sie erklärt dem Menschen, warum die Auflösung abweicht.
+
+Das ist eine Änderung an bestehendem Code aus Meilenstein 1 und geschieht deshalb früh in Meilenstein 3, bevor PDF-Erzeugung und Dienst-Loop darauf aufbauen.
 
 ## Spike-Ergebnisse (Zusammenfassung)
 
