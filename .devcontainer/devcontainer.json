@@ -3,17 +3,17 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "workspaceFolder": "/workspaces/UnboundAir",
+  // Derived from the folder name instead of hardcoded, so the repository
+  // works from a git worktree as well: the CLI bind-mounts the workspace at
+  // /workspaces/<folder name>, and a fixed value would miss that target for
+  // every folder not named "UnboundAir".
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 
   // Keep the Gradle cache across container rebuilds. Without this every
   // rebuild downloads the full dependency set again.
   "mounts": [
     "source=unboundair-gradle-cache,target=/home/ubuntu/.gradle,type=volume"
   ],
-
-  // A named volume is created owned by root, which would shadow the
-  // directory the Dockerfile prepared. Hand it back to the ubuntu user.
-  "postCreateCommand": "sudo chown ubuntu:ubuntu /home/ubuntu/.gradle",
 
   // DC-01 acceptance criterion: both have to answer inside the container.
   "postAttachCommand": "java -version && jpegtran -version",

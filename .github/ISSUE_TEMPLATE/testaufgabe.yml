@@ -1,20 +1,20 @@
-name: Testaufgabe
-description: Eine Testaufgabe mit fester Checkliste (KI-Lauf: genau eine Datei; Mensch: eine Datei-Liste).
+name: Test task
+description: A test task with a fixed checklist (AI run: exactly one file; human: a file list).
 title: "test: "
 labels: []
 body:
   - type: textarea
     id: requirements
     attributes:
-      label: Anforderungs-ID(s)
-      description: "z. B. SV-01, SC-03 – die umgesetzten IDs aus docs/plan.md"
+      label: Requirement ID(s)
+      description: "e.g. SV-01, SC-03 – the implemented IDs from docs/plan.md"
     validations:
       required: true
   - type: dropdown
     id: layer
     attributes:
-      label: Test-Schicht
-      description: Wird zusätzlich als Label gesetzt.
+      label: Test layer
+      description: Also set as a label.
       options:
         - unit
         - property
@@ -24,38 +24,39 @@ body:
         - e2e
         - golden-master
         - mutation
+        - guard
     validations:
       required: true
   - type: textarea
     id: files
     attributes:
-      label: Datei bzw. Datei-Liste
-      description: "KI-Lauf: genau eine Datei. Mensch: eine Liste der betroffenen Dateien."
+      label: File or file list
+      description: "AI run: exactly one file. Human: a list of the affected files."
     validations:
       required: true
   - type: textarea
     id: criterion
     attributes:
-      label: Abnahmekriterium
-      description: Woran die Abnahme festgemacht wird (prüfbar).
+      label: Acceptance criterion
+      description: What the acceptance is based on (verifiable).
     validations:
       required: true
   - type: checkboxes
     id: checklist
     attributes:
-      label: Test-Checkliste
+      label: Test checklist
       options:
-        - label: Anforderungs-ID(s) referenziert
+        - label: Requirement ID(s) referenced
           required: false
-        - label: Test-Schicht(en) als Label gesetzt
+        - label: Test layer(s) set as label
           required: false
-        - label: genau eine Datei (KI-Lauf) bzw. Datei-Liste (Mensch); Abnahmekriterium benannt
+        - label: exactly one file (AI run) or file list (human); acceptance criterion named
           required: false
-        - label: Test läuft im Dev Container grün (Commit-SHA verlinkt)
+        - label: Test runs green in the dev container (commit SHA linked)
           required: false
-        - label: Standard eingehalten (AssertJ, Backtick-Name mit Anforderungs-ID)
+        - label: Standard followed (AssertJ, backtick name with requirement ID)
           required: false
-        - label: Mutation-Lauf (nur Kernpaket) dokumentiert
+        - label: Mutation run (core packages only) documented
           required: false
-        - label: kein Verstoß gegen DC-03 (offline)
+        - label: no DC-03 violation (offline)
           required: false

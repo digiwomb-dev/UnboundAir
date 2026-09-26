@@ -189,3 +189,13 @@ Zwei getrennte Probleme treffen hier zusammen:
 **Womit zu rechnen ist:** Solange die Differenz besteht, kann der Linter Syntax nicht verstehen, die erst nach Kotlin 2.2 hinzugekommen ist. Für die hier verwendeten Sprachmittel ist das unkritisch; fällt es doch auf, äußert es sich als Parse-Fehler in einer bestimmten Datei.
 
 **Klärt sich,** sobald ktlint 2.x stabil ist und die Gradle-Plugins dessen neue Koordinaten unterstützen. Dann ist zu prüfen, ob der Umweg über Spotless noch nötig ist. Dieser Abstand tritt bei jedem Kotlin-Update erneut auf und ist kein einmaliges Problem.
+
+## OF-12 Git-Befehle im Dev Container aus einem Worktree
+
+**Worum es geht:** Das Repository lässt sich aus einem Git-Worktree heraus im Dev Container bauen und testen. Git-Befehle funktionieren darin aber nur im normalen Klon, nicht im Worktree.
+
+**Warum:** Ein Worktree enthält kein `.git`-Verzeichnis, sondern nur eine Datei, die auf das gemeinsame Git-Verzeichnis des Hauptklons zeigt. Das liegt außerhalb des eingehängten Ordners und ist im Container deshalb nicht erreichbar.
+
+**Wie damit umgegangen wird:** Der Container ist zum Bauen und Testen da – der Gradle-Build braucht kein Git. Git-Befehle laufen daneben, nicht darin.
+
+**Klärt sich,** sobald Git 2.48 oder neuer überall verfügbar ist, wo der Dev Container gebaut wird. Dann lassen sich Worktrees mit relativen Pfaden anlegen (`git worktree add --relative-paths`), und die `devcontainer`-CLI kann das gemeinsame Git-Verzeichnis mitmounten (`--mount-git-worktree-common-dir`). Aktuell scheitert das an den ausgelieferten Git-Versionen: Debian Trixie liefert 2.47, Ubuntu Noble 2.43.

@@ -1,7 +1,7 @@
 ---
 description: Uses Devstral Small 2 2512 for a third, independent local implementation or test attempt after two local attempts failed.
 mode: subagent
-model: lmstudio/mistralai_devstral-small-2-2512
+model: lmstudio/mistralai/devstral-small-2-2512
 temperature: 0.1
 ---
 

@@ -4,7 +4,7 @@ Macht aus einem Mustek iScan Air (S400W) einen „Einlegen und fertig"-Scanner: 
 
 Kein Knopfdruck, keine Hersteller-Software, keine Windows-Anwendung. Kotlin und Spring Boot, Betrieb als Container.
 
-> **Im Aufbau – Meilenstein 2 von 5.** Aus Meilenstein 1 stehen Gradle-Projekt, Scanner-Client, Fake-Scanner und die Befehle `status` und `scan` (getestet gegen den Fake-Scanner); Meilenstein 2 ergänzt verlustfreien Zuschnitt und Graustufen. Der aktuelle Stand steht im [GitHub-Milestone 2](https://github.com/digiwomb-dev/UnboundAir/milestones/2) bzw. in den [Issues](https://github.com/digiwomb-dev/UnboundAir/issues).
+> **Im Aufbau – Meilenstein 2 von 5, Zuschnitt und Graustufen stehen.** Aus Meilenstein 1 stehen Gradle-Projekt, Scanner-Client, Fake-Scanner und die Befehle `status` und `scan`; Meilenstein 2 hat verlustfreien Zuschnitt und Graustufen ergänzt – offen sind dort noch die Befehle `crop` und `scan --out`. Dazwischen lag der Meilenstein [`top tier testing`](https://github.com/digiwomb-dev/UnboundAir/milestone/7), der die Testbasis vertieft hat: Property-, Golden-Master-, Contract- und Wächter-Tests plus einen Mutationslauf über die Kern-Pakete. Der aktuelle Stand steht in den [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues).
 
 ## Was es können soll
 
@@ -24,10 +24,12 @@ Die Doku ist auf Deutsch. Je nachdem, was du vorhast:
 | wissen, was gebaut wird und warum | [`docs/plan.md`](docs/plan.md) – Auftrag, feste Entscheidungen, alle Anforderungen mit IDs und Abnahmekriterien |
 | den aktuellen Stand sehen | [GitHub-Issues](https://github.com/digiwomb-dev/UnboundAir/issues) und [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) – offene Aufgaben, was in Arbeit und was erledigt ist |
 | selbst bauen und testen | [`docs/entwicklung.md`](docs/entwicklung.md) – Dev Container, Build, Testlauf |
+| wissen, wie getestet wird | [`docs/teststrategie.md`](docs/teststrategie.md) – die acht Testschichten, die Werkzeuge je Schicht und die Gründe dafür |
+| wissen, warum etwas so entschieden wurde | [`docs/entscheidungen.md`](docs/entscheidungen.md) – Begründungen zu den festen Entscheidungen, inklusive der gemessenen Zahlen |
 | wissen, was am Gerät noch unklar ist | [`docs/offene-fragen.md`](docs/offene-fragen.md) – offene Punkte mit Status, Herkunft und dem Umgang damit im Code |
 | am Projekt mitarbeiten | [`AGENTS.md`](AGENTS.md) – Arbeitsweise, Leitplanken, Regeln |
 
-Weitere Dateien entstehen später: `protokoll.md` und `hardware.md` (Gerät und Protokoll), `betrieb.md` (Container-Betrieb), `ausgabe-module.md` (Modul-Schnittstelle) und `entscheidungen.md` (Begründungen). Sie sind in `plan.md` als Anforderungen DO-01 bis DO-06 beschrieben und gehören zu Meilenstein 5.
+Weitere Dateien entstehen später: `protokoll.md` und `hardware.md` (Gerät und Protokoll), `betrieb.md` (Container-Betrieb) und `ausgabe-module.md` (Modul-Schnittstelle). Sie sind in `plan.md` als Anforderungen DO-01 bis DO-05 beschrieben und gehören zu Meilenstein 5.
 
 ## Warum es das gibt
 

@@ -3,10 +3,7 @@ package dev.digiwomb.unboundair.cli
 import dev.digiwomb.unboundair.UnboundAirApplication
 import dev.digiwomb.unboundair.scanner.FakeScanner
 import dev.digiwomb.unboundair.scanner.ScannerClient
-import org.junit.jupiter.api.Assertions.assertArrayEquals
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.springframework.boot.SpringApplication
@@ -17,17 +14,17 @@ import java.nio.file.Path
 import java.time.LocalDateTime
 
 /**
- * Tests for the `status` and `scan` commands against the [FakeScanner].
+ * Tests for the `status` (BE-01) and `scan` (BE-02) commands against the [FakeScanner].
  *
  * The first four tests exercise [StatusCommand] and [ScanCommand] directly,
  * so the command output and written bytes are easy to assert. The last test
  * boots the whole Spring application without a web environment and runs a
  * command end to end, proving that it starts, runs, and terminates on its
- * own (T1.9).
+ * own (BE-01).
  */
 class CommandTest {
     @Test
-    fun `status reports the scanner status and firmware version`() {
+    fun `BE-01 status reports the scanner status and firmware version`() {
         val fake = FakeScanner()
         fake.statusWord = "nopaper"
         fake.version = "NB0a.032"
@@ -35,16 +32,22 @@ class CommandTest {
         try {
             val output = StatusCommand(ScannerClient("127.0.0.1", fake.port)).run()
 
-            assertTrue(output.contains("nopaper"), "the status word must appear in the output")
-            assertTrue(output.contains("NB0a.032"), "the firmware version must appear in the output")
-            assertEquals(2, fake.connectionCount, "status must open one connection for the status and one for the version")
+            assertThat(output)
+                .`as`("the status word must appear in the output")
+                .contains("nopaper")
+            assertThat(output)
+                .`as`("the firmware version must appear in the output")
+                .contains("NB0a.032")
+            assertThat(fake.connectionCount)
+                .`as`("status must open one connection for the status and one for the version")
+                .isEqualTo(2)
         } finally {
             fake.stop()
         }
     }
 
     @Test
-    fun `scan writes the raw JPEG byte-identical`(
+    fun `BE-02 scan writes the raw JPEG byte-identical`(
         @TempDir dir: Path,
     ) {
         val fake = FakeScanner()
@@ -54,16 +57,22 @@ class CommandTest {
             val out = dir.resolve("page.jpg")
             val result = ScanCommand(ScannerClient("127.0.0.1", fake.port)).run(300, out)
 
-            assertArrayEquals(fake.payload, Files.readAllBytes(result.path), "the raw JPEG must be written unchanged")
-            assertEquals(out, result.path, "the result must name the requested file")
-            assertEquals(fake.payload.size, result.size, "the result must report the byte count")
+            assertThat(Files.readAllBytes(result.path))
+                .`as`("the raw JPEG must be written unchanged")
+                .isEqualTo(fake.payload)
+            assertThat(result.path)
+                .`as`("the result must name the requested file")
+                .isEqualTo(out)
+            assertThat(result.size)
+                .`as`("the result must report the byte count")
+                .isEqualTo(fake.payload.size)
         } finally {
             fake.stop()
         }
     }
 
     @Test
-    fun `scan requests 600 dpi when the firmware allows it`(
+    fun `BE-02 scan requests 600 dpi when the firmware allows it`(
         @TempDir dir: Path,
     ) {
         val fake = FakeScanner()
@@ -72,23 +81,27 @@ class CommandTest {
         try {
             ScanCommand(ScannerClient("127.0.0.1", fake.port)).run(600, dir.resolve("page.jpg"))
 
-            assertTrue(fake.receivedCommands.contains("dpi600"), "a capable firmware must receive the 600 dpi command")
-            assertFalse(fake.receivedCommands.contains("dpi300"), "no 300 dpi fallback for a capable firmware")
+            assertThat(fake.receivedCommands)
+                .`as`("a capable firmware must receive the 600 dpi command")
+                .contains("dpi600")
+            assertThat(fake.receivedCommands)
+                .`as`("no 300 dpi fallback for a capable firmware")
+                .doesNotContain("dpi300")
         } finally {
             fake.stop()
         }
     }
 
     @Test
-    fun `the default file name follows the reference format`() {
+    fun `BE-02 the default file name follows the reference format`() {
         val now = LocalDateTime.of(2026, 9, 22, 14, 35, 0)
 
-        assertEquals("iscan_20260922-143500_300dpi.jpg", ScanCommand.defaultFileName(300, now))
-        assertEquals("iscan_20260922-143500_600dpi.jpg", ScanCommand.defaultFileName(600, now))
+        assertThat(ScanCommand.defaultFileName(300, now)).isEqualTo("iscan_20260922-143500_300dpi.jpg")
+        assertThat(ScanCommand.defaultFileName(600, now)).isEqualTo("iscan_20260922-143500_600dpi.jpg")
     }
 
     @Test
-    fun `the application boots, runs a command, and terminates without a web server`() {
+    fun `BE-01 the application boots, runs a command, and terminates without a web server`() {
         val fake = FakeScanner()
         fake.statusWord = "nopaper"
         fake.start()
@@ -99,7 +112,9 @@ class CommandTest {
                     .run("status", "--host", "127.0.0.1", "--port", fake.port.toString())
 
             try {
-                assertEquals(0, SpringApplication.exit(context), "a successful command must exit with code 0")
+                assertThat(SpringApplication.exit(context))
+                    .`as`("a successful command must exit with code 0")
+                    .isEqualTo(0)
             } finally {
                 context.close()
             }

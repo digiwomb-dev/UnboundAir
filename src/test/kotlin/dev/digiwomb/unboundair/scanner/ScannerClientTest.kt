@@ -1,10 +1,8 @@
 package dev.digiwomb.unboundair.scanner
 
-import org.junit.jupiter.api.Assertions.assertArrayEquals
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 /**
@@ -32,10 +30,14 @@ class ScannerClientTest {
         try {
             val bytes = clientFor(fake).scan(300)
 
-            assertArrayEquals(fake.payload, bytes, "the scanned page must arrive byte-identical")
+            assertThat(bytes)
+                .`as`("the scanned page must arrive byte-identical")
+                .isEqualTo(fake.payload)
 
             val expectedCommands = listOf("status", "version", "dpi300", "scan", "jpegsize", "jpegdata")
-            assertEquals(expectedCommands, fake.receivedCommands, "the whole flow must arrive in this order")
+            assertThat(fake.receivedCommands)
+                .`as`("the whole flow must arrive in this order")
+                .isEqualTo(expectedCommands)
         } finally {
             fake.stop()
         }
@@ -49,10 +51,14 @@ class ScannerClientTest {
             val client = clientFor(fake)
 
             client.queryStatus()
-            assertEquals(1, fake.connectionCount, "one status query must open exactly one connection")
+            assertThat(fake.connectionCount)
+                .`as`("one status query must open exactly one connection")
+                .isEqualTo(1)
 
             client.scan(300)
-            assertEquals(2, fake.connectionCount, "a second operation must open exactly one more connection")
+            assertThat(fake.connectionCount)
+                .`as`("a second operation must open exactly one more connection")
+                .isEqualTo(2)
         } finally {
             fake.stop()
         }
@@ -66,9 +72,8 @@ class ScannerClientTest {
         hangingFake.start()
         try {
             val client = clientFor(hangingFake)
-            assertThrows(ScannerTimeoutException::class.java) {
-                client.scan(300)
-            }
+            assertThatThrownBy { client.scan(300) }
+                .isInstanceOf(ScannerTimeoutException::class.java)
         } finally {
             hangingFake.stop()
         }
@@ -85,7 +90,9 @@ class ScannerClientTest {
             val client = clientFor(fake)
             for (word in listOf("scanready", "nopaper", "devbusy", "battlow")) {
                 fake.statusWord = word
-                assertEquals(word, client.queryStatus(), "the padded answer must be recognized as '$word'")
+                assertThat(client.queryStatus())
+                    .`as`("the padded answer must be recognized as '$word'")
+                    .isEqualTo(word)
             }
         } finally {
             fake.stop()
@@ -105,89 +112,105 @@ class ScannerClientTest {
 
             // A byte-identical 1234-byte payload is the proof that the client assembled
             // the split size answer and parsed the size from it.
-            assertEquals(fake.payload.size, bytes.size, "the size parsed from jpegsize must match the payload")
-            assertArrayEquals(fake.payload, bytes, "the payload must arrive untouched")
+            assertThat(bytes.size)
+                .`as`("the size parsed from jpegsize must match the payload")
+                .isEqualTo(fake.payload.size)
+            assertThat(bytes)
+                .`as`("the payload must arrive untouched")
+                .isEqualTo(fake.payload)
         } finally {
             fake.stop()
         }
     }
 
-    @Test
-    fun `SC-05 every scanner failure raises its own exception`() {
-        // ScannerOfflineException: a stopped scanner refuses the connection.
-        val offlineFake = FakeScanner()
-        offlineFake.start()
-        try {
-            offlineFake.stop()
-            val client = clientFor(offlineFake)
-            assertThrows(ScannerOfflineException::class.java) {
-                client.queryStatus()
+    /**
+     * Every scanner failure raises its own exception (SC-05).
+     *
+     * The `ScannerTimeoutException` case is not repeated here: it is asserted in the
+     * SC-02 test, where a hanging scanner makes the client's read time out after
+     * 10 seconds, and this class pays for that wait exactly once.
+     */
+    @Nested
+    inner class ScannerFailures {
+        @Test
+        fun `SC-05 offline is mapped to ScannerOfflineException`() {
+            val fake = FakeScanner()
+            fake.start()
+            try {
+                fake.stop()
+                val client = clientFor(fake)
+                assertThatThrownBy { client.queryStatus() }
+                    .isInstanceOf(ScannerOfflineException::class.java)
+            } finally {
+                fake.stop() // idempotent
             }
-        } finally {
-            offlineFake.stop() // idempotent
         }
 
-        // ScannerBusyException: the scanner answers devbusy.
-        val busyFake = FakeScanner()
-        busyFake.statusWord = "devbusy"
-        busyFake.start()
-        try {
-            val client = clientFor(busyFake)
-            assertThrows(ScannerBusyException::class.java) {
-                client.scan(300)
+        @Test
+        fun `SC-05 devbusy is mapped to ScannerBusyException`() {
+            val fake = FakeScanner()
+            fake.statusWord = "devbusy"
+            fake.start()
+            try {
+                val client = clientFor(fake)
+                assertThatThrownBy { client.scan(300) }
+                    .isInstanceOf(ScannerBusyException::class.java)
+            } finally {
+                fake.stop()
             }
-        } finally {
-            busyFake.stop()
         }
 
-        // ScannerNoPaperException: the scanner answers nopaper.
-        val noPaperFake = FakeScanner()
-        noPaperFake.statusWord = "nopaper"
-        noPaperFake.start()
-        try {
-            val client = clientFor(noPaperFake)
-            assertThrows(ScannerNoPaperException::class.java) {
-                client.scan(300)
+        @Test
+        fun `SC-05 nopaper is mapped to ScannerNoPaperException`() {
+            val fake = FakeScanner()
+            fake.statusWord = "nopaper"
+            fake.start()
+            try {
+                val client = clientFor(fake)
+                assertThatThrownBy { client.scan(300) }
+                    .isInstanceOf(ScannerNoPaperException::class.java)
+            } finally {
+                fake.stop()
             }
-        } finally {
-            noPaperFake.stop()
         }
 
-        // ScannerBatteryLowException: the scanner answers battlow.
-        val batteryFake = FakeScanner()
-        batteryFake.statusWord = "battlow"
-        batteryFake.start()
-        try {
-            val client = clientFor(batteryFake)
-            assertThrows(ScannerBatteryLowException::class.java) {
-                client.scan(300)
+        @Test
+        fun `SC-05 battlow is mapped to ScannerBatteryLowException`() {
+            val fake = FakeScanner()
+            fake.statusWord = "battlow"
+            fake.start()
+            try {
+                val client = clientFor(fake)
+                assertThatThrownBy { client.scan(300) }
+                    .isInstanceOf(ScannerBatteryLowException::class.java)
+            } finally {
+                fake.stop()
             }
-        } finally {
-            batteryFake.stop()
         }
 
-        // ScannerProtocolException: an unknown status word is a protocol violation.
-        val protocolFake = FakeScanner()
-        protocolFake.statusWord = "garbage"
-        protocolFake.start()
-        try {
-            val client = clientFor(protocolFake)
-            assertThrows(ScannerProtocolException::class.java) {
-                client.queryStatus()
+        @Test
+        fun `SC-05 an unknown status word is mapped to ScannerProtocolException`() {
+            val fake = FakeScanner()
+            fake.statusWord = "garbage"
+            fake.start()
+            try {
+                val client = clientFor(fake)
+                assertThatThrownBy { client.queryStatus() }
+                    .isInstanceOf(ScannerProtocolException::class.java)
+            } finally {
+                fake.stop()
             }
-        } finally {
-            protocolFake.stop()
         }
-
-        // ScannerTimeoutException: asserted in the SC-02 test, where a hanging scanner
-        // makes the client's read time out after 10 seconds. Deliberately not repeated
-        // here: this class pays for that wait exactly once.
     }
 
     @Test
     fun `SC-06 host and port are configurable with the shipped defaults`() {
-        assertEquals("192.168.18.33", ScannerClient.DEFAULT_HOST, "shipped device address")
-        assertEquals(23, ScannerClient.DEFAULT_PORT, "shipped device port")
+        assertThat(ScannerClient.DEFAULT_HOST)
+            .`as`("shipped device address")
+            .isEqualTo("192.168.18.33")
+        assertThat(ScannerClient.DEFAULT_PORT)
+            .`as`("shipped device port")
+            .isEqualTo(23)
 
         val fake = FakeScanner()
         fake.start()
@@ -195,7 +218,7 @@ class ScannerClientTest {
             // host and port are plain constructor parameters, so pointing the client at
             // the fake needs no code change, only the free port the fake bound itself to.
             val client = ScannerClient("127.0.0.1", fake.port)
-            assertEquals("scanready", client.queryStatus())
+            assertThat(client.queryStatus()).isEqualTo("scanready")
         } finally {
             fake.stop()
         }
@@ -213,10 +236,18 @@ class ScannerClientTest {
             val client = ScannerClient("127.0.0.1", capableFake.port) { warnings += it }
             val bytes = client.scan(600)
 
-            assertArrayEquals(capableFake.payload, bytes, "the scan must succeed")
-            assertTrue(capableFake.receivedCommands.contains("dpi600"), "a capable firmware allows 600 dpi")
-            assertFalse(capableFake.receivedCommands.contains("dpi300"), "no 300 dpi fallback when 600 is granted")
-            assertTrue(warnings.isEmpty(), "no warning for a capable firmware")
+            assertThat(bytes)
+                .`as`("the scan must succeed")
+                .isEqualTo(capableFake.payload)
+            assertThat(capableFake.receivedCommands)
+                .`as`("a capable firmware allows 600 dpi")
+                .contains("dpi600")
+            assertThat(capableFake.receivedCommands)
+                .`as`("no 300 dpi fallback when 600 is granted")
+                .doesNotContain("dpi300")
+            assertThat(warnings)
+                .`as`("no warning for a capable firmware")
+                .isEmpty()
         } finally {
             capableFake.stop()
         }
@@ -229,11 +260,21 @@ class ScannerClientTest {
             val client = ScannerClient("127.0.0.1", outdatedFake.port) { warnings += it }
             val bytes = client.scan(600)
 
-            assertArrayEquals(outdatedFake.payload, bytes, "the scan must succeed at 300 dpi")
-            assertTrue(outdatedFake.receivedCommands.contains("dpi300"), "an old firmware falls back to 300 dpi")
-            assertFalse(outdatedFake.receivedCommands.contains("dpi600"), "600 dpi must not be sent for old firmware")
-            assertTrue(warnings.isNotEmpty(), "the fallback must warn")
-            assertTrue(warnings.any { it.contains("600 dpi") }, "the warning must mention the 600 dpi fallback")
+            assertThat(bytes)
+                .`as`("the scan must succeed at 300 dpi")
+                .isEqualTo(outdatedFake.payload)
+            assertThat(outdatedFake.receivedCommands)
+                .`as`("an old firmware falls back to 300 dpi")
+                .contains("dpi300")
+            assertThat(outdatedFake.receivedCommands)
+                .`as`("600 dpi must not be sent for old firmware")
+                .doesNotContain("dpi600")
+            assertThat(warnings)
+                .`as`("the fallback must warn")
+                .isNotEmpty()
+            assertThat(warnings)
+                .`as`("the warning must mention the 600 dpi fallback")
+                .anySatisfy { assertThat(it).contains("600 dpi") }
         } finally {
             outdatedFake.stop()
         }

@@ -1,7 +1,7 @@
 ---
 description: Reserved placeholder for a manually approved cloud fallback after three different local models failed.
 mode: subagent
-disable: true
+model: cpa-gui/claude-sonnet-5
 ---
 
 This agent is intentionally disabled until a cloud provider and model are chosen.

@@ -40,6 +40,19 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
 
   Die Obergrenze setzt jeweils der älteste Baustein der Kette: Gradle begrenzt Java, Spring Boot begrenzt Kotlin. Beim Anheben einer Version diese Tabelle mitpflegen.
 
+  **Test-Abhängigkeiten** (alle `testImplementation`; Auswahl begründet in `docs/entscheidungen.md`, Konzept in `docs/teststrategie.md`):
+
+  | Baustein | Version | Anmerkung |
+  |---|---|---|
+  | kotest-property | 6.2.5 | Property-Tests. jqwik entfällt wegen der Anti-AI-Klausel ab 1.10. |
+  | WireMock (standalone) | 3.13.2 | Contract-Tests gegen paperless; 4.x ist noch Beta. |
+  | ArchUnit (`archunit-junit6`) | 1.5.0 | Architektur-Wächter, JUnit-6-Unterstützung seit 1.5.0. |
+  | gradle-pitest-plugin / pitest | 1.19.0 / 1.25.5 | Mutation, eigener Task, nie Teil von `build`. |
+  | pitest-junit5-plugin | 1.2.2 | PIT-Anbindung an JUnit 5/6. |
+  | Awaitility | (verwaltet) | über `spring-boot-starter-test` (4.3.0). |
+  | AssertJ | (verwaltet) | über `spring-boot-starter-test` (3.27.7), Standard-Assertions. |
+  | json-schema-validator (networknt) | 3.0.7 | Contract-JSON-Schema, wird mit der ersten Contract-Testdatei gepinnt. |
+
   **Warum nicht Java 27:** Gradle 9.7.1 gibt in seiner Kompatibilitätsmatrix ausdrücklich an, JVM 27 und neuer nicht auszuführen. Sobald Gradle nachzieht, ist Java 27 der nächste Schritt – der Grundsatz bleibt „neueste stabile Version".
 
   **Kotlin wird bewusst hochgezogen:** Spring Boot 4.1.1 verwaltet Kotlin 2.3.21, und dessen Compiler kennt als höchstes Bytecode-Ziel `JVM_25` – mit Java 26 lässt sich damit nicht bauen. Kotlin 2.4.20 kennt `JVM_26`. Deshalb wird die von Spring Boot vorgegebene Kotlin-Version im Build überschrieben. Das ist die einzige Stelle, an der bewusst von Spring Boots verwalteten Versionen abgewichen wird; sie gehört mit Begründung nach `docs/entscheidungen.md` (DO-06). Falls daraus Probleme entstehen, ist der Rückfallweg Java 25 statt 26.
@@ -180,7 +193,7 @@ Unterbefehle der Anwendung (Umsetzung entscheidest du, z. B. Startskript `unboun
 
 Hinweis: Wie die Tests im Dev Container gestartet werden, hängt von der Umgebung ab, in der du arbeitest, und gehört nicht ins Repo. Kannst du sie nicht selbst im Dev Container starten: sag es mir – lass sie nicht stillschweigend woanders laufen.
 
-**Aktuelle Lage:** Der Dev Container läuft lokal – es gibt keinen Umweg mehr über einen anderen Rechner. Ein Wrapper außerhalb des Repos startet ihn, das Repo wird per `docker cp` hineingespiegelt, und `./gradlew build` läuft darin. Der Ablauf steht in `docs/entwicklung.md`.
+**Aktuelle Lage:** Der Dev Container läuft lokal – es gibt keinen Umweg mehr über einen anderen Rechner. `devcontainer up` startet ihn, der Arbeitsordner ist direkt eingehängt (Änderungen sind sofort beidseitig sichtbar), und `./gradlew build` läuft darin. Das funktioniert auch aus einem Git-Worktree heraus. Der Ablauf steht in `docs/entwicklung.md`.
 
 Eine Aufgabe gilt erst als abgenommen, wenn ihr Testergebnis im zugehörigen Issue dokumentiert ist (Test-Checkliste abgehakt, Lauf im Dev Container grün mit Commit-SHA). Aufgaben, die geschrieben, aber noch nicht ausgeführt wurden, gelten als „nicht verifiziert" und werden nicht abgehakt.
 
@@ -223,7 +236,7 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
 
 ## Arbeit wird in GitHub getrackt
 
-Der Fortschritt lebt nicht mehr in dieser Datei, sondern in GitHub: [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues). Jeder Meilenstein aus „Umfang von v1" ist ein Milestone, jede Aufgabe ein Issue – Impl+Test-Paare als Eltern-Issue (Typ `Task`) mit zwei Sub-Issues. Welche Anforderungen ein Meilenstein umsetzt, steht in seiner Milestone-Beschreibung.
+Der Fortschritt lebt nicht mehr in dieser Datei, sondern in GitHub: [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues). Jeder Meilenstein aus „Umfang von v1" ist ein Milestone, jede Aufgabe ein Issue – Impl+Test-Paare als Eltern-Issue (Typ `Task`) mit zwei Sub-Issues. Welche Anforderungen ein Meilenstein umsetzt, steht in seiner Milestone-Beschreibung. Labels, Milestones und die Issue-Vorlage sind auf Englisch – wie Code, Commits und PR-Titel; nur die Doku ist Deutsch.
 
 Der Fortschritt von Meilenstein 2 liegt ab jetzt im Milestone [`2`](https://github.com/digiwomb-dev/UnboundAir/milestones/2).
 
