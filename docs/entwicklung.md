@@ -2,7 +2,7 @@
 
 Wie man `UnboundAir` baut und testet. Gearbeitet wird ausschließlich im Dev Container – auf dem Rechner selbst muss außer einer Container-Runtime und dem Dev-Container-Tooling nichts installiert sein, insbesondere kein JDK und kein Gradle.
 
-> **Stand: Meilenstein 2, in Arbeit.** Aus Meilenstein 1 stehen Gradle-Projekt, Scanner-Client, Fake-Scanner und die Befehle `status` und `scan` (getestet gegen den Fake-Scanner); Meilenstein 2 ergänzt Zuschnitt und Graustufen. Den aktuellen Stand zeigen die [GitHub-Issues](https://github.com/digiwomb-dev/UnboundAir/issues) im [Milestone 2](https://github.com/digiwomb-dev/UnboundAir/milestones/2).
+> **Stand: Meilenstein 2, in Arbeit.** Aus Meilenstein 1 stehen Gradle-Projekt, Scanner-Client, Fake-Scanner und die Befehle `status` und `scan`; Meilenstein 2 hat Zuschnitt und Graustufen ergänzt, offen sind dort noch `crop` und `scan --out`. Der Meilenstein [`top tier testing`](https://github.com/digiwomb-dev/UnboundAir/milestone/7) hat dazwischen die Testbasis vertieft (Property, Golden Master, Contract, Wächter, Mutationslauf). Den aktuellen Stand zeigen die [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues).
 
 ## Voraussetzungen
 
@@ -78,6 +78,27 @@ Die Tests kommen ohne echte Geräte und ohne fremde Dienste aus: Der Scanner wir
 Eine Netzwerkverbindung braucht trotzdem, wer zum ersten Mal baut: Der Wrapper lädt die Gradle-Distribution, Gradle lädt die Abhängigkeiten. Beides landet im Cache und wird danach nicht mehr benötigt.
 
 **Der echte Scanner wird nie für Tests verwendet.** Er ist nur nach ausdrücklicher Freigabe und nur für Messläufe (`measure`) im Spiel.
+
+## Mutationstest (`pitest`)
+
+Zusätzlich zu den gewöhnlichen Tests gibt es einen Mutationslauf: Er verändert den Produktivcode an vielen Stellen minimal und prüft, ob die Tests das merken. Das deckt schwache Zusicherungen auf, die eine reine Zeilenabdeckung nicht zeigt. Die Schicht ist in `teststrategie.md` unter „Mutation" beschrieben.
+
+```bash
+./gradlew pitest          # Mutationslauf über die Kern-Pakete
+```
+
+Vier Dinge, die man vorher wissen sollte:
+
+- **Nicht Teil von `build`.** Der Task hängt bewusst nicht an `check` oder `build` – er läuft nur, wenn man ihn ausdrücklich aufruft. Ziel sind die Kern-Pakete `scanner`, `image` und `processing`.
+- **Er dauert.** Rund **23 Minuten**, weil die zeitgesteuerten Scanner-Tests für jede Mutation erneut laufen. Der Bericht landet in `build/reports/pitest/index.html`.
+- **Der erste Lauf braucht Netz.** Die `org.pitest`-Artefakte liegen nicht im normalen Abhängigkeits-Cache, weil sie nur dieser Task verwendet. `--offline` schlägt deshalb beim ersten Mal fehl. Das berührt DC-03 nicht: Die Anforderung gilt `./gradlew test`, und der bleibt offline.
+- **Er braucht Speicher.** Gradle-Daemon, Kotlin-Daemon und die PIT-Prozesse liegen gleichzeitig im RAM. Auf einem kleinen Container-Host kann der Gradle-Daemon dabei abstürzen („daemon disappeared"). Bricht ein Lauf ab, bleibt der PIT-Hauptprozess verwaist zurück und startet weiter Unterprozesse – er blockiert dann den nächsten Lauf. Vorher aufräumen:
+
+  ```bash
+  ./gradlew --stop && pkill -f MutationTestMinion; pkill -f pitest-command-line
+  ```
+
+Es gibt eine **Schwelle**: Fällt die Mutationsabdeckung unter den in `build.gradle.kts` gepinnten Wert, schlägt der Task fehl. Der Wert ist der zuletzt gemessene Stand und wirkt als Boden – er wird angehoben, wenn der Score steigt, und nicht stillschweigend gesenkt. Die aktuellen Zahlen je Paket stehen in `entscheidungen.md`.
 
 ## Gradle-Wrapper
 
