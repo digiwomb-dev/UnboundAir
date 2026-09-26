@@ -81,10 +81,12 @@ class ScannerTranscriptContractTest {
 
     /**
      * Test that a scan session with 300 dpi matches the golden transcript.
-     * This verifies SC-01: byte-exact protocol fidelity for the full scan flow.
+     * This verifies SC-01..SC-04: byte-exact protocol fidelity for the full scan flow,
+     * one connection per operation (SC-02), the padded answer format (SC-03), and the
+     * jpegsize answer structure (SC-04).
      */
     @Test
-    fun `SC-01 the scan session matches the golden transcript`() {
+    fun `SC-01 to SC-04 the scan session matches the golden transcript`() {
         val fake = FakeScanner() // Uses defaults: fillBytes=true, scanready status
         try {
             fake.start()
