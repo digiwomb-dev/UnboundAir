@@ -238,8 +238,6 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
 
 Der Fortschritt lebt nicht mehr in dieser Datei, sondern in GitHub: [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues). Jeder Meilenstein aus „Umfang von v1" ist ein Milestone, jede Aufgabe ein Issue – Impl+Test-Paare als Eltern-Issue (Typ `Task`) mit zwei Sub-Issues. Welche Anforderungen ein Meilenstein umsetzt, steht in seiner Milestone-Beschreibung. Labels, Milestones und die Issue-Vorlage sind auf Englisch – wie Code, Commits und PR-Titel; nur die Doku ist Deutsch.
 
-Der Fortschritt von Meilenstein 2 liegt ab jetzt im Milestone [`2`](https://github.com/digiwomb-dev/UnboundAir/milestones/2). Meilenstein 2 ist abgeschlossen (Squash-Merge PR #78): `crop`, `scan` mit verarbeiteter Seite, `--color-mode`/`--keep-raw`, Warnungsweiterleitung (SV-02) und die zugehörigen Tests (94 Tests grün).
-
 ## Offene Entscheidungen – nicht vorwegnehmen, fragen
 
 Hier stehen nur Punkte, die **eine Entscheidung** brauchen. Was sich dagegen nur **am Gerät klären** lässt, steht in `docs/offene-fragen.md` – dort ist die Abgrenzung erklärt. Zweistufige Punkte (erst messen, dann entscheiden) stehen in beiden Listen und verweisen aufeinander.

@@ -4,7 +4,7 @@ Macht aus einem Mustek iScan Air (S400W) einen „Einlegen und fertig"-Scanner: 
 
 Kein Knopfdruck, keine Hersteller-Software, keine Windows-Anwendung. Kotlin und Spring Boot, Betrieb als Container.
 
-> **Im Aufbau – Meilenstein 2 von 5, Zuschnitt und Graustufen stehen.** Aus Meilenstein 1 stehen Gradle-Projekt, Scanner-Client, Fake-Scanner und die Befehle `status` und `scan`; Meilenstein 2 hat verlustfreien Zuschnitt und Graustufen ergänzt und die Befehle `crop` sowie `scan --out` (mit `--color-mode` und `--keep-raw`) fertiggestellt. Dazwischen lag der Meilenstein [`top tier testing`](https://github.com/digiwomb-dev/UnboundAir/milestone/7), der die Testbasis vertieft hat: Property-, Golden-Master-, Contract- und Wächter-Tests plus einen Mutationslauf über die Kern-Pakete. Der aktuelle Stand steht in den [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues).
+> **Im Aufbau – v1 ist noch nicht fertig.** Welche Meilensteine erledigt sind und woran gerade gearbeitet wird, zeigen die [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues); dort steht der Stand aus erster Hand, statt hier zu veralten.
 
 ## Was es können soll
 

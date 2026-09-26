@@ -2,8 +2,6 @@
 
 Wie man `UnboundAir` baut und testet. Gearbeitet wird ausschließlich im Dev Container – auf dem Rechner selbst muss außer einer Container-Runtime und dem Dev-Container-Tooling nichts installiert sein, insbesondere kein JDK und kein Gradle.
 
-> **Stand: Meilenstein 2, in Arbeit.** Aus Meilenstein 1 stehen Gradle-Projekt, Scanner-Client, Fake-Scanner und die Befehle `status` und `scan`; Meilenstein 2 hat Zuschnitt und Graustufen ergänzt und die Befehle `crop` sowie `scan --out` (mit `--color-mode` und `--keep-raw`) fertiggestellt. Der Meilenstein [`top tier testing`](https://github.com/digiwomb-dev/UnboundAir/milestone/7) hat dazwischen die Testbasis vertieft (Property, Golden Master, Contract, Wächter, Mutationslauf). Den aktuellen Stand zeigen die [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues).
-
 ## Voraussetzungen
 
 - Eine Container-Runtime (z. B. Podman oder Docker)
