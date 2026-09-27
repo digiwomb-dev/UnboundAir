@@ -107,6 +107,12 @@ Golden-Master-Tests brauchen bytegleiche PDFs. PDF-Metadaten (insbesondere `Crea
 
 Damit entfällt die Alternative „festes CreationDate" (z. B. Epoche), die zwar einfach und stabil wäre, aber PDFs ohne sinnvolle Zeitangabe erzeugte. Ein rein struktureller Vergleich ohne Voll-Byte-Golden-Master würde die Aussagekraft des Golden Masters schwächen.
 
+**Nachtrag aus der Umsetzung (Meilenstein 3): die Clock allein genügt nicht.** Beim Bau von `PdfBuilder` zeigte sich, dass zwei Speichervorgänge desselben Dokuments sich auch bei gepinnter Clock um 32 Byte unterscheiden. Ursache ist die Trailer-Angabe `/ID`, die PDFBox aus der **aktuellen Zeit und einer Zufallszahl** bildet – unabhängig von `CreationDate`. Der Determinismus-Test schlug deshalb fehl, bevor überhaupt ein Golden File verglichen werden konnte.
+
+`PDDocument.setDocumentId` wird daher ebenfalls aus der injizierten Clock abgeleitet (`clock.millis()`). Damit ist die Ausgabe bei gepinnter Clock reproduzierbar, während die Produktion weiterhin je Dokument einen eigenen Wert bekommt, weil die Uhr weiterläuft.
+
+Der Punkt ist festgehalten, weil er die ursprüngliche Entscheidung ergänzt: „injizierbare Clock" reicht als Beschreibung nicht: **jede** Quelle von Zufall oder Echtzeit im Schreibpfad muss an die Clock gebunden sein, sonst ist ein Byte-Vergleich unmöglich. Zusätzlich ist deshalb `Producer` fest auf `UnboundAir` gesetzt, ohne Versionsnummer – sonst änderte jede Freigabe jedes Golden File, ohne dass sich inhaltlich etwas bewegt hätte.
+
 ## Paketschichten: eigene Schichten `config` und `service`
 
 Mit Meilenstein 3 kommen Dienst-Loop, Batch und PDF-Erzeugung dazu. Für keines davon gab es einen Platz: Der Wächter kannte `scanner`, `image`, `processing`, `output` und `cli`, wobei `cli` **nicht** auf `output` zugreifen darf. Eine Schleife, die scannt, verarbeitet und ein PDF baut, hätte in keine dieser Schichten gepasst, ohne eine Regel zu brechen oder eine Schicht zu ihrem Gegenteil zu machen.
