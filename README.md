@@ -24,6 +24,7 @@ Die Doku ist auf Deutsch. Je nachdem, was du vorhast:
 | wissen, was gebaut wird und warum | [`docs/plan.md`](docs/plan.md) – Auftrag, feste Entscheidungen, alle Anforderungen mit IDs und Abnahmekriterien |
 | den aktuellen Stand sehen | [GitHub-Issues](https://github.com/digiwomb-dev/UnboundAir/issues) und [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) – offene Aufgaben, was in Arbeit und was erledigt ist |
 | selbst bauen und testen | [`docs/entwicklung.md`](docs/entwicklung.md) – Dev Container, Build, Testlauf |
+| eine Einstellung nachschlagen | [`docs/konfiguration.md`](docs/konfiguration.md) – jede Einstellung mit Default, Umgebungsvariable und Bedeutung |
 | wissen, wie getestet wird | [`docs/teststrategie.md`](docs/teststrategie.md) – die acht Testschichten, die Werkzeuge je Schicht und die Gründe dafür |
 | wissen, warum etwas so entschieden wurde | [`docs/entscheidungen.md`](docs/entscheidungen.md) – Begründungen zu den festen Entscheidungen, inklusive der gemessenen Zahlen |
 | wissen, was am Gerät noch unklar ist | [`docs/offene-fragen.md`](docs/offene-fragen.md) – offene Punkte mit Status, Herkunft und dem Umgang damit im Code |
