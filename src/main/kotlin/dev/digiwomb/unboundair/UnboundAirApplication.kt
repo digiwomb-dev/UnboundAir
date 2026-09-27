@@ -14,6 +14,7 @@ import org.springframework.boot.SpringApplication
 import org.springframework.boot.WebApplicationType
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.builder.SpringApplicationBuilder
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan
 import java.nio.file.Path
 
 /**
@@ -23,8 +24,17 @@ import java.nio.file.Path
  * so starting it boots the Spring context, runs exactly one subcommand, and
  * the process then ends on its own instead of a servlet container keeping it
  * alive.
+ *
+ * [ConfigurationPropertiesScan] registers
+ * [dev.digiwomb.unboundair.config.UnboundAirProperties] as a bean (KL-01).
+ * Scanning is used rather than `@EnableConfigurationProperties` listing the
+ * class explicitly, because the settings class carries its own defaults and
+ * nothing else needs to be named at the registration site. Note that the
+ * annotation alone is what makes `@ConfigurationProperties` take effect: the
+ * annotation on the data class is inert without it.
  */
 @SpringBootApplication
+@ConfigurationPropertiesScan
 class UnboundAirApplication :
     ApplicationRunner,
     ExitCodeGenerator {
