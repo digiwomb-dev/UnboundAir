@@ -2,6 +2,7 @@ package dev.digiwomb.unboundair.scanner
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.time.Duration
 
 /**
  * Unit tests for [ScanResult] and the resolution it reports (SC-08).
@@ -108,10 +109,40 @@ class ScanResultTest {
      */
     @Test
     fun `SC-08 the description names the size instead of dumping the image`() {
-        val result = ScanResult(ByteArray(900_000), 300)
+        val result = ScanResult(ByteArray(900_000), 300, Duration.ofMillis(1200), Duration.ofMillis(800))
 
         assertThat(result.toString())
             .`as`("a failing test must stay readable")
-            .isEqualTo("ScanResult(bytes=900000, dpi=300)")
+            .isEqualTo("ScanResult(bytes=900000, dpi=300, scan=1200ms, transfer=800ms)")
+    }
+
+    /**
+     * KL-02 needs the scan and the transfer timed separately, and the split can
+     * only be made inside the client. The durations are therefore part of the
+     * result -- but they are measurements, not identity.
+     */
+    @Test
+    fun `KL-02 the result carries the scan and transfer durations`() {
+        val result = ScanResult(byteArrayOf(1), 300, Duration.ofMillis(1500), Duration.ofMillis(400))
+
+        assertThat(result.scanDuration)
+            .`as`("the time the device spent pulling the sheet through")
+            .isEqualTo(Duration.ofMillis(1500))
+        assertThat(result.transferDuration)
+            .`as`("the time the image spent on the wire")
+            .isEqualTo(Duration.ofMillis(400))
+    }
+
+    @Test
+    fun `SC-08 two results differing only in their durations are equal`() {
+        val fast = ScanResult(byteArrayOf(1, 2, 3), 300, Duration.ofMillis(100), Duration.ofMillis(50))
+        val slow = ScanResult(byteArrayOf(1, 2, 3), 300, Duration.ofSeconds(9), Duration.ofSeconds(4))
+
+        assertThat(fast)
+            .`as`(
+                "durations are measurements, not identity: the same page scanned twice is the same result, " +
+                    "and including them would make every comparison fail for a reason that does not matter",
+            ).isEqualTo(slow)
+        assertThat(fast.hashCode()).isEqualTo(slow.hashCode())
     }
 }

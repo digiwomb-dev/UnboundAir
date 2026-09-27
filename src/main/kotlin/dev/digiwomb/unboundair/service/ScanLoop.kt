@@ -1,7 +1,9 @@
 package dev.digiwomb.unboundair.service
 
+import dev.digiwomb.unboundair.processing.PageImage
 import dev.digiwomb.unboundair.processing.PageProcessor
 import dev.digiwomb.unboundair.processing.pageImage
+import dev.digiwomb.unboundair.scanner.ScanResult
 import dev.digiwomb.unboundair.scanner.ScannerClient
 import dev.digiwomb.unboundair.scanner.ScannerException
 import dev.digiwomb.unboundair.scanner.ScannerOfflineException
@@ -182,10 +184,12 @@ class ScanLoop(
             Files.write(raw, scan.bytes)
 
             val processed = processor.process(pageImage(raw), pageDir) { log.warn(it) }
-            batch.addPage(Files.readAllBytes(processed.file), scan.dpi)
+            val processedBytes = Files.readAllBytes(processed.file)
+            batch.addPage(processedBytes, scan.dpi)
 
             lastActivity = clock.instant()
             val number = pageCounter.incrementAndGet()
+            logPage(number, scan, processed, processedBytes.size)
             listener.onPageScanned(number, scan.bytes.size)
         } catch (e: ScannerException) {
             // DL-05: discard the page, keep the batch, carry on.
@@ -197,6 +201,41 @@ class ScanLoop(
         } finally {
             runCatching { deleteRecursively(pageDir) }
         }
+    }
+
+    /**
+     * Writes the per-page log line KL-02 demands (DL-03).
+     *
+     * KL-02 names exactly four values, and all four are here: scan duration,
+     * transfer duration, size, and the dimensions in mm **after** cropping.
+     * They are on one line rather than four, so a page is one entry in the
+     * journal and two pages cannot interleave into something unreadable.
+     *
+     * The size logged is that of the *processed* page, not of the raw scan:
+     * that is what ends up in the document, and comparing it with the raw size
+     * would be the only way to notice that cropping silently stopped working.
+     *
+     * The millimetres come from the page's own pixel count and the resolution
+     * the device actually used (SC-08), which is the same arithmetic SV-05
+     * applies to the PDF page. If the two ever disagree, the document is wrong.
+     */
+    private fun logPage(
+        number: Int,
+        scan: ScanResult,
+        processed: PageImage,
+        processedSize: Int,
+    ) {
+        val widthMm = processed.info.width.toDouble() / scan.dpi * MM_PER_INCH
+        val heightMm = processed.info.height.toDouble() / scan.dpi * MM_PER_INCH
+        log.info(
+            "page {} scanned in {} ms, transferred in {} ms, {} bytes, {} x {} mm",
+            number,
+            scan.scanDuration.toMillis(),
+            scan.transferDuration.toMillis(),
+            processedSize,
+            "%.1f".format(widthMm),
+            "%.1f".format(heightMm),
+        )
     }
 
     /**
@@ -244,5 +283,8 @@ class ScanLoop(
          * own: it quadruples both the transfer and the memory of a page (OF-06).
          */
         const val DEFAULT_DPI = 300
+
+        /** One inch is 25.4 mm; used to report a page size in millimetres (KL-02). */
+        const val MM_PER_INCH = 25.4
     }
 }
