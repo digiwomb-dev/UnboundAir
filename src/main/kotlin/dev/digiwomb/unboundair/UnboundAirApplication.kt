@@ -7,6 +7,8 @@ import dev.digiwomb.unboundair.processing.ColorMode
 import dev.digiwomb.unboundair.processing.PageSettings
 import dev.digiwomb.unboundair.scanner.ScannerClient
 import dev.digiwomb.unboundair.scanner.ScannerException
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.boot.ExitCodeGenerator
@@ -32,6 +34,23 @@ import java.nio.file.Path
  * nothing else needs to be named at the registration site. Note that the
  * annotation alone is what makes `@ConfigurationProperties` take effect: the
  * annotation on the data class is inert without it.
+ *
+ * **Which channel carries what.** The distinction is deliberate and survives the
+ * move to SLF4J (KL-02):
+ *
+ * - A command's **result** -- the scanner status, the path of a written file --
+ *   is the answer the caller asked for. It goes to stdout as plain text through
+ *   [println], so `unboundair status` can be piped into another program. Turning
+ *   these into log lines would prefix them with a level and a logger name and
+ *   break every such use.
+ * - **Diagnostics** -- warnings from the processing chain, failures, the usage
+ *   text -- go through the logger. These are the lines an operator reads in
+ *   `journalctl`, and they are what KL-02 is about.
+ *
+ * Commands and processing steps still never log by themselves. They report
+ * through their `warn: (String) -> Unit` sink, and this class decides that the
+ * sink means [Logger.warn]. That keeps the core testable without a logging
+ * framework and lets a later web UI route the same messages elsewhere.
  */
 @SpringBootApplication
 @ConfigurationPropertiesScan
@@ -51,10 +70,10 @@ class UnboundAirApplication :
         try {
             dispatch(parseCliArgs(args.sourceArgs))
         } catch (e: ScannerException) {
-            System.err.println(e.message)
+            log.error(e.message)
             commandExitCode = 1
         } catch (e: IllegalArgumentException) {
-            System.err.println(e.message)
+            log.error(e.message)
             commandExitCode = 1
         }
     }
@@ -62,7 +81,7 @@ class UnboundAirApplication :
     override fun getExitCode(): Int = commandExitCode
 
     private fun dispatch(cli: CliArgs) {
-        val client = ScannerClient(cli.host, cli.port) { warning -> System.err.println(warning) }
+        val client = ScannerClient(cli.host, cli.port, ::warn)
         when (cli.command) {
             "status" -> {
                 println(StatusCommand(client).run())
@@ -71,7 +90,7 @@ class UnboundAirApplication :
             "scan" -> {
                 val settings = PageSettings(colorMode = cli.colorMode, keepRaw = cli.keepRaw)
                 val result =
-                    ScanCommand(client, settings) { warning -> System.err.println(warning) }.run(cli.dpi, cli.out?.let { Path.of(it) })
+                    ScanCommand(client, settings, ::warn).run(cli.dpi, cli.out?.let { Path.of(it) })
                 val message =
                     if (result.rawPath != null) {
                         "Saved: ${result.path} (${result.size} bytes), raw: ${result.rawPath}"
@@ -87,16 +106,27 @@ class UnboundAirApplication :
                 // so it deliberately ignores --color-mode and --keep-raw and
                 // uses the default settings. Those flags are scan-specific.
                 require(cli.positional.size == 2) { "crop requires two arguments: <input> <output>" }
-                val command = CropCommand { warning -> System.err.println(warning) }
+                val command = CropCommand(warn = ::warn)
                 val result = command.run(Path.of(cli.positional[0]), Path.of(cli.positional[1]))
                 println("Saved: $result")
             }
 
             else -> {
-                System.err.println(USAGE)
+                log.error(USAGE)
                 commandExitCode = 1
             }
         }
+    }
+
+    /**
+     * The warning sink handed to every command (SV-02).
+     *
+     * A single method reference rather than a lambda per call site, so all
+     * warnings demonstrably take the same route and a change of channel happens
+     * in exactly one place.
+     */
+    private fun warn(message: String) {
+        log.warn(message)
     }
 
     private fun parseCliArgs(raw: Array<String>): CliArgs {
@@ -194,6 +224,8 @@ class UnboundAirApplication :
     )
 
     private companion object {
+        val log: Logger = LoggerFactory.getLogger(UnboundAirApplication::class.java)
+
         val USAGE: String =
             "Usage: unboundair.jar <command> [options]\n" +
                 "\n" +
