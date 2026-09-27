@@ -63,6 +63,35 @@ data class TranscriptEntry(
  * instance records one append-only transcript; a fresh instance per test is
  * the norm, matching how the class is used today.
  *
+ * ## Driving a running service (TE-01 extension, milestone 3)
+ *
+ * A single fixed answer is enough to test one operation, but not a polling
+ * loop (DL-01 to DL-06) or the measuring run (BE-04): those need the device to
+ * *change* over time. Three additions cover that, all opt-in so the existing
+ * single-shot tests keep behaving exactly as before:
+ *
+ * - **A sheet tray** ([loadSheets], [insertSheet]). This models the device
+ *   rather than the test: `status` answers `scanready` while a sheet is
+ *   waiting and `nopaper` once the tray is empty, and a completed scan
+ *   consumes the sheet it delivered. A loop therefore scans each sheet exactly
+ *   once and then settles, without the test having to time anything.
+ * - **A scripted status queue** ([scriptStatuses]) for answers that do not
+ *   follow from the tray, above all `devbusy` (OF-02) and `battlow`. Each
+ *   scripted entry is consumed by one `status` command; when the script runs
+ *   out, the tray decides again.
+ * - **Reversible offline** ([goOffline], [comeOnline]) on the **same port**.
+ *   [stop] is terminal and a later [start] would bind a different port, which
+ *   cannot express "the device switched itself off and was switched on again"
+ *   (DL-02, DL-04, and the auto-off of OF-01).
+ *
+ * ## Thread safety
+ *
+ * The configuration fields are `@Volatile` and the collections are concurrent.
+ * This is not decoration: the fields are written by the test thread while the
+ * per-connection threads read them, and without the annotation a change made
+ * mid-run may never become visible to the serving thread. The resulting test
+ * would fail rarely and unreproducibly.
+ *
  * @see ScannerCommand
  * @see ScannerResponse
  */
@@ -141,6 +170,7 @@ class FakeScanner : AutoCloseable {
      * the raw word is sent, which tests use to provoke a protocol error
      * (SC-05).
      */
+    @Volatile
     var fillBytes: Boolean = true
 
     /**
@@ -151,6 +181,7 @@ class FakeScanner : AutoCloseable {
      * (OF-07). Tests set this to a version below 26 to exercise the
      * firmware check (SC-07).
      */
+    @Volatile
     var version: String = "NB0a.032"
 
     /**
@@ -160,6 +191,7 @@ class FakeScanner : AutoCloseable {
      * two separate writes with a short pause in between, as observed on the
      * real device (SC-04). Default `false`.
      */
+    @Volatile
     var splitJpegsize: Boolean = false
 
     /**
@@ -169,6 +201,7 @@ class FakeScanner : AutoCloseable {
      * written, so a client read eventually times out. Used for the timeout
      * test (SC-02). Default `false`.
      */
+    @Volatile
     var hang: Boolean = false
 
     /**
@@ -178,6 +211,7 @@ class FakeScanner : AutoCloseable {
      * JPEG and not loaded from a file). Tests override it and assert that
      * the exact bytes come back unchanged (SC-01).
      */
+    @Volatile
     var payload: ByteArray =
         ByteArray(3000) { index -> (index * 31 + 7).toByte() }
 
@@ -187,6 +221,7 @@ class FakeScanner : AutoCloseable {
      * Default `scanready`. Tests set it to `nopaper`, `devbusy`, or
      * `battlow` to exercise the error paths (SC-05).
      */
+    @Volatile
     var statusWord: String = "scanready"
 
     /**
@@ -196,7 +231,148 @@ class FakeScanner : AutoCloseable {
      * the client allows up to 60 s here; tests may set a short delay to
      * observe the behaviour.
      */
+    @Volatile
     var scanDelayMillis: Long = 0
+
+    /**
+     * The sheets waiting in the tray, each one the payload of a future scan.
+     *
+     * Empty by default, which keeps [statusWord] and [payload] in charge and
+     * leaves every existing single-shot test untouched. Once sheets are loaded
+     * ([loadSheets], [insertSheet]) the tray takes over: `status` answers
+     * `scanready` while a sheet is waiting and `nopaper` when the tray is
+     * empty, and each completed `jpegdata` consumes its sheet.
+     */
+    private val sheets = ConcurrentLinkedQueue<ByteArray>()
+
+    /**
+     * Status answers to hand out before the tray is consulted ([scriptStatuses]).
+     */
+    private val scriptedStatuses = ConcurrentLinkedQueue<String>()
+
+    /**
+     * Whether the tray has been used at all, i.e. whether sheets were ever
+     * loaded.
+     *
+     * A separate flag rather than `sheets.isNotEmpty()`, because the two differ
+     * in exactly the case that matters: once the last sheet has been scanned
+     * the tray is empty, and the device must then answer `nopaper`. Deciding by
+     * emptiness would instead fall back to the [statusWord] field -- `scanready`
+     * by default -- and the loop would scan forever.
+     */
+    private val trayInUse = AtomicBoolean(false)
+
+    /** Whether the device currently refuses connections ([goOffline]). */
+    private val offline = AtomicBoolean(false)
+
+    /** Counts completed scans, i.e. delivered `jpegdata` payloads. */
+    private val scanCounter = AtomicInteger(0)
+
+    /**
+     * The number of pages fully delivered so far.
+     *
+     * Lets a test wait for "three pages have been scanned" instead of sleeping
+     * for a guessed duration.
+     */
+    val completedScans: Int
+        get() = scanCounter.get()
+
+    /** How many sheets are still waiting in the tray. */
+    val remainingSheets: Int
+        get() = sheets.size
+
+    /** Whether the device is currently refusing connections. */
+    val isOffline: Boolean
+        get() = offline.get()
+
+    /**
+     * Loads [pages] into the tray, replacing whatever was there.
+     *
+     * From this point the tray drives the status: `scanready` while a sheet is
+     * waiting, `nopaper` when it is empty. Each page is delivered by exactly
+     * one scan, in order, so a loop picks them up one after another and then
+     * settles on `nopaper` by itself.
+     *
+     * Distinct page contents are recommended: identical payloads would let a
+     * loop that scans the same sheet repeatedly pass unnoticed.
+     */
+    fun loadSheets(pages: List<ByteArray>) {
+        sheets.clear()
+        sheets.addAll(pages)
+        trayInUse.set(true)
+    }
+
+    /**
+     * Adds one sheet to the tray, as a person laying a page on a running
+     * device would.
+     *
+     * Used to test that a page arriving within the batch window joins the open
+     * batch (DL-03, DL-04).
+     */
+    fun insertSheet(page: ByteArray) {
+        sheets.add(page)
+        trayInUse.set(true)
+    }
+
+    /**
+     * Queues status answers that are handed out before the tray is consulted,
+     * one per `status` command, in order.
+     *
+     * This is for answers the tray cannot express: `devbusy` (OF-02) and
+     * `battlow` above all. Once the script is exhausted the tray decides again,
+     * so `scriptStatuses("devbusy", "devbusy")` means "the device is busy for
+     * the next two polls and normal afterwards".
+     */
+    fun scriptStatuses(vararg statuses: String) {
+        scriptedStatuses.addAll(statuses.toList())
+    }
+
+    /**
+     * Makes the device unreachable without giving up its port.
+     *
+     * Existing connections are dropped and new ones refused, which is what a
+     * client sees when the scanner switches itself off (the 5-minute auto-off
+     * of OF-01, and the offline trigger of DL-02 and DL-04).
+     *
+     * Unlike [stop] this is reversible: [comeOnline] brings the device back on
+     * the **same port**, so a test can cover a full off-and-on cycle. That is
+     * impossible with [stop], because a later [start] binds a new port and the
+     * client would be pointing at the wrong address.
+     */
+    fun goOffline() {
+        if (offline.getAndSet(true)) return
+        serverSocket?.let { runCatching { it.close() } }
+        serverSocket = null
+        activeSockets.forEach { socket -> runCatching { socket.close() } }
+        activeSockets.clear()
+    }
+
+    /**
+     * Brings the device back on its original port after [goOffline].
+     *
+     * Binding the same port again can lose a race with the kernel releasing the
+     * previous socket, so the attempt is retried briefly. `SO_REUSEADDR` is set
+     * for the same reason: without it a socket lingering in `TIME_WAIT` would
+     * make this fail intermittently.
+     */
+    fun comeOnline() {
+        if (!offline.getAndSet(false)) return
+        val socket = ServerSocket()
+        socket.reuseAddress = true
+        var attempt = 0
+        while (true) {
+            try {
+                socket.bind(java.net.InetSocketAddress(InetAddress.getByName("127.0.0.1"), boundPort), 50)
+                break
+            } catch (e: IOException) {
+                attempt++
+                if (attempt >= REBIND_ATTEMPTS) throw e
+                Thread.sleep(REBIND_PAUSE_MILLIS)
+            }
+        }
+        serverSocket = socket
+        startAcceptLoop(socket)
+    }
 
     /**
      * Starts the fake scanner.
@@ -212,9 +388,20 @@ class FakeScanner : AutoCloseable {
         serverSocket = socket
         boundPort = socket.localPort
         isRunning.set(true)
+        startAcceptLoop(socket)
+    }
+
+    /**
+     * Accepts connections on [socket] until it is closed.
+     *
+     * Extracted from [start] so [comeOnline] can resume serving on a freshly
+     * bound socket without duplicating the loop. The loop exits when its own
+     * socket is closed, which is how both [stop] and [goOffline] end it.
+     */
+    private fun startAcceptLoop(socket: ServerSocket) {
         acceptThread =
             thread(isDaemon = true, name = "fake-scanner-accept") {
-                while (isRunning.get()) {
+                while (isRunning.get() && !socket.isClosed) {
                     try {
                         val clientSocket = socket.accept()
                         val connection = connectionCounter.incrementAndGet()
@@ -227,7 +414,10 @@ class FakeScanner : AutoCloseable {
                             }
                         }
                     } catch (e: IOException) {
-                        if (isRunning.get()) continue else break
+                        // The socket was closed by stop() or goOffline(); in
+                        // both cases this loop is done. A new one is started by
+                        // comeOnline() on a new socket.
+                        break
                     }
                 }
             }
@@ -301,8 +491,9 @@ class FakeScanner : AutoCloseable {
 
                 when (commandName) {
                     "status" -> {
-                        val answer = paddedAnswer(statusWord)
-                        recordToClient(connection, answer, statusWord)
+                        val word = currentStatusWord()
+                        val answer = paddedAnswer(word)
+                        recordToClient(connection, answer, word)
                         write(output, answer)
                     }
 
@@ -335,7 +526,7 @@ class FakeScanner : AutoCloseable {
 
                     "jpegsize" -> {
                         if (scanDelayMillis > 0) Thread.sleep(scanDelayMillis)
-                        val answer = jpegSizeAnswer()
+                        val answer = jpegSizeAnswer(currentPayload())
                         // One entry for the full 12 bytes: the optional split
                         // into two TCP segments is a transport artifact and not
                         // part of the protocol exchange.
@@ -352,17 +543,24 @@ class FakeScanner : AutoCloseable {
                     }
 
                     "jpegdata" -> {
+                        val page = currentPayload()
                         // One entry for the full payload: the 1460-byte
                         // chunking is a transport artifact, not a protocol
                         // exchange.
-                        recordToClient(connection, payload, "jpegdata")
-                        var offset = 0
-                        while (offset < payload.size) {
-                            val end = minOf(offset + JPEG_CHUNK_SIZE, payload.size)
-                            output.write(payload, offset, end - offset)
-                            offset = end
+                        recordToClient(connection, page, "jpegdata")
+                        var sent = 0
+                        while (sent < page.size) {
+                            val end = minOf(sent + JPEG_CHUNK_SIZE, page.size)
+                            output.write(page, sent, end - sent)
+                            sent = end
                         }
                         output.flush()
+                        // The sheet has left the device: drop it from the tray
+                        // so the next status answers nopaper unless another
+                        // sheet is waiting. Without this the loop would rescan
+                        // the same page forever.
+                        sheets.poll()
+                        scanCounter.incrementAndGet()
                     }
 
                     else -> {
@@ -414,11 +612,37 @@ class FakeScanner : AutoCloseable {
     private fun versionAnswer(): ByteArray = "$version\u0000".toByteArray(Charsets.US_ASCII)
 
     /**
+     * The status word for the next `status` command.
+     *
+     * Priority, and the order matters:
+     *
+     * 1. a scripted answer, if one is queued ([scriptStatuses]) -- these are the
+     *    states the tray cannot express, such as `devbusy`;
+     * 2. otherwise the tray, once it has been used at all: `scanready` while a
+     *    sheet waits, `nopaper` when empty;
+     * 3. otherwise the plain [statusWord] field, which is what every
+     *    single-shot test uses and what keeps their behaviour unchanged.
+     */
+    private fun currentStatusWord(): String {
+        scriptedStatuses.poll()?.let { return it }
+        if (trayInUse.get()) {
+            return if (sheets.isEmpty()) "nopaper" else "scanready"
+        }
+        return statusWord
+    }
+
+    /**
+     * The payload for the current scan: the sheet at the front of the tray, or
+     * the [payload] field when the tray is not in use.
+     */
+    private fun currentPayload(): ByteArray = sheets.peek() ?: payload
+
+    /**
      * Builds the 12-byte `jpegsize` answer: the ASCII word followed by the
      * payload size as a little-endian uint32 (SC-04).
      */
-    private fun jpegSizeAnswer(): ByteArray {
-        val size = payload.size
+    private fun jpegSizeAnswer(page: ByteArray): ByteArray {
+        val size = page.size
         val answer = ByteArray(12)
         ScannerResponse.JPEGSIZE.copyInto(answer, 0)
         answer[8] = (size and 0xFF).toByte()
@@ -497,5 +721,11 @@ class FakeScanner : AutoCloseable {
 
         /** Pause between the two segments of a split jpegsize answer. */
         const val SPLIT_PAUSE_MILLIS = 50L
+
+        /** How often [comeOnline] retries binding the original port. */
+        const val REBIND_ATTEMPTS = 50
+
+        /** Pause between two rebind attempts. */
+        const val REBIND_PAUSE_MILLIS = 20L
     }
 }
