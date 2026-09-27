@@ -1,6 +1,7 @@
 package dev.digiwomb.unboundair
 
 import dev.digiwomb.unboundair.cli.CropCommand
+import dev.digiwomb.unboundair.cli.MeasureCommand
 import dev.digiwomb.unboundair.cli.ScanCommand
 import dev.digiwomb.unboundair.cli.StatusCommand
 import dev.digiwomb.unboundair.processing.ColorMode
@@ -17,7 +18,9 @@ import org.springframework.boot.WebApplicationType
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan
+import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
 
 /**
  * Command line entry point and subcommand dispatcher.
@@ -100,6 +103,24 @@ class UnboundAirApplication :
                 println(message)
             }
 
+            "measure" -> {
+                // BE-04: a measuring run writes its pages to a temporary
+                // directory and hands nothing to an output module. The
+                // directory is removed afterwards - the scans are a by-product
+                // of the measurement, not something anyone wants to keep.
+                val workDir = Files.createTempDirectory("unboundair-measure")
+                try {
+                    val report =
+                        MeasureCommand(
+                            client = client,
+                            pollInterval = Duration.ofSeconds(cli.pollSeconds.toLong()),
+                        ).run(workDir, Duration.ofMinutes(cli.minutes.toLong()))
+                    println(report.format())
+                } finally {
+                    runCatching { deleteRecursively(workDir) }
+                }
+            }
+
             "crop" -> {
                 // The crop command is a pure image operation (BE-03): it runs
                 // only the crop step and must never change the color of a page,
@@ -129,6 +150,14 @@ class UnboundAirApplication :
         log.warn(message)
     }
 
+    /** Removes the temporary working directory of a measuring run. */
+    private fun deleteRecursively(dir: Path) {
+        if (!Files.exists(dir)) return
+        Files.walk(dir).use { walk ->
+            walk.sorted(Comparator.reverseOrder()).forEach { path -> runCatching { Files.delete(path) } }
+        }
+    }
+
     private fun parseCliArgs(raw: Array<String>): CliArgs {
         var command: String? = null
         val positional = mutableListOf<String>()
@@ -138,6 +167,8 @@ class UnboundAirApplication :
         var out: String? = null
         var colorMode = ColorMode.GRAY
         var keepRaw = false
+        var minutes = DEFAULT_MEASURE_MINUTES
+        var pollSeconds = DEFAULT_POLL_SECONDS
 
         var i = 0
         while (i < raw.size) {
@@ -171,6 +202,16 @@ class UnboundAirApplication :
                     keepRaw = true
                 }
 
+                "--minutes" -> {
+                    minutes = intAfter(raw, i, "--minutes")
+                    i++
+                }
+
+                "--poll-seconds" -> {
+                    pollSeconds = intAfter(raw, i, "--poll-seconds")
+                    i++
+                }
+
                 else -> {
                     if (token.startsWith("--")) {
                         throw IllegalArgumentException("Unknown option: $token")
@@ -184,7 +225,7 @@ class UnboundAirApplication :
             }
             i++
         }
-        return CliArgs(command, host, port, dpi, out, colorMode, keepRaw, positional.toList())
+        return CliArgs(command, host, port, dpi, out, colorMode, keepRaw, minutes, pollSeconds, positional.toList())
     }
 
     /**
@@ -220,11 +261,19 @@ class UnboundAirApplication :
         val out: String?,
         val colorMode: ColorMode,
         val keepRaw: Boolean,
+        val minutes: Int,
+        val pollSeconds: Int,
         val positional: List<String>,
     )
 
     private companion object {
         val log: Logger = LoggerFactory.getLogger(UnboundAirApplication::class.java)
+
+        /** Long enough to observe the device's five-minute auto-off (OF-01). */
+        const val DEFAULT_MEASURE_MINUTES = 10
+
+        /** The provisional poll interval of DL-01, which measure exists to validate. */
+        const val DEFAULT_POLL_SECONDS = 3
 
         val USAGE: String =
             "Usage: unboundair.jar <command> [options]\n" +
@@ -233,6 +282,7 @@ class UnboundAirApplication :
                 "  status                            Show scanner status and firmware version.\n" +
                 "  scan [--dpi 300|600] [--out FILE] Scan one page and write the processed JPEG.\n" +
                 "  crop IN OUT                       Crop an existing JPEG file (no scanner needed).\n" +
+                "  measure [--minutes N]             Measure the device; sends nothing to an output module.\n" +
                 "\n" +
                 "Options:\n" +
                 "  --host HOST                       Scanner host (default ${ScannerClient.DEFAULT_HOST}).\n" +
@@ -240,7 +290,9 @@ class UnboundAirApplication :
                 "  --dpi 300|600                     Scan resolution (default 300).\n" +
                 "  --out FILE                        Target file for scan (default: a timestamped file).\n" +
                 "  --color-mode gray|color           Color mode of scan (default gray).\n" +
-                "  --keep-raw                        Also store the raw JPEG of scan.\n"
+                "  --keep-raw                        Also store the raw JPEG of scan.\n" +
+                "  --minutes N                       Duration of measure (default $DEFAULT_MEASURE_MINUTES).\n" +
+                "  --poll-seconds N                  Poll interval of measure (default $DEFAULT_POLL_SECONDS).\n"
     }
 }
 
