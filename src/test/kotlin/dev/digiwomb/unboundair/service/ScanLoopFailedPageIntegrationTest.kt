@@ -266,7 +266,7 @@ class ScanLoopFailedPageIntegrationTest {
         const val SCAN_DELAY_MILLIS = 400L
 
         const val ENVELOPE = "envelope_dl_300dpi_raw.jpg"
-        const val AWAIT_SECONDS = 15L
+        const val AWAIT_SECONDS = 60L
         const val THREAD_JOIN_MILLIS = 5_000L
         const val SLEEP_MILLIS = 5L
     }

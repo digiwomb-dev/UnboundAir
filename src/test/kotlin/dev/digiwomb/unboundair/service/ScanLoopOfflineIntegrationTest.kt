@@ -247,7 +247,7 @@ class ScanLoopOfflineIntegrationTest {
         val BATCH_TIMEOUT: Duration = Duration.ofMinutes(10)
 
         const val ENVELOPE = "envelope_dl_300dpi_raw.jpg"
-        const val AWAIT_SECONDS = 15L
+        const val AWAIT_SECONDS = 60L
         const val THREAD_JOIN_MILLIS = 5_000L
 
         /**

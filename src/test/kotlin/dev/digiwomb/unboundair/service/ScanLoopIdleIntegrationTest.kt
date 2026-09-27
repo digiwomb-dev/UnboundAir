@@ -265,7 +265,7 @@ class ScanLoopIdleIntegrationTest {
         val BATCH_TIMEOUT: Duration = Duration.ofSeconds(20)
 
         /** Generous: the bound only has to be reached on a loaded machine, never waited out. */
-        const val AWAIT_SECONDS = 10L
+        const val AWAIT_SECONDS = 60L
         const val THREAD_JOIN_MILLIS = 5_000L
     }
 }

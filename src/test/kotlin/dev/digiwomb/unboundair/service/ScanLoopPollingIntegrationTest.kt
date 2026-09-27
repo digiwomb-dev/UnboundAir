@@ -189,8 +189,19 @@ class ScanLoopPollingIntegrationTest {
          */
         const val POLLS_TO_OBSERVE = 6
 
-        /** Generous: the bound only has to be reached on a loaded machine, never waited out. */
-        const val AWAIT_SECONDS = 10L
+        /**
+         * The Awaitility bound, and it has to be generous for a concrete reason:
+         * a poll is not cheap. SC-02 prescribes 200 ms before and 500 ms after
+         * sending `status`, so one poll costs about 0.7 s of deliberate waiting
+         * no matter how short [POLL_INTERVAL] is. Six polls therefore need well
+         * over four seconds, and that is before the rest of the suite competes
+         * for the machine.
+         *
+         * An earlier value of 10 s passed on its own and failed inside a full
+         * `./gradlew build`. The bound is never waited out when things work, so
+         * a large value costs nothing and a tight one buys a flaky test.
+         */
+        const val AWAIT_SECONDS = 60L
         const val THREAD_JOIN_MILLIS = 5_000L
     }
 }
