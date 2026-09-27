@@ -95,7 +95,7 @@ class ScannerClient(
      * [resolveDpi], SC-07) → `scan` → `jpegsize` → `jpegdata`.
      *
      * @param dpi requested resolution: 300 or 600.
-     * @return the raw JPEG bytes of the scanned page.
+     * @return the raw JPEG bytes together with the resolution actually used (SC-08).
      * @throws ScannerOfflineException the scanner cannot be reached or the connection drops.
      * @throws ScannerTimeoutException a read outlived its timeout.
      * @throws ScannerNoPaperException the scanner reports `nopaper`.
@@ -104,7 +104,7 @@ class ScannerClient(
      * @throws ScannerProtocolException the device answered with an unexpected word.
      * @throws IllegalArgumentException [dpi] is neither 300 nor 600.
      */
-    fun scan(dpi: Int): ByteArray {
+    fun scan(dpi: Int): ScanResult {
         require(dpi == 300 || dpi == 600) { "dpi must be 300 or 600, was $dpi" }
         val socket = connect()
         try {
@@ -138,7 +138,7 @@ class ScannerClient(
             send(socket, ScannerCommand.JPEGSIZE, "jpegsize")
             val size = readJpegSizeAnswer(socket, JPEGSIZE_TIMEOUT_MILLIS)
             send(socket, ScannerCommand.JPEGDATA, "jpegdata", BULK_READ_PAUSE_MILLIS)
-            return readBulkData(socket, size, BULK_READ_TIMEOUT_MILLIS)
+            return ScanResult(readBulkData(socket, size, BULK_READ_TIMEOUT_MILLIS), effectiveDpi)
         } finally {
             runCatching { socket.close() }
         }

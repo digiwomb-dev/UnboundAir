@@ -54,11 +54,18 @@ class ScanCommand(
      * raw JPEG was written to, and `null` when [PageSettings.keepRaw] is
      * false; it is the target's file name with `_raw` inserted before the
      * extension ([rawFileName]) in the target's directory.
+     *
+     * [dpi] is the resolution the page was **actually** scanned at (SC-08),
+     * which is not necessarily the one that was requested: an old firmware
+     * forces a downgrade from 600 to 300 (SC-07). It is reported because the
+     * caller needs it — SV-05 derives the PDF page size from exactly this
+     * number.
      */
     data class Result(
         val path: Path,
         val size: Int,
         val rawPath: Path?,
+        val dpi: Int,
     )
 
     /**
@@ -90,8 +97,13 @@ class ScanCommand(
         dpi: Int,
         out: Path?,
     ): Result {
-        val bytes = client.scan(dpi)
-        val target = out ?: Path.of(defaultFileName(dpi))
+        val scan = client.scan(dpi)
+        val bytes = scan.bytes
+        // The effective resolution, not the requested one (SC-08): if the
+        // firmware forced a downgrade to 300 dpi, a file named "600dpi" would
+        // be a lie, and the number is what SV-05 later derives the page size
+        // from.
+        val target = out ?: Path.of(defaultFileName(scan.dpi))
         target.parent?.let { Files.createDirectories(it) }
 
         val workDir = Files.createTempDirectory("unboundair-scan")
@@ -123,7 +135,7 @@ class ScanCommand(
                     null
                 }
 
-            return Result(target, Files.size(target).toInt(), rawPath)
+            return Result(target, Files.size(target).toInt(), rawPath, scan.dpi)
         } finally {
             runCatching { deleteRecursively(workDir) }
         }
