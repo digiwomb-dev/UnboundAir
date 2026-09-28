@@ -53,7 +53,7 @@ Entscheidung des Auftraggebers (siehe `docs/plan.md`, DC-03).
 
 **Verworfene Alternativen.** `mutflow` (1.4.0) und `MutKt` (0.3.3) wurden nur als Fallback evaluiert und nicht gebaut: PIT genügt, beide sind deutlich jünger (MutKt: 1 Stern, gegründet Juni 2026) und brächten ein eigenes Compiler-/Laufzeitmodell mit, das `build` tangieren würde — unnötiges Risiko, solange PIT trägt. Bleiben beide als Rückfallweg notiert, falls PIT mit künftigen JUnit-/Kotlin-Versionen bricht.
 
-## Mutations-Schwelle: 73 %, gemessen statt gewählt
+## Mutations-Schwelle: 71 %, gemessen statt gewählt
 
 **Erster vollständiger Lauf** über alle drei Kern-Pakete (25.09.2026, Commit `4cd877f`, Dev Container, JDK 26.0.2): `./gradlew pitest`, Dauer **23 min 5 s**, 11 Klassen, 386 Mutationen.
 
@@ -66,7 +66,20 @@ Entscheidung des Auftraggebers (siehe `docs/plan.md`, DC-03).
 
 **Bestätigungslauf Meilenstein 2** (26.09.2026, Commit `f51c65e`): Nach der neuen Factory `pageImage` im Kern-Paket `processing` wurde der volle Lauf wiederholt — **73 % (280/386)**, unverändert grün gegen die Schwelle. Line Coverage 86 % (428/497), Test Strength 76 %, 1287 ausgeführte Tests, Dauer 23 min 7 s. Der Score ist mit der zusätzlichen Zeile gleich geblieben; die Schwelle hält.
 
-**Entscheidung: `mutationThreshold = 73`** in `build.gradle.kts` — exakt der gemessene Gesamtwert. Die Schwelle ist ein **Boden, kein Ziel**: Sie friert den erreichten Stand ein, damit ein späterer Rückgang der Assertion-Qualität den Task rot macht, statt unbemerkt durchzulaufen. Es wurde **nichts gesenkt** — vorher gab es gar keine Schwelle. Steigt der Score, wird die Zahl angehoben; gesenkt wird sie nicht stillschweigend.
+**Einmessungslauf Meilenstein 3** (28.09.2026, Commit `d05f6f2`, Dev Container, JDK 26.0.2): Gemäß TE-04 wurden die neuen Kern-Pakete `output` (PDF-Erzeugung) und `service` (Dienst-Loop und Batch) aufgenommen. 17 Klassen, 525 Mutationen:
+
+| Paket | Klassen | Line Coverage | Mutation Coverage | Test Strength |
+|---|---|---|---|---|
+| `image` | 4 | 83 % (195/235) | **74 %** (146/197) | 76 % (146/193) |
+| `output` | 1 | 100 % (36/36) | **87 %** (20/23) | 87 % (20/23) |
+| `processing` | 5 | 93 % (85/91) | **68 %** (39/57) | 76 % (39/51) |
+| `scanner` | 3 | 89 % (169/189) | **72 %** (107/148) | 76 % (107/141) |
+| `service` | 4 | 93 % (155/166) | **59 %** (59/100) | 71 % (59/83) |
+| **gesamt** | **17** | **89 %** (640/717) | **71 %** (371/525) | **76 %** (371/491) |
+
+Durch das Hinzukommen von `output` und `service` änderte sich der Nenner von 386 auf 525 Mutationen. Das ist kein stilles Senken, sondern der nach TE-04 vorgesehene, dokumentierte Wechsel der Messgrundlage.
+
+**Entscheidung: `mutationThreshold = 71`** in `build.gradle.kts` — exakt der gemessene Gesamtwert. Die Schwelle ist ein **Boden, kein Ziel**: Sie friert den erreichten Stand ein, damit ein späterer Rückgang der Assertion-Qualität den Task rot macht, statt unbemerkt durchzulaufen. Steigt der Score, wird die Zahl angehoben; gesenkt wird sie nicht stillschweigend.
 
 Bewusst **nicht** gesetzt sind `coverageThreshold` und `testStrengthThreshold`: Eine Schwelle, die scharf ist, genügt; drei parallele Schwellen machen jeden Rückgang zu einer Fehlersuche über drei Kennzahlen.
 
@@ -92,8 +105,9 @@ Das ist keine Eigenheit von PIT, sondern die Folge von `org.gradle.jvmargs=-Xmx2
 
 - `JpegTran.kt` — 27 % (3/11). Der Prozess-Aufruf ist kaum gegen Fehlverhalten abgesichert; die Argumentbildung wird nur indirekt geprüft.
 - `PageSettings.kt` — 25 % (1/4) und `GrayscaleStep.kt` — 50 % (2/4). Kleine Klassen, in denen einzelne überlebende Mutanten stark durchschlagen.
+- `ScanLoop.kt` — 56 % (38/67). Multithreading-, Polling- und Timeout-Pfade mit überlebenden Randfall-Mutanten.
 - `CropStep.kt` — 60 % (9/15), `PageProcessor.kt` — 61 % (11/18).
-- 16 Mutationen ohne jede Testabdeckung (`no coverage`).
+- 34 Mutationen ohne jede Testabdeckung (`no coverage`).
 
 **Netzzugriff beim ersten Lauf.** `org.pitest:pitest:1.25.5` und `pitest-junit5-plugin:1.2.2` liegen nicht im warmen Gradle-Cache (nur das Gradle-Plugin 1.19.0), der erste `pitest`-Lauf löst sie daher online auf. Das berührt **DC-03 nicht**: Die Anforderung gilt `./gradlew test`, und dieser Lauf blieb danach unverändert offline grün (72 Tests, 0 Fehler). `pitest` bleibt außerhalb von `build`/`check`.
 
