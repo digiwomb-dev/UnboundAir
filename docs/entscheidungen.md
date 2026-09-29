@@ -66,7 +66,7 @@ Entscheidung des Auftraggebers (siehe `docs/plan.md`, DC-03).
 
 **Bestätigungslauf Meilenstein 2** (26.09.2026, Commit `f51c65e`): Nach der neuen Factory `pageImage` im Kern-Paket `processing` wurde der volle Lauf wiederholt — **73 % (280/386)**, unverändert grün gegen die Schwelle. Line Coverage 86 % (428/497), Test Strength 76 %, 1287 ausgeführte Tests, Dauer 23 min 7 s. Der Score ist mit der zusätzlichen Zeile gleich geblieben; die Schwelle hält.
 
-**Einmessungslauf Meilenstein 3** (28.09.2026, Commit `d05f6f2`, Dev Container, JDK 26.0.2): Gemäß TE-04 wurden die neuen Kern-Pakete `output` (PDF-Erzeugung) und `service` (Dienst-Loop und Batch) aufgenommen. 17 Klassen, 525 Mutationen:
+**Einmessungslauf Meilenstein 3** (28.09.2026, Commit `17ae322`, Dev Container, JDK 26.0.2): Gemäß TE-04 wurden die neuen Kern-Pakete `output` (PDF-Erzeugung) und `service` (Dienst-Loop und Batch) aufgenommen. 17 Klassen, 525 Mutationen:
 
 | Paket | Klassen | Line Coverage | Mutation Coverage | Test Strength |
 |---|---|---|---|---|
