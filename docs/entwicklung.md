@@ -116,7 +116,7 @@ sha256sum gradle/wrapper/gradle-wrapper.jar
 
 ## Zusammenarbeit am Repository
 
-Arbeit wird über GitHub-Issues organisiert: je Aufgabe ein Issue, je Issue ein Branch (`gh issue develop`), Commits referenzieren das Issue (`(#n)`/`Closes #n`), der Abschluss läuft über einen Pull Request. Commits folgen den Conventional Commits und bleiben klein.
+Arbeit wird über GitHub-Issues organisiert: je Aufgabe ein Issue, Commits referenzieren das Issue (`(#n)`/`Closes #n`). Commits folgen den Conventional Commits und bleiben klein.
 
 ## Warum der Umweg über den Dev Container
 
