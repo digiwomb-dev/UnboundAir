@@ -35,6 +35,8 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
   | Spring Boot | 4.1.1 | |
   | Kotlin | 2.4.20 | **bewusst neuer** als die von Spring Boot 4.1.1 verwaltete 2.3.21 – siehe Hinweis unten |
   | Apache PDFBox | 3.0.8 | |
+  | spring-boot-starter-restclient | (verwaltet, 4.1.1) | HTTP-Client für das paperless-Modul (AU-05); bringt `spring-web` und Jackson mit. Kommt mit Meilenstein 4 dazu. |
+  | jackson-module-kotlin | (verwaltet, 3.x) | liest und schreibt `metadata.json` der Outbox (AU-04) als Kotlin-Datenklasse. Gruppe ist **`tools.jackson.module`** – Jackson 3 hat die Koordinaten gewechselt, `com.fasterxml.jackson` ist die alte Welt. Kommt mit Meilenstein 4 dazu. |
   | Spotless-Gradle-Plugin | 8.10.2 | führt den Linter aus, siehe TE-03 |
   | ktlint (über Spotless) | 1.8.0 | der eigentliche Linter |
 
@@ -51,7 +53,7 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
   | pitest-junit5-plugin | 1.2.2 | PIT-Anbindung an JUnit 5/6. |
   | Awaitility | (verwaltet) | über `spring-boot-starter-test` (4.3.0). |
   | AssertJ | (verwaltet) | über `spring-boot-starter-test` (3.27.7), Standard-Assertions. |
-  | json-schema-validator (networknt) | 3.0.7 | Contract-JSON-Schema, wird mit der ersten Contract-Testdatei gepinnt. |
+  | json-schema-validator (networknt) | 3.0.8 | Contract-JSON-Schema (AU-05): prüft die paperless-Antwort gegen ein Schema, statt nur ein einzelnes Feld anzusehen. |
 
   **Warum nicht Java 27:** Gradle 9.7.1 gibt in seiner Kompatibilitätsmatrix ausdrücklich an, JVM 27 und neuer nicht auszuführen. Sobald Gradle nachzieht, ist Java 27 der nächste Schritt – der Grundsatz bleibt „neueste stabile Version".
 
@@ -65,11 +67,15 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
   | `scanner` | nichts (Blatt) |
   | `image` | nichts (Blatt) |
   | `processing` | `image` |
-  | `output` | `processing`, `image` |
+  | `output` (mit `output.outbox`, `output.paperless`) | `processing`, `image` |
   | `service` | `scanner`, `processing`, `image`, `output`, `config` |
   | `cli` | `scanner`, `processing`, `service`, `config` |
 
   `scanner`, `image` und `processing` bleiben ausdrücklich **frei von `config`**: Sie bekommen ihre Werte wie bisher über Konstruktor-Parameter (Muster `PageSettings`). So bleibt der Kern ohne Spring testbar, und die Blatt-Eigenschaft der drei Pakete ist eine prüfbare Regel statt einer Absichtserklärung. `UnboundAirApplication` ist als Kompositionswurzel keiner Schicht zugeordnet und darf alles sehen.
+
+  **Die Outbox und die Module liegen in `output`, nicht daneben.** `output.outbox` (AU-04) und `output.paperless` (AU-05) sind Unterpakete der Schicht `output` und erben damit deren Regeln. Das ist kein Ordnungsgeschmack: Der Wächter prüft nur Pakete, die in dieser Tabelle stehen – ein Top-Level-Paket `outbox` wäre schlicht ungeprüft und damit ein stilles Loch in der Regel.
+
+  **Der Kern bleibt frei von Spring.** In keinem der Kern-Pakete darf `org.springframework..` auftauchen – mit genau **einer benannten Ausnahme: `output.paperless` darf den Spring-eigenen HTTP-Client verwenden** (`RestClient` samt `spring-web`-Typen für Multipart und Header). Das Hochladen ist der einzige Punkt in v1, an dem ein Kern-Paket nach außen spricht, und einen zweiten HTTP-Client dafür einzuziehen stünde gegen „Abhängigkeiten minimal". Alles andere bleibt verboten, auch in `output.paperless`: keine Spring-Stereotypen (`@Component` und Verwandte), kein injiziertes `UnboundAirProperties`. Die Einstellungen kommen als Konstruktor-Werte aus der Kompositionswurzel, wie überall im Kern.
 - **Logging über SLF4J,** Ausgabe per Logback auf stdout. Beides bringt `spring-boot-starter` bereits mit – keine neue Abhängigkeit. Kommandos und Verarbeitungsschritte loggen weiterhin **nicht** selbst, sondern melden über ihre `warn: (String) -> Unit`-Senke nach oben; nur die äußeren Schichten (`service`, Kompositionswurzel) schreiben Log-Zeilen. Begründung in `docs/entscheidungen.md`.
 - **Batch-Übergabe als Senke.** Ein geschlossener Batch wird an eine Senke vom Typ `(ScannedDocument) -> Unit` übergeben – dasselbe Lambda-Muster wie `warn`. Bis die Outbox existiert (AU-04), schreibt die Senke das PDF in ein Verzeichnis; danach wird die Outbox eingehängt, **ohne den Batch zu ändern**. Damit braucht es keine Wegwerf-Abstraktion und AU-02 („andocken ohne Änderung am Kern") ist an einer echten Stelle belegt.
 - **Abhängigkeiten minimal:** Spring Boot, Apache PDFBox, Spring-eigener HTTP-Client. Bildanalyse mit Java-Bordmitteln (ImageIO). Systemabhängigkeit: `jpegtran` (libjpeg-turbo) als externes Programm.
@@ -227,7 +233,7 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
   *Abnahme:* Alle Testbilder liegen als Test-Ressourcen vor und werden in den SV-Tests genutzt.
 - **TE-03** Linting mit ktlint, ausgeführt über das Spotless-Gradle-Plugin (entschieden, siehe „Entschieden – nicht mehr offen").
   *Abnahme:* Der Linter läuft im Build mit (`spotlessCheck` hängt an `check`) und meldet nichts.
-- **TE-04** Der Mutationslauf zielt auf die Kern-Pakete. „Kern" heißt: die Pakete, in denen die riskante Logik liegt – ab Meilenstein 3 also zusätzlich `output` (PDF-Erzeugung) und `service` (Loop und Batch). `config` bleibt außen vor, weil eine reine Datenklasse mit Defaults nichts Mutierbares enthält, und `cli` ebenso, weil dort nur Argumente auf Kommandos abgebildet werden.
+- **TE-04** Der Mutationslauf zielt auf die Kern-Pakete. „Kern" heißt: die Pakete, in denen die riskante Logik liegt – ab Meilenstein 3 also zusätzlich `output` (PDF-Erzeugung) und `service` (Loop und Batch), ab Meilenstein 4 die neuen Unterpakete `output.outbox` (Persistenz, Backoff, Wiederholung) und `output.paperless` (Aufbau des Upload-Requests). `config` bleibt außen vor, weil eine reine Datenklasse mit Defaults nichts Mutierbares enthält, und `cli` ebenso, weil dort nur Argumente auf Kommandos abgebildet werden.
   Wächst das Ziel, ändert sich der Nenner: Die Schwelle ist dann **neu einzumessen** und mit Datum, Commit und Zahlen in `docs/entscheidungen.md` als bewusste neue Grundlage festzuhalten. Das ist kein stilles Senken – das bleibt verboten –, sondern ein dokumentierter Wechsel der Messgrundlage.
   *Abnahme:* Nach jedem Meilenstein, der ein Kern-Paket hinzufügt, steht in `docs/entscheidungen.md` ein voller Lauf mit den Zahlen je Paket, und `mutationThreshold` in `build.gradle.kts` entspricht dem gemessenen Gesamtwert.
 
@@ -248,7 +254,7 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
   *Abnahme:* Alle sechs Unterpunkte sind beschrieben, ohne eine bestimmte Container-Runtime vorauszusetzen.
 - **DO-04** `entwicklung.md` – Dev Container, Build, Tests.
   *Abnahme:* Wer nur die Datei liest, bekommt `./gradlew test` im Dev Container grün.
-- **DO-05** `ausgabe-module.md` – Modul-Schnittstelle, paperless-Modul, Anleitung für neue Module.
+- **DO-05** `ausgabe-module.md` – Modul-Schnittstelle, paperless-Modul, Anleitung für neue Module. Entsteht in **Meilenstein 4** zusammen mit der Schnittstelle selbst – aus demselben Grund wie DO-09 in Meilenstein 3: Das Abnahmekriterium hängt an AU-02, also an Code aus Meilenstein 4. Eine Anleitung, die erst einen Meilenstein später aus dem fertigen Code rekonstruiert wird, beschreibt, was dasteht, statt zu prüfen, ob es sich erklären lässt.
   *Abnahme:* Die Anleitung reicht, um das Test-Modul aus AU-02 nachzubauen.
 - **DO-06** `entscheidungen.md` – die festen Entscheidungen mit Begründung.
   *Abnahme:* Jede feste Entscheidung aus diesem Plan steht mit Begründung drin.
@@ -291,7 +297,11 @@ Punkte, die zu Projektbeginn geklärt wurden. Die Begründungen gehören nach DO
   Erschwerend: ktlint ist mit Kotlin 2.4 ohnehin nicht kompatibel (ktlint-Issue 3289, gemeldet von einem JetBrains-Compiler-Entwickler); der Fix existiert bisher nur in ktlint 2.0.0-ALPHA. Der Linter parst deshalb bewusst mit einem älteren Compiler als dem, mit dem übersetzt wird – für Formatierungsregeln genügt das. Siehe OF-11.
 - **DPI-Quelle (SV-05):** Maßgeblich ist die **befohlene** Auflösung (wir setzen `dpi300`/`dpi600` selbst). Der JPEG-Header wird zusätzlich gelesen; weicht er ab, wird **gewarnt, nicht abgebrochen**. Grund: Laut offener Frage 5 stimmt die physische Größe ohnehin nicht, der Header ist also nicht vertrauenswürdiger als unser eigener Befehl – eine Abweichung ist aber ein wertvoller Hinweis.
 - **Modul-Auswahl (AU-03):** Umgebungsvariable `UNBOUNDAIR_OUTPUT_MODULES` als Komma-Liste, in v1 mit dem Wert `paperless`. Eine Liste kostet jetzt nichts und nimmt die offene Frage „mehrere Module gleichzeitig" nicht vorweg.
+- **Dokument-Typ der Modul-Schnittstelle (AU-02):** Ein eigener Typ `output.OutputDocument`; die Batch-Senke bildet `service.ScannedDocument` darauf ab. Nicht umgekehrt: `output` darf `service` nach der Schichten-Tabelle nicht sehen, und `ScannedDocument` nach `output` zu verschieben würde die CLI an die Ausgabe koppeln. Die paar Zeilen Abbildung sind der günstigere Preis.
 - **Outbox (AU-04):** Ablage unter `unboundair.outbox.path`, Default `/var/lib/unboundair/outbox`; je Dokument ein Unterordner mit `document.pdf` und `metadata.json` (Metadaten müssen mitpersistiert werden, sonst überleben sie den Neustart nicht). Backoff: Start 30 s, Faktor 2, Deckel 1 h, unbegrenzte Versuche. Nach erfolgreicher Zustellung wird der Ordner gelöscht.
+
+  Die Backoff-Werte sind **Konstruktor-Parameter, keine Einstellungen** (Muster `PageSettings`). Tests kürzen sie darüber ab; `konfiguration.md` wächst nicht um Schrauben, an denen im Betrieb niemand drehen soll.
+- **Wer die Wiederholung antreibt (AU-04):** Die Outbox ist **passiv** – reine Logik mit injizierter `Clock`, ohne eigenen Thread: Sie persistiert, nennt die fälligen Einträge und vermerkt Erfolg oder Fehlschlag. Die Uhr dreht ein `OutboxRunner` in `service`, mit injizierter `Clock` und injiziertem Sleeper, genau wie `ScanLoop` es schon tut. Eine Outbox, die sich selbst startet, müsste in jedem Test nebenläufig geprüft werden – und Nebenläufigkeit in Tests war in Meilenstein 3 die Quelle der sporadisch roten Läufe.
 - **Dateiname und paperless-Felder (AU-05):** Zeitstempel = Beginn der **ersten Seite** des Batches, in der **lokalen Zeitzone** des Containers (über `TZ` steuerbar) – der Name ist für Menschen gedacht, nicht für Maschinen. `tags`, `correspondent` und `document_type` sind optional als numerische IDs konfigurierbar. `title` und `created` werden **nicht** gesetzt, weil paperless sie sonst schlechter ableitet als selbst bestimmt.
 - **Doppelscan-Schutz:** in v1 weggelassen.
 
