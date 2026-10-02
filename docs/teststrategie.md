@@ -84,6 +84,7 @@ Byte-genaue Referenzartefakte unter `golden/` mit einem **sha256-Manifest**. Erg
 - **Warum:** schützt vor stillen Regressionen, wo „ungefähr richtig" nicht reicht (verlustfreier Zuschnitt, JPEG-Einbettung per `JPEGFactory`).
 - **PDF-Determinismus:** PDF-Metadaten (CreationDate) stammen aus der **injizierbaren Clock** (Scan-Zeitpunkt = Beginn der ersten Seite). Tests pinnen die Clock → bytegleiche PDFs; die Produktion behält echte Zeitstempel. Begründung in `docs/entscheidungen.md`. **Die Clock allein genügt nicht:** PDFBox bildet auch die Trailer-Angabe `/ID` aus Zeit und Zufall, die ebenfalls an die Clock gebunden werden musste.
 - **„Nicht neu komprimiert" muss man byteweise prüfen.** Ein Test, der nur die JPEG-Marker `SOI`/`EOI` kontrolliert, sieht gut aus und beweist nichts: Diese Marker überstehen eine Neukodierung unverändert. In Meilenstein 3 blieb genau so ein Test grün, während jedes Pixel durch einen zweiten verlustbehafteten Durchgang gelaufen war. Verglichen wird deshalb der **rohe, noch komprimierte Datenstrom** (`COSStream.createRawInputStream`) gegen die Eingabedatei — `toByteArray()` und `createInputStream()` dekodieren und taugen dafür nicht.
+- **In Meilenstein 4 bewusst nicht eingesetzt.** Die Ausgabe-Module erzeugen kein neues bytegenaues Artefakt: Das PDF ist bereits durch `PdfGoldenTest` festgenagelt, und die Outbox kopiert es unverändert. Bliebe `metadata.json` — dafür ist der `@JsonTest`-Rundlauf (Schicht Slice) die bessere Prüfung, weil er den Verlust einzelner Felder benennt, während eine Golden-Datei bei jedem neuen Feld rot wird, ohne dass etwas kaputt ist. Eine Schicht wegzulassen, ohne den Grund aufzuschreiben, ist dasselbe wie sie zu vergessen.
 
 ### 8. Mutation (`mutation`)
 
@@ -91,8 +92,8 @@ Byte-genaue Referenzartefakte unter `golden/` mit einem **sha256-Manifest**. Erg
 
 - **Warum:** Mutation deckt Lücken in der Assertion-Qualität auf, die Coverage allein nicht zeigt.
 - **Grenzen (gemessen, Spike B):** PIT funktioniert auf JUnit Platform 6 (das bekannte Problem 0 %-Coverage ist mit pitest 1.25.5 behoben). Die zeitgesteuerten Scanner-Tests machen Läufe über den ganzen Kern langsam; deshalb `timeoutConstInMillis` erhöht. Zahlen und Entscheidung in `docs/entscheidungen.md`.
-- **Stand (erster voller Lauf, 25.09.2026):** gesamt **73 %** Mutation Coverage (280/386), Test Strength 76 %, Dauer 23 min. Je Paket: `image` 74 %, `scanner` 72 %, `processing` 68 %.
-- **Schwelle:** `mutationThreshold = 73` in `build.gradle.kts` — der gemessene Wert als **Boden**, damit ein Rückgang den Task rot macht. Anheben, wenn der Score steigt; **nie stillschweigend senken**. Schwächste Klassen und Begründung in `docs/entscheidungen.md`.
+- **Stand (Einmessung Meilenstein 3, 28.09.2026, Commit `17ae322`):** gesamt **71 %** Mutation Coverage (371/525), Test Strength 76 %. Mit der Aufnahme von `output` und `service` wuchs der Nenner von 386 auf 525 Mutationen — ein belegter Wechsel der Messgrundlage. Alle Zahlen je Paket stehen in `docs/entscheidungen.md`.
+- **Schwelle:** `mutationThreshold = 71` in `build.gradle.kts` — der gemessene Wert als **Boden**, damit ein Rückgang den Task rot macht. Anheben, wenn der Score steigt; **nie stillschweigend senken**. Schwächste Klassen und Begründung in `docs/entscheidungen.md`.
 - **Netz:** Die `org.pitest`-Artefakte sind nicht im warmen Cache; der erste `pitest`-Lauf löst sie online auf. DC-03 bleibt unberührt, weil es `./gradlew test` betrifft — der läuft weiterhin offline.
 
 ### Wächter (Guard)
@@ -136,6 +137,8 @@ Checkliste für künftige Test-Issues:
 | Mutation | `org.pitest:pitest-junit5-plugin` | 1.2.2 |
 | Asynchronität | `org.awaitility:awaitility` | verwaltet über `spring-boot-starter-test` |
 | AssertJ | `org.assertj:assertj-core` | verwaltet über `spring-boot-starter-test` |
-| JSON-Schema | `com.networknt:json-schema-validator` | 3.0.7, wird mit der ersten Contract-Testdatei gepinnt |
+| JSON-Schema | `com.networknt:json-schema-validator` | 3.0.8 |
+| HTTP-Client (paperless) | `org.springframework.boot:spring-boot-starter-restclient` | verwaltet über Spring Boot 4.1.1 |
+| JSON (Outbox-Metadaten) | `tools.jackson.module:jackson-module-kotlin` | verwaltet über Spring Boot 4.1.1 |
 
 Auswahlbegründungen stehen in `docs/entscheidungen.md`, die Versions-Tabelle in `docs/plan.md`.
