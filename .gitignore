@@ -6,6 +6,9 @@ _input/
 .gradle/
 build/
 
+# Kotlin build tooling (session files of the Kotlin Gradle plugin)
+.kotlin/
+
 # IDE
 .idea/
 *.iml
