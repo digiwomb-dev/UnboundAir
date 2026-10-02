@@ -42,6 +42,17 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
 
+    // Outbound upload to paperless-ngx (AU-05). Client only: this adds no
+    // endpoint of its own, so the "no web starter" note above stays true.
+    implementation("org.springframework.boot:spring-boot-starter-restclient")
+
+    // Jackson for reading and writing the outbox metadata.json (AU-04).
+    // Jackson 3 changed its coordinates: the Kotlin module is
+    // tools.jackson.module, not com.fasterxml.jackson.module - the old group
+    // resolves and compiles, but fails at runtime for a Kotlin data class
+    // without a default constructor.
+    implementation("tools.jackson.module:jackson-module-kotlin")
+
     // PDF assembly. Version pinned here rather than inherited, since
     // Spring Boot does not manage PDFBox.
     implementation("org.apache.pdfbox:pdfbox:3.0.8")
@@ -62,6 +73,10 @@ dependencies {
     // Contract tests against the paperless-ngx HTTP API. 4.x is still beta,
     // so 3.13.2 is the newest stable line.
     testImplementation("org.wiremock:wiremock-standalone:3.13.2")
+
+    // Contract tests: JSON schema validation of the paperless payload.
+    // Version pinned: Spring Boot does not manage com.networknt.
+    testImplementation("com.networknt:json-schema-validator:3.0.8")
 
     // Architecture guard (Wächter). The junit6 artifact carries JUnit Platform 6
     // support, introduced in ArchUnit 1.5.0.
