@@ -5,6 +5,7 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.SocketTimeoutException
+import java.time.Duration
 
 /**
  * TCP client for the Mustek iScan Air (S400W) scan protocol.
@@ -95,7 +96,7 @@ class ScannerClient(
      * [resolveDpi], SC-07) → `scan` → `jpegsize` → `jpegdata`.
      *
      * @param dpi requested resolution: 300 or 600.
-     * @return the raw JPEG bytes of the scanned page.
+     * @return the raw JPEG bytes together with the resolution actually used (SC-08).
      * @throws ScannerOfflineException the scanner cannot be reached or the connection drops.
      * @throws ScannerTimeoutException a read outlived its timeout.
      * @throws ScannerNoPaperException the scanner reports `nopaper`.
@@ -104,7 +105,7 @@ class ScannerClient(
      * @throws ScannerProtocolException the device answered with an unexpected word.
      * @throws IllegalArgumentException [dpi] is neither 300 nor 600.
      */
-    fun scan(dpi: Int): ByteArray {
+    fun scan(dpi: Int): ScanResult {
         require(dpi == 300 || dpi == 600) { "dpi must be 300 or 600, was $dpi" }
         val socket = connect()
         try {
@@ -133,12 +134,29 @@ class ScannerClient(
             val dpiExpected = if (effectiveDpi == 600) ScannerResponse.DPIFINE else ScannerResponse.DPISTD
             send(socket, dpiCommand, if (effectiveDpi == 600) "dpi600" else "dpi300")
             expectPrefix(readAnswer(socket, "dpi", NORMAL_TIMEOUT_MILLIS), dpiExpected, "dpi")
+            // KL-02 wants the scan and the transfer timed separately, and this
+            // is the only place that can tell them apart: pulling the sheet
+            // through ends when jpegsize answers, the transfer begins with
+            // jpegdata. System.nanoTime, not the clock, because these are
+            // elapsed times - a wall clock can jump backwards over an NTP
+            // correction and produce a negative duration.
+            val scanStartedAt = System.nanoTime()
             send(socket, ScannerCommand.SCAN, "scan")
             expectPrefix(readAnswer(socket, "scan", NORMAL_TIMEOUT_MILLIS), ScannerResponse.SCANGO, "scan")
             send(socket, ScannerCommand.JPEGSIZE, "jpegsize")
             val size = readJpegSizeAnswer(socket, JPEGSIZE_TIMEOUT_MILLIS)
+            val scanFinishedAt = System.nanoTime()
+
             send(socket, ScannerCommand.JPEGDATA, "jpegdata", BULK_READ_PAUSE_MILLIS)
-            return readBulkData(socket, size, BULK_READ_TIMEOUT_MILLIS)
+            val bytes = readBulkData(socket, size, BULK_READ_TIMEOUT_MILLIS)
+            val transferFinishedAt = System.nanoTime()
+
+            return ScanResult(
+                bytes = bytes,
+                dpi = effectiveDpi,
+                scanDuration = Duration.ofNanos(scanFinishedAt - scanStartedAt),
+                transferDuration = Duration.ofNanos(transferFinishedAt - scanFinishedAt),
+            )
         } finally {
             runCatching { socket.close() }
         }

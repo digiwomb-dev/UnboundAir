@@ -17,7 +17,7 @@ import java.nio.file.Path
 /**
  * Tests for the subcommand dispatch of [UnboundAirApplication] (issue #21: the dispatch
  * around `crop`, the new `--color-mode` and `--keep-raw` options, and the updated usage
- * text), plus the processing-warning forwarding to stderr (issue #18: SV-02). "Integration"
+ * text), plus the processing-warning forwarding (issue #18: SV-02). "Integration"
  * layer of docs/teststrategie.md: every test boots the full Spring context without a web
  * environment, passes arguments exactly as they would appear on the command line, and
  * asserts the exit code plus the files written to disk.
@@ -72,24 +72,24 @@ class DispatchCommandTest {
      * wires the processing warning sink to `System.err`. The `dark_page.jpg` fixture
      * contains no paper, so the crop finds none and must carry the page through
      * uncropped: the command still succeeds (exit code 0) and the output file is a
-     * byte-for-byte copy of the input, while stderr carries the warning. This is the
+     * byte-for-byte copy of the input, while the log carries the warning. This is the
      * SV-02 acceptance from docs/plan.md -- a dark test image stays uncropped and the
      * log carries a warning -- proved through the real sink, end to end.
      */
     @Test
-    fun `SV-02 crop of a dark page without paper exits 0 and reports the no-paper warning on stderr`(
+    fun `SV-02 crop of a dark page without paper exits 0 and reports the no-paper warning in the log`(
         @TempDir dir: Path,
     ) {
         val input = TestImages.copy(DARK_PAGE, dir)
         val output = dir.resolve("dark.jpg")
 
-        val result = exitCodeWithStderr("crop", input.toString(), output.toString())
+        val result = exitCodeWithDiagnostics("crop", input.toString(), output.toString())
 
         assertThat(result.first)
             .`as`("a crop that finds no paper must still succeed with exit code 0")
             .isEqualTo(0)
         assertThat(result.second)
-            .`as`("the SV-02 acceptance is a warning in the log: the dispatch must print it on stderr")
+            .`as`("the SV-02 acceptance is a warning in the log: the dispatch must report it (KL-02: through SLF4J)")
             .contains("no paper")
         assertThat(Files.readAllBytes(output))
             .`as`("the page is carried through uncropped: the output must be the input, byte-for-byte")
@@ -120,7 +120,7 @@ class DispatchCommandTest {
      */
     @Test
     fun `SV-03 scan with an invalid color-mode value fails with exit code 1 before any scanner access`() {
-        val result = exitCodeWithStderr("scan", "--color-mode", "bogus")
+        val result = exitCodeWithDiagnostics("scan", "--color-mode", "bogus")
 
         assertThat(result.first)
             .`as`("an invalid --color-mode value must be rejected with exit code 1")
@@ -146,7 +146,7 @@ class DispatchCommandTest {
         try {
             val out = dir.resolve("page.jpg")
             val result =
-                exitCodeWithStderr(
+                exitCodeWithDiagnostics(
                     "scan",
                     "--host",
                     "127.0.0.1",
@@ -192,7 +192,7 @@ class DispatchCommandTest {
         try {
             val out = dir.resolve("page.jpg")
             val result =
-                exitCodeWithStderr(
+                exitCodeWithDiagnostics(
                     "scan",
                     "--host",
                     "127.0.0.1",
@@ -227,7 +227,7 @@ class DispatchCommandTest {
      */
     @Test
     fun `BE-02 scan with an unknown option fails with exit code 1`() {
-        val result = exitCodeWithStderr("scan", "--bogus")
+        val result = exitCodeWithDiagnostics("scan", "--bogus")
 
         assertThat(result.first)
             .`as`("an unknown option must be rejected with exit code 1")
@@ -245,7 +245,7 @@ class DispatchCommandTest {
      */
     @Test
     fun `BE-03 an unknown command prints the updated usage text and fails with exit code 1`() {
-        val result = exitCodeWithStderr("frobnicate")
+        val result = exitCodeWithDiagnostics("frobnicate")
 
         assertThat(result.first)
             .`as`("an unknown command must fail with exit code 1")
@@ -255,6 +255,38 @@ class DispatchCommandTest {
             .contains("crop IN OUT")
             .contains("--color-mode")
             .contains("--keep-raw")
+    }
+
+    /**
+     * KL-02 -- the result of a command stays plain text on stdout.
+     *
+     * Since KL-02 the diagnostics travel through SLF4J, and Logback prefixes every line
+     * with a level and a logger name. A command's *answer* must not go the same way:
+     * `unboundair crop in out` is meant to be usable in a pipeline, and a line reading
+     * `INFO [UnboundAirApplication] Saved: ...` would break every such use.
+     *
+     * This test guards the boundary from the other side than the diagnostics tests above:
+     * it asserts that stdout carries exactly the bare result line and none of the log
+     * decoration. Without it, nothing stops a later change from routing results through
+     * the logger too, which would look tidy in the code and break the interface.
+     */
+    @Test
+    fun `KL-02 the result of a command is bare text on stdout, not a log line`(
+        @TempDir dir: Path,
+    ) {
+        val input = TestImages.copy(ENVELOPE, dir)
+        val output = dir.resolve("cropped.jpg")
+
+        val (code, stdout) = exitCodeWithStdout("crop", input.toString(), output.toString())
+
+        assertThat(code).isEqualTo(0)
+        assertThat(stdout.trim())
+            .`as`("stdout must be exactly the result line, so the command can be piped")
+            .isEqualTo("Saved: $output")
+        assertThat(stdout)
+            .`as`("the result must not carry a log level or a logger name")
+            .doesNotContain("INFO")
+            .doesNotContain("[UnboundAirApplication]")
     }
 
     /**
@@ -275,18 +307,49 @@ class DispatchCommandTest {
     }
 
     /**
-     * Like [exitCode], but with `System.err` captured for the whole boot, so tests can
-     * assert on what the dispatch reports on the error channel (parse errors, usage
-     * text). The original stream is restored even if the boot fails.
+     * Like [exitCode], but with only `System.out` captured, so a test can assert what a
+     * command writes to the channel a caller would pipe. Diagnostics are deliberately not
+     * captured here: they must not appear in this stream in the first place.
      */
-    private fun exitCodeWithStderr(vararg args: String): Pair<Int, String> {
-        val original = System.err
+    private fun exitCodeWithStdout(vararg args: String): Pair<Int, String> {
+        val original = System.out
         val captured = ByteArrayOutputStream()
-        System.setErr(PrintStream(captured, true, Charsets.UTF_8))
+        System.setOut(PrintStream(captured, true, Charsets.UTF_8))
         return try {
             exitCode(*args) to captured.toString(Charsets.UTF_8)
         } finally {
-            System.setErr(original)
+            System.setOut(original)
+        }
+    }
+
+    /**
+     * Like [exitCode], but with the diagnostic output of the boot captured, so tests can
+     * assert on what the dispatch reports (processing warnings, parse errors, usage
+     * text). The original streams are restored even if the boot fails.
+     *
+     * **Both streams are captured on purpose.** Since KL-02 these messages travel through
+     * SLF4J, and Logback's console appender writes to stdout, not stderr: stdout is what a
+     * container runtime and journald collect. Capturing only stderr would make every one
+     * of these tests fail; capturing only stdout would tie them to that choice of
+     * appender. What the tests actually care about is that the message reaches the user
+     * at all, so both channels are captured and searched together.
+     *
+     * The distinction that still matters, and that [exitCodeWithStdout] pins, is the
+     * opposite direction: a command's *result* must stay plain text on stdout so it can be
+     * piped.
+     */
+    private fun exitCodeWithDiagnostics(vararg args: String): Pair<Int, String> {
+        val originalOut = System.out
+        val originalErr = System.err
+        val captured = ByteArrayOutputStream()
+        val stream = PrintStream(captured, true, Charsets.UTF_8)
+        System.setOut(stream)
+        System.setErr(stream)
+        return try {
+            exitCode(*args) to captured.toString(Charsets.UTF_8)
+        } finally {
+            System.setOut(originalOut)
+            System.setErr(originalErr)
         }
     }
 

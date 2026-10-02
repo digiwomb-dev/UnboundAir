@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logging configuration (KL-02).
+
+  Logs go to stdout so a container runtime and journald can collect them
+  without a log file, a rotation policy or a mounted volume. There is
+  deliberately no file appender: in a container a log file is a liability,
+  not a feature.
+
+  Two deviations from Spring Boot's defaults, both on purpose:
+
+  1. No timestamp and no PID in the pattern. journald and every container
+     runtime already stamp each line with a time and the originating
+     process; repeating both doubles the width of every line and makes the
+     message itself harder to find. The level and the logger name stay,
+     because those carry information nothing upstream can reconstruct.
+
+  2. The logger name is shortened to its last segment. The package prefix
+     is the same for every line in this application and adds no signal.
+
+  Spring Boot's `defaults.xml` is imported for its conversion rules
+  (`%clr`, the exception converters); `console-appender.xml` is not, since
+  the pattern below replaces it.
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%clr(%-5level) %clr([%logger{0}]){cyan} %message%n%wEx</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!--
+      The startup chatter of the framework is noise for a command line tool:
+      a `status` call should print the scanner status, not three lines about
+      the application context. Warnings and errors still come through.
+
+      `org.springframework` silences the framework's own logging. That alone is
+      not enough: the three "Starting / No active profile set / Started in 0.4
+      seconds" lines are emitted through a logger named after whichever class
+      holds the `main` method. That is `UnboundAirApplicationKt` for the packaged
+      jar, but `GradleWorkerMain` under the test runner, and something else again
+      if the application is embedded. Naming those classes would be a game of
+      whack-a-mole.
+
+      `spring.main.log-startup-info=false` in application.properties turns the
+      three lines off at the source instead, which is why no rule for them
+      appears here.
+    -->
+    <logger name="org.springframework" level="WARN"/>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

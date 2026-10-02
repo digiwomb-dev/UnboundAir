@@ -104,11 +104,17 @@ tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
 pitest {
     pitestVersion.set("1.25.5")
     junit5PluginVersion.set("1.2.2")
+    // The core packages, as TE-04 defines them: where the risky logic lives.
+    // Milestone 3 added `output` (PDF assembly) and `service` (loop and batch).
+    // `config` stays out - a data class of defaults has nothing to mutate - and
+    // so does `cli`, which only maps arguments onto commands.
     targetClasses.set(
         setOf(
             "dev.digiwomb.unboundair.scanner.*",
             "dev.digiwomb.unboundair.image.*",
             "dev.digiwomb.unboundair.processing.*",
+            "dev.digiwomb.unboundair.output.*",
+            "dev.digiwomb.unboundair.service.*",
         ),
     )
     targetTests.set(
@@ -116,6 +122,10 @@ pitest {
             "dev.digiwomb.unboundair.scanner.*",
             "dev.digiwomb.unboundair.image.*",
             "dev.digiwomb.unboundair.processing.*",
+            "dev.digiwomb.unboundair.output.*",
+            "dev.digiwomb.unboundair.service.*",
+            // The page-log assertions live in `logging` but exercise `service`.
+            "dev.digiwomb.unboundair.logging.*",
         ),
     )
     outputFormats.set(setOf("HTML"))
@@ -123,11 +133,12 @@ pitest {
     timestampedReports.set(false)
     timeoutConstInMillis.set(60000)
 
-    // Floor, not a target. 73 % is exactly what the first full run over all
-    // three core packages measured (280/386 killed, 25.09.2026); pinning it
+    // Floor, not a target. 71 % is exactly what the re-measurement run over all
+    // five core packages measured (371/525 killed, 28.09.2026); pinning it
     // here makes a later drop in assertion quality fail the task instead of
-    // passing unnoticed. No previous value was lowered - there was none.
+    // passing unnoticed. Milestone 3 added `output` and `service`, changing
+    // the measurement basis as permitted by TE-04.
     // Raise this number when the score improves; never lower it silently.
     // Per-package numbers and the weak spots are in docs/entscheidungen.md.
-    mutationThreshold.set(73)
+    mutationThreshold.set(71)
 }

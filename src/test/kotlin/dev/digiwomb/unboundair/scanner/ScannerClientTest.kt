@@ -28,7 +28,7 @@ class ScannerClientTest {
         fake.payload = ByteArray(5000) { index -> (index * 29 + 3).toByte() }
         fake.start()
         try {
-            val bytes = clientFor(fake).scan(300)
+            val bytes = clientFor(fake).scan(300).bytes
 
             assertThat(bytes)
                 .`as`("the scanned page must arrive byte-identical")
@@ -108,7 +108,7 @@ class ScannerClientTest {
         fake.payload = ByteArray(1234) { index -> (index * 31 + 7).toByte() }
         fake.start()
         try {
-            val bytes = clientFor(fake).scan(300)
+            val bytes = clientFor(fake).scan(300).bytes
 
             // A byte-identical 1234-byte payload is the proof that the client assembled
             // the split size answer and parsed the size from it.
@@ -234,11 +234,15 @@ class ScannerClientTest {
         capableFake.start()
         try {
             val client = ScannerClient("127.0.0.1", capableFake.port) { warnings += it }
-            val bytes = client.scan(600)
+            val scan = client.scan(600)
+            val bytes = scan.bytes
 
             assertThat(bytes)
                 .`as`("the scan must succeed")
                 .isEqualTo(capableFake.payload)
+            assertThat(scan.dpi)
+                .`as`("SC-08: a capable firmware reports the requested 600 dpi back to the caller")
+                .isEqualTo(600)
             assertThat(capableFake.receivedCommands)
                 .`as`("a capable firmware allows 600 dpi")
                 .contains("dpi600")
@@ -258,11 +262,17 @@ class ScannerClientTest {
         outdatedFake.start()
         try {
             val client = ScannerClient("127.0.0.1", outdatedFake.port) { warnings += it }
-            val bytes = client.scan(600)
+            val scan = client.scan(600)
+            val bytes = scan.bytes
 
             assertThat(bytes)
                 .`as`("the scan must succeed at 300 dpi")
                 .isEqualTo(outdatedFake.payload)
+            assertThat(scan.dpi)
+                .`as`(
+                    "SC-08: the downgrade must reach the caller as a value, not only as a warning - " +
+                        "SV-05 derives the PDF page size from this number",
+                ).isEqualTo(300)
             assertThat(outdatedFake.receivedCommands)
                 .`as`("an old firmware falls back to 300 dpi")
                 .contains("dpi300")

@@ -27,7 +27,17 @@ Jeder Eintrag hat eine feste ID, einen Status und eine Herkunft. IDs werden nie 
 
 **Herkunft:** **[Gerät]** am echten Gerät verifiziert · **[App/s400w]** aus der Windows-App bzw. s400w, am Gerät nicht getestet · **[Handbuch]** · **[Scan]** an 1–2 echten Scans beobachtet · **[Analyse]** aus den Testbildern in dieser Arbeit abgeleitet
 
-Die meisten Punkte lassen sich erst mit dem Befehl `measure` am echten Gerät klären (BE-04; wie er aufgerufen wird, ist noch offen). Ein Gerätetest ist bisher nicht freigegeben, deshalb gelten überall vorläufige Werte.
+Die meisten Punkte lassen sich erst mit dem Befehl `measure` am echten Gerät klären (BE-04). Ein Gerätetest ist bisher nicht freigegeben, deshalb gelten überall vorläufige Werte.
+
+**Der Befehl existiert seit Meilenstein 3** und wird so aufgerufen:
+
+```bash
+unboundair.jar measure [--minutes N] [--poll-seconds N] [--host HOST] [--port PORT]
+```
+
+Default sind 10 Minuten Laufzeit und ein Abfrage-Abstand von 3 Sekunden. Der Lauf endet von selbst, wenn das Gerät offline geht und offline bleibt. Am Ende steht eine Zusammenfassung auf stdout, deren Zeilen die hier geführten Fragen namentlich nennen – die Zahlen lassen sich also direkt zuordnen und nach `hardware.md` übernehmen. **Es geht dabei kein Dokument an ein Ausgabe-Modul**; die Scans sind ein Nebenprodukt der Messung und werden verworfen.
+
+Was noch fehlt, ist allein die Freigabe für den Lauf am echten Gerät.
 
 ---
 
@@ -39,7 +49,7 @@ Das Gerät schaltet sich laut Handbuch nach 5 Minuten ohne Aktion ab. Unklar ist
 
 **So gebaut:** `poll-interval` konfigurierbar, vorläufiger Default 3 s (DL-01). Offline ist ein regulärer Zustand, kein Fehler (DL-02, DL-04).
 
-**Klärt:** `measure` – protokolliert den Zeitpunkt, ab dem das Gerät nicht mehr erreichbar ist, und den Abstand zur letzten Aktivität.
+**Klärt:** `measure` – protokolliert den Zeitpunkt, ab dem das Gerät nicht mehr erreichbar ist, und den Abstand zur letzten Aktivität. **Gebaut (Meilenstein 3):** Die Zusammenfassung meldet beides in der Zeile `went offline: … after … of quiet (OF-01)`. Ist die Ruhezeit dort nahe fünf Minuten, obwohl durchgehend abgefragt wurde, hält das Polling das Gerät **nicht** wach.
 
 **Zweistufig:** Nach der Messung ist noch zu entscheiden, welcher Default daraus wird – siehe „Defaults" in den offenen Entscheidungen des Plans.
 
@@ -53,7 +63,7 @@ Die Mustek-App fragt den Status nicht periodisch ab, AirScan alle 8 s. Ob das Ge
 
 **So gebaut:** `devbusy` wird als eigener Zustand behandelt und führt nicht zum Abbruch (SC-05).
 
-**Klärt:** `measure` – zählt die `devbusy`-Antworten pro Lauf.
+**Klärt:** `measure` – zählt die `devbusy`-Antworten pro Lauf. **Gebaut (Meilenstein 3):** Zeile `devbusy answers: … (OF-02)`. Mit `--poll-seconds` lässt sich derselbe Lauf mit verschiedenen Takten wiederholen, um die Grenze zu finden, ab der das Gerät sich beschwert.
 
 **Zweistufig:** Kommt `devbusy` häufig, muss anschließend entschieden werden, wie stark das Polling gestreckt wird – siehe „Defaults" in den offenen Entscheidungen des Plans.
 
@@ -67,7 +77,7 @@ Wie lange ein Scan dauert und wie viel Zeit zwischen zwei Blättern vergeht, wen
 
 **So gebaut:** `batch-timeout` konfigurierbar, vorläufiger Default 20 s (DL-04).
 
-**Klärt:** `measure` – misst Scan-Dauer, Übertragungsdauer und die Abstände zwischen den Seiten (Mittelwert, Minimum, Maximum).
+**Klärt:** `measure` – misst Scan-Dauer, Übertragungsdauer und die Abstände zwischen den Seiten (Mittelwert, Minimum, Maximum). **Gebaut (Meilenstein 3):** Die Abstände stehen als `gaps between pages` mit Mittelwert, Minimum und Maximum in der Zusammenfassung. Scan- und Übertragungsdauer werden **je Seite getrennt** gemessen und stehen in der Log-Zeile jeder Seite (KL-02) – getrennt deshalb, weil nur der erste Teil das Papier durch das Gerät zieht und nur dieser den Abstand zwischen zwei Blättern bestimmt.
 
 **Zweistufig:** Aus den gemessenen Abständen ist anschließend der endgültige `batch-timeout` festzulegen – siehe „Defaults" in den offenen Entscheidungen des Plans.
 
@@ -81,7 +91,7 @@ Möglicherweise meldet das Gerät unmittelbar nach einem Scan noch einmal kurz `
 
 **Entscheidung:** Ein Doppelscan-Schutz wird in v1 **nicht** gebaut – solange nicht gemessen ist, ob das Problem überhaupt auftritt, wäre jede Sperrzeit geraten.
 
-**Klärt:** `measure` – erkennt aufeinanderfolgende Scans mit auffällig kurzem Abstand.
+**Klärt:** `measure` – erkennt aufeinanderfolgende Scans mit auffällig kurzem Abstand. **Gebaut (Meilenstein 3):** Zeile `possible double scans: … (OF-04)`; als auffällig gilt ein Abstand unter 2 Sekunden. Diese Schwelle ist geraten und darf es sein: Sie entscheidet nur, was die Zusammenfassung einem Menschen zur Ansicht **meldet**, und ändert am Verhalten des Dienstes nichts. Im Dienst selbst wäre ein geratener Wert nicht zulässig – deshalb gibt es dort weiterhin keinen Doppelscan-Schutz.
 
 ---
 

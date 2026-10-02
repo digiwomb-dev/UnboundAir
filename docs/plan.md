@@ -57,6 +57,21 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
 
   **Kotlin wird bewusst hochgezogen:** Spring Boot 4.1.1 verwaltet Kotlin 2.3.21, und dessen Compiler kennt als höchstes Bytecode-Ziel `JVM_25` – mit Java 26 lässt sich damit nicht bauen. Kotlin 2.4.20 kennt `JVM_26`. Deshalb wird die von Spring Boot vorgegebene Kotlin-Version im Build überschrieben. Das ist die einzige Stelle, an der bewusst von Spring Boots verwalteten Versionen abgewichen wird; sie gehört mit Begründung nach `docs/entscheidungen.md` (DO-06). Falls daraus Probleme entstehen, ist der Rückfallweg Java 25 statt 26.
 - **Eine Anwendung,** in v1 ohne Web-Oberfläche. Den Kern (Scanner, Verarbeitung, Batch, Ausgabe) so schneiden, dass später eine Web-UI andocken kann, ohne den Kern umzubauen.
+- **Paketschichten mit fester Richtung.** Der Schnitt ist eine Entscheidung, keine Gewohnheit, und wird vom ArchUnit-Wächter erzwungen (`guard/ArchitectureRulesTest.kt`):
+
+  | Schicht | darf zugreifen auf |
+  |---|---|
+  | `config` | nichts (Blatt) |
+  | `scanner` | nichts (Blatt) |
+  | `image` | nichts (Blatt) |
+  | `processing` | `image` |
+  | `output` | `processing`, `image` |
+  | `service` | `scanner`, `processing`, `image`, `output`, `config` |
+  | `cli` | `scanner`, `processing`, `service`, `config` |
+
+  `scanner`, `image` und `processing` bleiben ausdrücklich **frei von `config`**: Sie bekommen ihre Werte wie bisher über Konstruktor-Parameter (Muster `PageSettings`). So bleibt der Kern ohne Spring testbar, und die Blatt-Eigenschaft der drei Pakete ist eine prüfbare Regel statt einer Absichtserklärung. `UnboundAirApplication` ist als Kompositionswurzel keiner Schicht zugeordnet und darf alles sehen.
+- **Logging über SLF4J,** Ausgabe per Logback auf stdout. Beides bringt `spring-boot-starter` bereits mit – keine neue Abhängigkeit. Kommandos und Verarbeitungsschritte loggen weiterhin **nicht** selbst, sondern melden über ihre `warn: (String) -> Unit`-Senke nach oben; nur die äußeren Schichten (`service`, Kompositionswurzel) schreiben Log-Zeilen. Begründung in `docs/entscheidungen.md`.
+- **Batch-Übergabe als Senke.** Ein geschlossener Batch wird an eine Senke vom Typ `(ScannedDocument) -> Unit` übergeben – dasselbe Lambda-Muster wie `warn`. Bis die Outbox existiert (AU-04), schreibt die Senke das PDF in ein Verzeichnis; danach wird die Outbox eingehängt, **ohne den Batch zu ändern**. Damit braucht es keine Wegwerf-Abstraktion und AU-02 („andocken ohne Änderung am Kern") ist an einer echten Stelle belegt.
 - **Abhängigkeiten minimal:** Spring Boot, Apache PDFBox, Spring-eigener HTTP-Client. Bildanalyse mit Java-Bordmitteln (ImageIO). Systemabhängigkeit: `jpegtran` (libjpeg-turbo) als externes Programm.
 - Kein SANE, kein AirScan, kein eSCL.
 - **Nie neu komprimieren:** Der Scanner liefert JPEG mit Qualität ~50. Zuschnitt und Graustufen verlustfrei per `jpegtran` (`-crop`, `-grayscale`). PDF mit PDFBox, JPEGs per `JPEGFactory` unverändert einbetten, Seitengröße aus Pixeln und DPI. Einzige Ausnahme: optionales `normalize`, Default aus.
@@ -92,6 +107,8 @@ Jede Anforderung hat eine feste ID und ein Abnahmekriterium. IDs werden nie umnu
   *Abnahme:* Test verbindet sich ohne Codeänderung mit dem Fake-Scanner auf einem freien Port; ohne Konfiguration gelten die Defaults oben.
 - **SC-07** Firmware-Check vor dem Umstellen der Auflösung: Die DPI nur umstellen, wenn die Zahl nach dem Punkt in der Versionsangabe ≥ 26 ist (Testgerät `NB0a.032` → 32 → umschaltbar). Andernfalls bei 300 dpi bleiben und warnen.
   *Abnahme:* Test mit Version `NB0a.032` stellt um, Test mit einer Version < 26 stellt nicht um und protokolliert eine Warnung.
+- **SC-08** Ein Scan liefert die Bilddaten **zusammen mit der tatsächlich verwendeten Auflösung** zurück, nicht nur die Bytes. Stuft der Firmware-Check nach SC-07 von 600 auf 300 dpi zurück, muss der Aufrufer das erfahren – eine Warnung im Log genügt nicht, weil die Seitengröße im PDF nach SV-05 aus genau dieser Zahl berechnet wird. Eine still danebenliegende DPI wäre ein unbemerkter Maßfehler im fertigen Dokument.
+  *Abnahme:* Test fordert 600 dpi bei einer Firmware < 26 an; das Ergebnis meldet 300 dpi, und die daraus gebaute PDF-Seite misst nach der 300er-Zahl.
 
 ### Dienst-Loop (DL)
 
@@ -203,10 +220,16 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
 
 - **TE-01** Fake-Scanner nach `_input/reference/fake_scanner.py` in Kotlin als TCP-Server im Test (bildet die echten Füllbytes, geteilte `jpegsize`-Antwort, `devbusy`, Offline und `battlow` nach). `battlow` kennt die Referenz nicht, wird aber für SC-05 gebraucht.
   *Abnahme:* Jedes dieser fünf Verhalten lässt sich im Test gezielt einschalten.
+
+  **Erweiterung ab Meilenstein 3:** Ein Dienst-Loop (DL-01 bis DL-06) und der Messmodus (BE-04) lassen sich mit einem Fake-Scanner, der immer dieselbe Antwort und dieselbe Seite liefert, nicht prüfen. Der Fake muss zusätzlich können: eine **Folge** von Statusantworten abspielen, **mehrere Seiten** nacheinander liefern, nach einem abgeschlossenen Scan **selbsttätig weiterschalten** und **offline gehen und auf demselben Port zurückkommen** (Auto-Off nach DL-04). Die von außen im Testlauf veränderbaren Felder müssen über Speichergrenzen hinweg sichtbar sein (`@Volatile` bzw. atomar), sonst werden die Tests sporadisch rot.
+  *Abnahme:* Ein Test spielt drei Seiten, eine `devbusy`-Antwort und ein Offline nacheinander ab, ohne den Fake zwischendurch neu zu starten.
 - **TE-02** Testbilder: die echten Testbilder aus `_input/fixtures/` als Test-Ressource plus synthetische Fälle: A4 ohne Schwarz oben und seitlich, nur Streifen unten; dunkles Bild.
   *Abnahme:* Alle Testbilder liegen als Test-Ressourcen vor und werden in den SV-Tests genutzt.
 - **TE-03** Linting mit ktlint, ausgeführt über das Spotless-Gradle-Plugin (entschieden, siehe „Entschieden – nicht mehr offen").
   *Abnahme:* Der Linter läuft im Build mit (`spotlessCheck` hängt an `check`) und meldet nichts.
+- **TE-04** Der Mutationslauf zielt auf die Kern-Pakete. „Kern" heißt: die Pakete, in denen die riskante Logik liegt – ab Meilenstein 3 also zusätzlich `output` (PDF-Erzeugung) und `service` (Loop und Batch). `config` bleibt außen vor, weil eine reine Datenklasse mit Defaults nichts Mutierbares enthält, und `cli` ebenso, weil dort nur Argumente auf Kommandos abgebildet werden.
+  Wächst das Ziel, ändert sich der Nenner: Die Schwelle ist dann **neu einzumessen** und mit Datum, Commit und Zahlen in `docs/entscheidungen.md` als bewusste neue Grundlage festzuhalten. Das ist kein stilles Senken – das bleibt verboten –, sondern ein dokumentierter Wechsel der Messgrundlage.
+  *Abnahme:* Nach jedem Meilenstein, der ein Kern-Paket hinzufügt, steht in `docs/entscheidungen.md` ein voller Lauf mit den Zahlen je Paket, und `mutationThreshold` in `build.gradle.kts` entspricht dem gemessenen Gesamtwert.
 
 ### Doku (DO) – `docs/`, Deutsch als führende Fassung
 
@@ -233,6 +256,8 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
   *Abnahme:* Alle offenen Punkte aus dem Wissensstand sind mit Status aufgeführt.
 - **DO-08** `README.md` im Wurzelverzeichnis – Einstieg und Wegweiser. Entsteht **bereits in Meilenstein 1**, damit von Anfang an erkennbar ist, welche Datei wofür da ist; in Meilenstein 5 kommt der Schnellstart dazu.
   *Abnahme:* Erklärt, was `UnboundAir` ist, nennt den Aufbaustand und verweist auf jede Datei in `docs/` mit einem Satz, wofür sie da ist. Ab Meilenstein 5 zusätzlich: Schnellstart.
+- **DO-09** `konfiguration.md` – die vollständige Referenz aller Einstellungen: Property-Name, Umgebungsvariable, Default, Bedeutung. Entsteht in **Meilenstein 3** zusammen mit den Properties selbst, weil KL-01 „jede Einstellung mit ihrem Default in der Doku" verlangt und `betrieb.md` (DO-03) erst in Meilenstein 5 kommt. `betrieb.md` verweist später hierher, statt die Tabelle zu doppeln.
+  *Abnahme:* Jede Einstellung, die der Code kennt, steht mit Default und Umgebungsvariable in der Tabelle – und umgekehrt beschreibt die Tabelle keine Einstellung, die es nicht gibt.
 
 ## Arbeit wird in GitHub getrackt
 

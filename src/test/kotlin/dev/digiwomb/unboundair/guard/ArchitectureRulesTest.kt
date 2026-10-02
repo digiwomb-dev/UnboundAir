@@ -25,11 +25,24 @@ import org.junit.jupiter.api.Test
  *    docs/plan.md). The check covers both classes and methods, because
  *    `@ConditionalOnProperty` commonly sits on a `@Bean` method rather than a class.
  *
- * 2. **Layered package dependencies.** `scanner` and `image` are leaves, `processing`
- *    may only use `image`, `output` only `processing` and `image`, and `cli` only
- *    `scanner` and `processing`. This keeps the core (scanner, processing, output)
- *    decoupled from the CLI adapter and from each other, so a later web UI can dock
- *    without rewiring the core.
+ * 2. **Layered package dependencies.** `config`, `scanner` and `image` are leaves,
+ *    `processing` may only use `image`, `output` only `processing` and `image`,
+ *    `service` orchestrates the core, and `cli` may only reach the core through
+ *    `service` (plus `scanner`, `processing` and `config` for the single-shot
+ *    commands). This keeps the core decoupled from the CLI adapter, so a later web UI
+ *    can dock onto `service` without rewiring anything.
+ *
+ *    Note that `config` is a leaf **and** that the three core packages may not use it:
+ *    `scanner`, `image` and `processing` take their values as constructor parameters
+ *    (the `PageSettings` pattern), which is what keeps them constructible without a
+ *    Spring context and therefore unit-testable. Mapping properties onto those
+ *    parameters is the composition root's job.
+ *
+ * 2a. **Only `cli` may access `service` (incoming rule).** The layered rules above all
+ *    constrain what a layer may *use*. That alone would leave the topmost layer
+ *    unguarded: nothing would stop `processing` from calling into the service loop and
+ *    turning the dependency graph upside down. `service` is therefore also constrained
+ *    from the other side.
  *
  * 3. **No Spring stereotypes in `..output..` (AU-03).** Modules are registered
  *    deliberately and selected at runtime; a stereotype annotation would wire them
@@ -39,6 +52,14 @@ import org.junit.jupiter.api.Test
  *    The moment a class appears in `dev.digiwomb.unboundair.output..`, the rule checks
  *    it in full. It is kept (not removed) so the AU-03 "Laufzeit-Registrierung"
  *    decision stays guarded as an executable rule even while nothing implements it yet.
+ *
+ * 4. **The core stays free of Spring (`scanner`, `image`, `processing`, `output`).**
+ *    No class there may import anything from `org.springframework`. This is the
+ *    executable form of the decision behind rule 2: the core is plain Kotlin, takes its
+ *    values through constructors, and can be exercised in a unit test without a
+ *    context. It also keeps the GraalVM native image option open, and it is the rule
+ *    that would catch the tempting shortcut of injecting `UnboundAirProperties`
+ *    straight into a processing step.
  *
  * The classes are imported from the classpath, which contains the compiled main and
  * test classes alike (same package namespace); the rules apply to all of them, and
@@ -97,16 +118,23 @@ class ArchitectureRulesTest {
      *   layers, which covers fields, method signatures, and return types alike.
      * - [withOptionalLayers] because the `output` layer is empty until the
      *   paperless-ngx module lands in a later milestone; ArchUnit otherwise requires
-     *   every declared layer to be non-empty. All five direction constraints stay in
+     *   every declared layer to be non-empty. All direction constraints stay in
      *   force, so the moment a class appears in `dev.digiwomb.unboundair.output..`
      *   the rule constrains it in both directions: it may only access
-     *   `processing`/`image`, and no other layer may access it.
+     *   `processing`/`image`, and only `service` may access it.
+     *
+     * The `mayOnlyBeAccessedByLayers` clauses on `service` and `output` are the
+     * incoming half of the guard. Without them the topmost layers would be
+     * unconstrained in the direction that matters most: nothing would stop a core
+     * package from reaching up into the service loop.
      */
     private val layerDependencyRule: ArchRule =
         Architectures
             .layeredArchitecture()
             .consideringOnlyDependenciesInLayers()
             .withOptionalLayers(true)
+            .layer("config")
+            .definedBy("dev.digiwomb.unboundair.config..")
             .layer("scanner")
             .definedBy("dev.digiwomb.unboundair.scanner..")
             .layer("image")
@@ -115,8 +143,12 @@ class ArchitectureRulesTest {
             .definedBy("dev.digiwomb.unboundair.processing..")
             .layer("output")
             .definedBy("dev.digiwomb.unboundair.output..")
+            .layer("service")
+            .definedBy("dev.digiwomb.unboundair.service..")
             .layer("cli")
             .definedBy("dev.digiwomb.unboundair.cli..")
+            .whereLayer("config")
+            .mayNotAccessAnyLayer()
             .whereLayer("scanner")
             .mayNotAccessAnyLayer()
             .whereLayer("image")
@@ -125,11 +157,16 @@ class ArchitectureRulesTest {
             .mayOnlyAccessLayers("image")
             .whereLayer("output")
             .mayOnlyAccessLayers("processing", "image")
+            .whereLayer("service")
+            .mayOnlyAccessLayers("scanner", "processing", "image", "output", "config")
+            .whereLayer("service")
+            .mayOnlyBeAccessedByLayers("cli")
             .whereLayer("cli")
-            .mayOnlyAccessLayers("scanner", "processing")
+            .mayOnlyAccessLayers("scanner", "processing", "service", "config")
             .because(
-                "the core must stay decoupled from the CLI adapter and the layers must " +
-                    "only talk to the layer directly below them (docs/plan.md)",
+                "the core must stay decoupled from the CLI adapter, the layers must only " +
+                    "talk downwards, and a later web UI must be able to dock onto the " +
+                    "service layer without rewiring the core (docs/plan.md)",
             )
 
     /**
@@ -181,6 +218,41 @@ class ArchitectureRulesTest {
             .beAnnotatedWith(stereotypeAnnotations)
             .allowEmptyShould(true)
             .check(classes)
+    }
+
+    /**
+     * The core packages stay plain Kotlin, free of Spring.
+     *
+     * This is the executable form of the layering decision in docs/plan.md: the core
+     * takes its values through constructor parameters (the `PageSettings` pattern) and
+     * must stay constructible without an application context, which is what makes it
+     * unit-testable and keeps the GraalVM native image option open.
+     *
+     * The rule bites exactly where the shortcut is tempting: injecting
+     * `UnboundAirProperties` directly into a processing step or the scanner client would
+     * be one import and would quietly couple the core to the framework. Note that the
+     * layered rule above cannot catch this, because `org.springframework` belongs to no
+     * declared layer.
+     *
+     * `cli` and `service` are deliberately **not** covered: the composition root and the
+     * service layer are where Spring legitimately lives.
+     */
+    @Test
+    fun `the core packages do not depend on Spring`() {
+        noClasses()
+            .that()
+            .resideInAnyPackage(
+                "dev.digiwomb.unboundair.scanner..",
+                "dev.digiwomb.unboundair.image..",
+                "dev.digiwomb.unboundair.processing..",
+                "dev.digiwomb.unboundair.output..",
+            ).should()
+            .dependOnClassesThat()
+            .resideInAPackage("org.springframework..")
+            .because(
+                "the core must stay constructible without an application context, so it can be " +
+                    "unit-tested and later compiled to a native image (docs/plan.md)",
+            ).check(classes)
     }
 
     private companion object {

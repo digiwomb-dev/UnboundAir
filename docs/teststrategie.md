@@ -35,6 +35,8 @@ Gezielte Spring-Boot-Slices statt voller Kontext. Konkret:
 
 - **`@JsonTest`** für JSON-Serialisierung/Deserialisierung (z. B. `metadata.json` der Outbox, AU-04).
 - **Config-Binding:** Tests für `@ConfigurationProperties` unter `unboundair.*` (KL-01) — jede Einstellung mit Default, Umgebungsvariable überschreibt.
+
+  **Fallstrick, in Meilenstein 3 gefunden:** Spring wendet seine „relaxed binding"-Regel (`UNBOUNDAIR_POLLINTERVAL` → `unboundair.poll-interval`) nur auf eine `SystemEnvironmentPropertySource` an, **deren Name `systemEnvironment` ist oder auf `-systemEnvironment` endet**. Eine Quelle der richtigen Klasse unter einem anderen Namen wird stillschweigend ignoriert, und `withPropertyValues` legt ohnehin eine gewöhnliche Map-Quelle an. Ein Test, der das nicht beachtet, ist grün und beweist das Gegenteil der Anforderung.
 - **Context-Smoke:** ein einziger Test, der den ApplicationContext hochzieht und bestätigt, dass die Konfiguration auflösbar ist (fängt Verdrahtungsfehler, ohne echtes Verhalten zu prüfen).
 - **`MockRestServiceServer`** für den paperless-Client gegen einen gemockten `RestClient` (AU-05) — ohne HTTP-Server, wenn nur die Request-Seite zählt.
 
@@ -45,9 +47,16 @@ Gezielte Spring-Boot-Slices statt voller Kontext. Konkret:
 
 Zusammenwirken mehrerer echter Bausteine, aber ohne echte Geräte/Dienste:
 
-- **FakeScanner-TCP** (TE-01): der Scanner-Client spricht über einen echten TCP-Socket mit dem im Test laufenden Fake-Scanner (Füllbytes, geteilte `jpegsize`-Antwort, `devbusy`, Offline, `battlow`).
+- **FakeScanner-TCP** (TE-01): der Scanner-Client spricht über einen echten TCP-Socket mit dem im Test laufenden Fake-Scanner (Füllbytes, geteilte `jpegsize`-Antwort, `devbusy`, Offline, `battlow`). Seit Meilenstein 3 zusätzlich skriptfähig: Blattfach für mehrere Seiten, Statusfolgen und ein **umschaltbares Offline auf demselben Port**, ohne das sich ein Dienst-Loop nicht prüfen ließe.
 - **`jpegtran`**: Zuschnitt/Graustufen laufen über das echte externe Programm (SV-01, SV-03) — dieselbe Systemabhängigkeit wie im Laufzeit-Image.
 - **Awaitility + injizierbare Clock**: asynchrone Abläufe (Dienst-Loop DL-01 bis DL-07, Outbox-Retry AU-04) werden mit Awaitility synchronisiert, Zeit mit einer injizierbaren Clock gesteuert statt `Thread.sleep`.
+- **Aufgezeichneter Sleeper statt echtem Warten:** Der Dienst-Loop bekommt seine Wartefunktion als `(Duration) -> Unit` injiziert. Die Tests reichen eine Funktion herein, die die angeforderten Abstände nur **aufschreibt**. Damit wird aus einer Taktregel eine gewöhnliche Zusicherung; echtes Warten auf verkürzte Intervalle wäre ein Wettlauf, kein Test.
+- **Log-Zusicherungen über einen `ListAppender`** statt über abgefangenes stdout: Die Einträge kommen als Objekte, lassen sich zählen und nach Level filtern, und ein geändertes Log-Muster macht die Tests nicht rot.
+
+**Zwei Erfahrungen aus Meilenstein 3, die für jeden weiteren nebenläufigen Test gelten:**
+
+1. **Awaitility-Grenzen großzügig wählen.** Eine Statusabfrage kostet nach SC-02 rund 0,7 s an vorgeschriebenen Pausen – unabhängig vom eingestellten Intervall. Sechs Abfragen brauchen also über vier Sekunden, bevor die übrige Testsuite um dieselbe Maschine konkurriert. Eine 10-Sekunden-Grenze war allein grün und im vollen `build` rot. Die Grenze wird nie ausgeschöpft, wenn alles funktioniert; eine großzügige kostet nichts, eine knappe erkauft sporadische Fehlschläge.
+2. **Auf den Zustand warten, nicht auf eine Anzahl Durchläufe.** Der Loop dreht viele Runden, während der Fake-Scanner seinen Port neu bindet. Ein Test, der „noch vier Abfragen" abwartet, ist fertig, bevor die Zustandsänderung überhaupt eingetreten ist.
 
 - **Warum:** die riskantesten Stellen des Dienstes sind die Protokoll-/Zeit- und Prozessgrenzen; genau die werden hier mit den echten Mechanismen (Socket, externes Programm) geprüft.
 
@@ -73,11 +82,12 @@ Der ganze Dienst offline: `run` gegen Fake-Scanner **und** WireMock-paperless. D
 Byte-genaue Referenzartefakte unter `golden/` mit einem **sha256-Manifest**. Ergebnisdateien (zugeschnittene JPEGs, PDFs) werden gegen den gespeicherten Stand verglichen.
 
 - **Warum:** schützt vor stillen Regressionen, wo „ungefähr richtig" nicht reicht (verlustfreier Zuschnitt, JPEG-Einbettung per `JPEGFactory`).
-- **PDF-Determinismus:** PDF-Metadaten (CreationDate) stammen aus der **injizierbaren Clock** (Scan-Zeitpunkt = Beginn der ersten Seite). Tests pinnen die Clock → bytegleiche PDFs; die Produktion behält echte Zeitstempel. Begründung in `docs/entscheidungen.md`.
+- **PDF-Determinismus:** PDF-Metadaten (CreationDate) stammen aus der **injizierbaren Clock** (Scan-Zeitpunkt = Beginn der ersten Seite). Tests pinnen die Clock → bytegleiche PDFs; die Produktion behält echte Zeitstempel. Begründung in `docs/entscheidungen.md`. **Die Clock allein genügt nicht:** PDFBox bildet auch die Trailer-Angabe `/ID` aus Zeit und Zufall, die ebenfalls an die Clock gebunden werden musste.
+- **„Nicht neu komprimiert" muss man byteweise prüfen.** Ein Test, der nur die JPEG-Marker `SOI`/`EOI` kontrolliert, sieht gut aus und beweist nichts: Diese Marker überstehen eine Neukodierung unverändert. In Meilenstein 3 blieb genau so ein Test grün, während jedes Pixel durch einen zweiten verlustbehafteten Durchgang gelaufen war. Verglichen wird deshalb der **rohe, noch komprimierte Datenstrom** (`COSStream.createRawInputStream`) gegen die Eingabedatei — `toByteArray()` und `createInputStream()` dekodieren und taugen dafür nicht.
 
 ### 8. Mutation (`mutation`)
 
-**PIT** (pitest 1.25.5) über den eigenen Gradle-Task `pitest`, Ziel sind die Kern-Pakete (`scanner`, `image`, `processing`). Der Task ist **nie Teil von `build`/`check`** und läuft nur auf ausdrücklichen Aufruf.
+**PIT** (pitest 1.25.5) über den eigenen Gradle-Task `pitest`, Ziel sind die Kern-Pakete (`scanner`, `image`, `processing`, seit Meilenstein 3 zusätzlich `output` und `service`). Der Task ist **nie Teil von `build`/`check`** und läuft nur auf ausdrücklichen Aufruf. Wächst das Ziel, ändert sich der Nenner: Die Schwelle ist dann neu einzumessen und mit Zahlen zu dokumentieren (TE-04) — das ist ein belegter Wechsel der Messgrundlage, kein stilles Senken.
 
 - **Warum:** Mutation deckt Lücken in der Assertion-Qualität auf, die Coverage allein nicht zeigt.
 - **Grenzen (gemessen, Spike B):** PIT funktioniert auf JUnit Platform 6 (das bekannte Problem 0 %-Coverage ist mit pitest 1.25.5 behoben). Die zeitgesteuerten Scanner-Tests machen Läufe über den ganzen Kern langsam; deshalb `timeoutConstInMillis` erhöht. Zahlen und Entscheidung in `docs/entscheidungen.md`.
@@ -89,8 +99,10 @@ Byte-genaue Referenzartefakte unter `golden/` mit einem **sha256-Manifest**. Erg
 
 Ergänzend zu den Schichten, als eigene Datei je Konzern:
 
-- **ArchUnit** (`archunit-junit6`): Architekturregeln — Paketabhängigkeiten zwischen `scanner`, `processing`, `cli`, `outbox`/`ausgabe`; **kein `@ConditionalOnProperty`** im Code (AU-03).
-- **Konventionstests:** alle Defaults zentral und in der Doku (KL-01), Exception-Hierarchie (SC-05), Test-Benennung.
+- **ArchUnit** (`archunit-junit6`): Architekturregeln — die Paketschichten `config`, `scanner`, `image`, `processing`, `output`, `service`, `cli` mit ihren Richtungen (Tabelle in `docs/plan.md`); **kein `@ConditionalOnProperty`** im Code (AU-03); **der Kern bleibt frei von Spring**.
+
+  Zwei Regeln sind bewusst anders gebaut als die übrigen: Auf `service` darf **nur `cli`** zugreifen (eine eingehende Regel — ohne sie wäre die oberste Schicht in der Richtung ungeprüft, die am meisten zählt), und `scanner`/`image`/`processing`/`output` dürfen nichts aus `org.springframework` importieren. Letzteres kann die Schichtenregel nicht leisten, weil `org.springframework` zu keiner Schicht gehört; sie greift genau dort, wo die Abkürzung verlockend ist — beim Hineininjizieren von `UnboundAirProperties` in einen Verarbeitungsschritt.
+- **Konventionstests:** alle Defaults zentral und in der Doku (KL-01, Referenz in `docs/konfiguration.md`), Exception-Hierarchie (SC-05), Test-Benennung.
 
 ## Was fehlt und warum
 
