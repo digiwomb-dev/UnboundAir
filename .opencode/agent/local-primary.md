@@ -1,7 +1,7 @@
 ---
 description: Runs the first local UnboundAir implementation or test attempt with Qwen3.8 27B.
 mode: subagent
-model: lmstudio/qwen/qwen3.8-27b
+model: opencode/muse-spark-1.3-contributor-free
 temperature: 0.1
 ---
 
