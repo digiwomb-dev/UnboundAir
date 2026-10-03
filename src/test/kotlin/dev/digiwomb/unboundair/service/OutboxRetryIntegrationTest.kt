@@ -1,10 +1,12 @@
-package dev.digiwomb.unboundair.output.outbox
+package dev.digiwomb.unboundair.service
 
 import dev.digiwomb.unboundair.output.OutputDocument
 import dev.digiwomb.unboundair.output.OutputModule
 import dev.digiwomb.unboundair.output.OutputModules
-import dev.digiwomb.unboundair.service.OutboxRunner
-import dev.digiwomb.unboundair.service.OutboxRunnerListener
+import dev.digiwomb.unboundair.output.outbox.METADATA_FILE_NAME
+import dev.digiwomb.unboundair.output.outbox.Outbox
+import dev.digiwomb.unboundair.output.outbox.OutboxEntry
+import dev.digiwomb.unboundair.output.outbox.readMetadata
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -32,6 +34,11 @@ import java.time.ZoneOffset
  *
  * Offline (DC-03): a committed golden PDF as the source document, fixed clocks, a temporary
  * directory. No device, no network.
+ *
+ * Lives in `service`, not beside the outbox, because the runner it drives lives here: the
+ * layer guard forbids `output..` to reach into `service..`, and a test in the outbox package
+ * is bound by that rule like any other class. Every other integration test of the loop sits
+ * here for the same reason.
  */
 class OutboxRetryIntegrationTest {
     @Nested
