@@ -1,0 +1,40 @@
+name: Defect
+description: Something is broken, flaky or behaves against its requirement.
+title: "fix(scope): "
+type: Bug
+labels:
+  - kind/bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Title: `fix(<scope>): <description>`. Name the cause before changing code —
+        a fix aimed at the wrong cause leaves a rarer version of the same defect behind.
+  - type: input
+    id: requirements
+    attributes:
+      label: Requirement ID(s)
+      description: "The affected IDs from docs/plan.md, e.g. TE-01, DL-02"
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: What happened
+      description: Observation, error output, and how reproducible it is.
+    validations:
+      required: true
+  - type: textarea
+    id: cause
+    attributes:
+      label: Suspected cause
+      description: Hypothesis plus the code location. Mark clearly what is not yet proven.
+    validations:
+      required: false
+  - type: textarea
+    id: criterion
+    attributes:
+      label: Acceptance criterion
+      description: How the fix is verified (no sleep added to a test to hide a race).
+    validations:
+      required: true

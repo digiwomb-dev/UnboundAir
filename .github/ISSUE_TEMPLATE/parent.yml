@@ -1,0 +1,47 @@
+name: Parent task
+description: An umbrella issue that groups implementation and test sub-issues.
+title: "task(scope): "
+type: Task
+labels:
+  - kind/parent
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Title: `task(<scope>): <description> (<requirement IDs>)` — no `T<n>` prefix,
+        the order inside the milestone goes into "Work order" below.
+  - type: input
+    id: work-order
+    attributes:
+      label: Work order
+      description: Position of this task inside its milestone, e.g. 2.
+    validations:
+      required: true
+  - type: input
+    id: requirements
+    attributes:
+      label: Requirement ID(s)
+      description: "e.g. AU-02, AU-03 – the implemented IDs from docs/plan.md"
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: What this covers
+      description: The files and concerns the sub-issues split into.
+    validations:
+      required: true
+  - type: textarea
+    id: criterion
+    attributes:
+      label: Acceptance criterion
+      description: The overall, verifiable criterion for the whole task.
+    validations:
+      required: true
+  - type: textarea
+    id: sub-issues
+    attributes:
+      label: Sub-issues
+      description: "Filled in once they exist, e.g. feat #63, test #64."
+    validations:
+      required: false

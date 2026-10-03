@@ -1,0 +1,48 @@
+name: Implementation task
+description: "One implementation file (AI run), or one concern with a file list (human)."
+title: "feat(scope): "
+type: Feature
+labels:
+  - kind/feat
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Title: `feat(<scope>): <description>` — the scope is mandatory
+        (`config`, `scanner`, `service`, `batch`, `cli`, `pdf`, `logging`,
+        `output`, `outbox`, `processing`, `app`).
+  - type: input
+    id: requirements
+    attributes:
+      label: Requirement ID(s)
+      description: "e.g. AU-04 – the implemented IDs from docs/plan.md"
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: File or file list
+      description: "AI run: exactly one file. Human: a list of the affected files."
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What is built
+      description: The behaviour to implement, including the guardrails that apply.
+    validations:
+      required: true
+  - type: textarea
+    id: criterion
+    attributes:
+      label: Acceptance criterion
+      description: What the acceptance is based on (verifiable).
+    validations:
+      required: true
+  - type: input
+    id: parent
+    attributes:
+      label: Parent
+      description: "The parent task, e.g. #108. Leave empty for standalone work."
+    validations:
+      required: false
