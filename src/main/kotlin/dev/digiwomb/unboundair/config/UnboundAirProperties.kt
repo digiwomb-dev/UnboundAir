@@ -24,6 +24,8 @@ import java.time.temporal.ChronoUnit
  * - `unboundair.offline-poll-interval` -> `UNBOUNDAIR_OFFLINEPOLLINTERVAL`
  * - `unboundair.output.modules` -> `UNBOUNDAIR_OUTPUT_MODULES`
  * - `unboundair.outbox.path` -> `UNBOUNDAIR_OUTBOX_PATH`
+ * - `unboundair.output.paperless.base-url` -> `UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL`
+ * - `unboundair.output.paperless.token-file` -> `UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE`
  *
  * @property pollInterval Poll interval for status checks (DL-01). Default 3 seconds.
  * @property offlinePollInterval Poll interval when scanner is offline (DL-02). Default 10 seconds.
@@ -77,9 +79,51 @@ data class UnboundAirProperties(
      * in GraalVM native images.
      *
      * @property modules the active module names, e.g. `paperless`. Default empty.
+     * @property paperless the settings of the paperless-ngx module (AU-05); see
+     *   [PaperlessProperties]. Nested here so the names come out as
+     *   `unboundair.output.paperless.*`, which is what AU-03 asks of every module.
      */
     data class OutputProperties(
         val modules: List<String> = emptyList(),
+        val paperless: PaperlessProperties = PaperlessProperties(),
+    )
+
+    /**
+     * The paperless-ngx module (AU-05).
+     *
+     * These are the **raw** configured values. Turning [token] and [tokenFile] into the
+     * one token the upload sends is `PaperlessSettings`' job, not this one: `config` is
+     * an architecture leaf and must not read a file. The same leaf property is why
+     * nothing here is validated beyond its type -- an unreachable base URL or a missing
+     * token surfaces when the settings are built, with a message that names the cause.
+     *
+     * `title` and `created` deliberately have no settings. docs/plan.md fixes that we do
+     * not send them, so paperless derives both from the file name itself; a knob here
+     * would invite someone to switch that decision on without reading why it was made.
+     *
+     * Environment variable names follow the rule from the class KDoc -- each dot becomes
+     * an underscore and each hyphen simply disappears:
+     *
+     * - `unboundair.output.paperless.base-url` -> `UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL`
+     * - `unboundair.output.paperless.token-file` -> `UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE`
+     * - `unboundair.output.paperless.document-type` -> `UNBOUNDAIR_OUTPUT_PAPERLESS_DOCUMENTTYPE`
+     *
+     * @property baseUrl the paperless instance, e.g. `https://paperless.example.org`.
+     *   Empty by default: there is no sensible guess, and the module is unusable without it.
+     * @property token the API token. Default empty; set this **or** [tokenFile] (AU-05).
+     * @property tokenFile path to a file holding the token, e.g. a mounted secret.
+     *   Default empty. The file is read by `PaperlessSettings`, not here.
+     * @property tags numeric tag IDs to attach to every document. Default empty.
+     * @property correspondent numeric correspondent ID, null means none. Default null.
+     * @property documentType numeric document type ID, null means none. Default null.
+     */
+    data class PaperlessProperties(
+        val baseUrl: String = "",
+        val token: String = "",
+        val tokenFile: String = "",
+        val tags: List<Long> = emptyList(),
+        val correspondent: Long? = null,
+        val documentType: Long? = null,
     )
 
     /**
