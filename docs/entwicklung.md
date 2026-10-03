@@ -138,6 +138,22 @@ gh issue list --label kind/parent --milestone 4
 gh issue list --label kind/test --label integration --state open
 ```
 
+### Woran du siehst, was wann dran ist
+
+Ein Filter zeigt, *welche* Arbeit es gibt – nicht, in welcher Folge. Die steht im Eltern-Issue: `Work order` ist seine Position im Meilenstein, die `Sub-issues`-Zeile listet die Sub-Issues in der Reihenfolge, in der sie abgearbeitet werden. Die Eltern-Aufgaben eines Meilensteins der Reihe nach:
+
+```bash
+gh issue list --label kind/parent --milestone 4 --state all --json number,title,body \
+  --jq 'map(. + {order: (.body | capture("\\*\\*Work order:\\*\\* (?<w>[0-9]+)").w | tonumber)})
+        | sort_by(.order) | .[] | "\(.order)  #\(.number)  \(.title)"'
+```
+
+Und für eine einzelne Aufgabe die Sub-Issues in Arbeitsreihenfolge:
+
+```bash
+gh issue view 109 --json body --jq '.body | capture("\\*\\*Sub-issues:\\*\\* (?<s>.*)").s'
+```
+
 Neue Issues entstehen immer über eine Vorlage aus `.github/ISSUE_TEMPLATE/`, weil sie Typ und Rolle-Label selbst setzen; Blanko-Issues sind abgeschaltet.
 
 ## Warum der Umweg über den Dev Container

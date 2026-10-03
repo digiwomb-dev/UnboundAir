@@ -98,11 +98,16 @@ Check the real state before acting, never rely on this list alone:
    - For `test(...)` the scope slot holds the **test layer**, never the package, and the
      same layer is set as a label as well.
    - **No `T<n>` prefix in any title.** The order inside a milestone goes into the parent
-     body as `Work order: <n>`.
+     body as `Work order: <n>`, numbered consecutively per milestone and without gaps —
+     a task without sub-issues gets a position too.
    - A parent is only a parent if it has sub-issues, and it carries no layer label.
    - Body fields: parent `Work order` / `Requirement ID(s)` / `Acceptance criterion` /
      `Sub-issues`; implementation `Requirement ID(s)` / `File` / `What is built` /
      `Acceptance criterion` / `Parent`; test the template checklist plus `File` and `Parent`.
+   - The `Sub-issues` line lists every sub-issue **in the order they get worked**, an
+     implementation before the test that pins it: `feat #62 · test #82 · test #66`. Keep it
+     in sync with the real sub-issue relations — the relation says what belongs together,
+     the line says when. Both must name the same issues.
 5. **Close an issue only when it is built AND accepted,** with a green result linked
    (commit SHA + `./gradlew test` summary, or the merged PR). Written alone is not enough.
 6. **Record dependencies the way this project does it.** An issue whose implementation does

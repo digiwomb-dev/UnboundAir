@@ -14,7 +14,7 @@ body:
     id: work-order
     attributes:
       label: Work order
-      description: Position of this task inside its milestone, e.g. 2.
+      description: "Position inside the milestone, numbered consecutively without gaps, e.g. 2."
     validations:
       required: true
   - type: input
@@ -42,6 +42,6 @@ body:
     id: sub-issues
     attributes:
       label: Sub-issues
-      description: "Filled in once they exist, e.g. feat #63, test #64."
+      description: "Filled in once they exist, in the order they get worked - an implementation before the test that pins it, e.g. feat #62 - test #82 - test #66."
     validations:
       required: false

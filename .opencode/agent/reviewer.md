@@ -67,7 +67,9 @@ mehr. Maßgeblich bei Abweichungen ist `docs/plan.md`.
 7. **Issue-Konvention:** Soweit du Issues einsehen kannst, prüfe gegen „Issue-Konvention" in
    `AGENTS.md`: Titel nach Schema und auf Englisch, passender Issue-Typ, genau ein
    `kind/*`-Label, bei Tests die Schicht als Prefix **und** als Label, keine `T<n>`-Nummern
-   im Titel, Eltern-Issues ohne Schicht-Label. Ein Verstoß ist ein kleiner Befund. Ohne
+   im Titel, Eltern-Issues ohne Schicht-Label. Jedes Eltern-Issue hat `Work order` und eine
+   `Sub-issues`-Zeile, die dieselben Issues nennt wie die echten Sub-Issue-Beziehungen; die
+   `Work order` ist je Meilenstein lückenlos. Ein Verstoß ist ein kleiner Befund. Ohne
    GitHub-Zugriff gehört der Punkt unter „Nicht geprüft".
 
 Berichte auf Deutsch in genau diesem Format:

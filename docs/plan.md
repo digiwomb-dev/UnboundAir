@@ -269,7 +269,7 @@ Damit die Art einer Aufgabe filterbar ist, trägt jedes Issue einen GitHub-Issue
 - **Testschicht** (nur auf Test-Issues, mehrere möglich): `unit`, `property`, `slice`, `integration`, `contract`, `e2e`, `golden-master`, `mutation`, `guard`
 - **Prozess:** `blocked`, `prio-high`
 
-Die Reihenfolge der Aufgaben innerhalb eines Meilensteins steht als `Work order` im jeweiligen Eltern-Issue, nicht im Titel.
+Die Reihenfolge der Aufgaben innerhalb eines Meilensteins steht als `Work order` im jeweiligen Eltern-Issue, nicht im Titel. Jedes Eltern-Issue führt seine Sub-Issues zusätzlich als `Sub-issues`-Zeile im Body – in der Reihenfolge, in der sie abgearbeitet werden, also Umsetzung vor dem Test, der sie prüft. Die Liste wiederholt bewusst, was GitHub schon als Sub-Issue-Beziehung kennt: Die Beziehung sagt nur, *was* dazugehört, die Zeile auch *wann*. Nummeriert wird je Meilenstein fortlaufend; Lücken entstehen nicht, auch Aufgaben ohne Sub-Issues bekommen ihre Position.
 
 ## Offene Entscheidungen – nicht vorwegnehmen, fragen
 
