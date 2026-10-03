@@ -4,6 +4,7 @@ import com.tngtech.archunit.base.DescribedPredicate
 import com.tngtech.archunit.core.domain.JavaAnnotation
 import com.tngtech.archunit.core.domain.JavaClasses
 import com.tngtech.archunit.core.importer.ClassFileImporter
+import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.lang.ArchRule
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
@@ -82,6 +83,17 @@ class ArchitectureRulesTest {
      */
     private val classes: JavaClasses =
         ClassFileImporter().importPackages("dev.digiwomb.unboundair")
+
+    /**
+     * The compiled classes that actually ship, without the test source set.
+     *
+     * Used by the single rule whose claim is about production code alone, the Spring ban
+     * on the core packages. Everything else deliberately checks the tests as well.
+     */
+    private val mainClasses: JavaClasses =
+        ClassFileImporter()
+            .withImportOption(ImportOption.DoNotIncludeTests())
+            .importPackages("dev.digiwomb.unboundair")
 
     /**
      * Matches any Spring `@ConditionalOn*` annotation (e.g. `@ConditionalOnProperty`)
@@ -236,6 +248,15 @@ class ArchitectureRulesTest {
      *
      * `cli` and `service` are deliberately **not** covered: the composition root and the
      * service layer are where Spring legitimately lives.
+     *
+     * This is the one rule evaluated against [mainClasses] rather than [classes]. The
+     * claim it makes is about what *ships*: production code takes its values through
+     * constructors and needs no context. A slice test of a core type legitimately boots
+     * Spring to prove the shipped object behaves -- `MetadataJsonSliceTest` uses
+     * `@JsonTest` for exactly that -- and it is never in a native image, so counting it
+     * as a violation would forbid testing the very property this rule protects. The
+     * other rules keep seeing the tests: a *test* that wires a core class through
+     * component scanning is a real smell, and nothing here relaxes that.
      */
     @Test
     fun `the core packages do not depend on Spring`() {
@@ -252,7 +273,7 @@ class ArchitectureRulesTest {
             .because(
                 "the core must stay constructible without an application context, so it can be " +
                     "unit-tested and later compiled to a native image (docs/plan.md)",
-            ).check(classes)
+            ).check(mainClasses)
     }
 
     private companion object {
