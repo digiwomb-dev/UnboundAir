@@ -61,12 +61,23 @@ Beide sind einstellbar, damit die Tests gegen den Fake-Scanner auf einem freien 
 |---|---|---|---|
 | `unboundair.output.modules` | `UNBOUNDAIR_OUTPUT_MODULES` | *(leer)* | Komma-Liste der aktiven Ausgabe-Module, z. B. `paperless` (AU-03). Leer heißt: kein Modul bekommt Dokumente. |
 | `unboundair.outbox.path` | `UNBOUNDAIR_OUTBOX_PATH` | `/var/lib/unboundair/outbox` | Wo fertige Dokumente liegen, bis ein Modul sie angenommen hat (AU-04). Gehört im Container auf ein dauerhaftes Volume, sonst gehen bei einem Neustart nicht zugestellte Dokumente verloren. |
+| `unboundair.output.paperless.base-url` | `UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL` | *(leer)* | Adresse der paperless-ngx-Instanz, z. B. `https://paperless.example.org` (AU-05). Ohne sinnvollen Standardwert – ohne sie ist das Modul nicht nutzbar. |
+| `unboundair.output.paperless.token` | `UNBOUNDAIR_OUTPUT_PAPERLESS_TOKEN` | *(leer)* | Das API-Token direkt (AU-05). Entweder das oder die Token-Datei – wie die beiden zusammenspielen, steht unter „Token-Auflösung". |
+| `unboundair.output.paperless.token-file` | `UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE` | *(leer)* | Pfad zu einer Datei, die das Token enthält, z. B. ein eingebundenes Secret (AU-05). |
+| `unboundair.output.paperless.tags` | `UNBOUNDAIR_OUTPUT_PAPERLESS_TAGS` | *(leer)* | Nummern der Schlagwörter, die jedes Dokument bekommt. Leer heißt: keine. |
+| `unboundair.output.paperless.correspondent` | `UNBOUNDAIR_OUTPUT_PAPERLESS_CORRESPONDENT` | *(nicht gesetzt)* | Nummer des Absenders. Ohne Wert leitet paperless ihn selbst her. |
+| `unboundair.output.paperless.document-type` | `UNBOUNDAIR_OUTPUT_PAPERLESS_DOCUMENTTYPE` | *(nicht gesetzt)* | Nummer des Dokumenttyps. Ohne Wert leitet paperless ihn selbst her. |
 
-> **Stand Meilenstein 3:** Die Ausgabe-Module und die Outbox sind noch nicht gebaut (Meilenstein 4). Die beiden Einstellungen existieren bereits, werden aber noch nicht ausgewertet. Sie stehen hier, weil sie zur zentralen Konfiguration gehören und der Slice-Test sie prüft – nicht, weil sie schon etwas bewirken.
+#### Token-Auflösung
+
+Das hochgeladene Dokument kennt genau einen Token, die Konfiguration aber zwei Quellen dafür (AU-05): den direkt gesetzten Token und die Token-Datei. Die Auflösung (`PaperlessSettings.fromConfigured`) folgt drei Fällen: Ist eine Token-Datei gesetzt, gewinnt sie – auch dann, wenn zusätzlich ein Token gesetzt ist. Die Datei muss dann lesbar sein und einen nicht-leeren Inhalt haben, sonst startet der Dienst nicht und nennt in der Meldung den Pfad. Ist keine Datei gesetzt, gilt der direkt gesetzte Token. Ist keines von beidem gesetzt, startet der Dienst ebenfalls nicht – mit einer Meldung, die genau das benennt.
+
+Dieses frühe Scheitern ist Absicht: Ein Modul mit leerem Token würde den Fehler erst beim ersten Dokument als undurchsichtiges 401 bemerken, lange nach dem Start. Dass eine gesetzte Datei einen gleichzeitig gesetzten Token still übergeht, folgt derselben Überlegung: Das Ersetzen des Dateiinhalts ist die vorgesehene Art, den Token zu wechseln – ein daneben stehen gebliebener alter Token dürfte diesen Wechsel nicht unsichtbar aushebeln. Ein aus der Datei gelesener Token wird noch von umgebendem Leerraum befreit, damit der fast unvermeidliche Zeilenumbruch am Dateiende (`echo "token" > datei`) nicht den Upload bricht.
 
 ## Was hier absichtlich nicht steht
 
-- **Der paperless-Token.** Secrets gehören nicht in eine Konfigurationsdatei. Er kommt als Umgebungsvariable oder als eingebundene Datei, deren Pfad über eine Umgebungsvariable kommt (AU-05). Das wird mit dem paperless-Modul in Meilenstein 4 beschrieben.
+- **Der paperless-Token als Wert.** Secrets gehören nicht in eine Konfigurationsdatei. Der Token kommt als Umgebungsvariable (`unboundair.output.paperless.token`) oder als eingebundene Datei, deren Pfad über eine Umgebungsvariable kommt (`unboundair.output.paperless.token-file`, AU-05). Welche Quelle gilt und warum der Dienst ohne beide gar nicht erst startet, steht unter „Token-Auflösung".
+- **Die Backoff-Werte der Outbox.** Nach dem ersten Fehlversuch wartet die Outbox 30 Sekunden, bei jedem weiteren verdoppelt sich die Wartezeit, gedeckelt bei einer Stunde. Das sind bewusst keine Einstellungen, sondern Konstruktor-Parameter von `Outbox`: Sie stimmen einen Algorithmus pro Instanz ab, den niemand im Betrieb umstellen muss – dafür bekäme die Datei nur einen Schalter, den niemand dreht.
 - **`normalize` (SV-04).** Zurückgestellt, bis entschieden ist, was es tun soll – siehe „Offene Entscheidungen" in `plan.md`.
 - **Die Zeitzone.** Der Dateiname eines Dokuments nutzt die lokale Zeit des Containers. Gesteuert wird sie über die übliche Umgebungsvariable `TZ`, nicht über eine eigene Einstellung.
 - **Log-Level.** Logging läuft über die Standardmittel von Spring Boot und Logback (`logging.level.*`), nicht über eigene `unboundair.*`-Einstellungen. Die Ausgabe geht auf stdout (KL-02).
