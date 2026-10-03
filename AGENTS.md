@@ -42,7 +42,19 @@ Kurzfassung. Maßgeblich sind die ausführlichen Formulierungen in `docs/plan.md
 
 ## Planung vor dem Bauen
 
-- **Issues vor jedem Meilenstein:** Bevor du einen Meilenstein baust, legst du die Arbeit als GitHub-Issues im zugehörigen Milestone an: je Aufgabe genau eine Datei, ein prüfbares Abnahmekriterium und die umgesetzten Anforderungs-IDs. Impl+Test-Paare werden als Eltern-Issue (Typ `Task`) mit zwei Sub-Issues (`feat(…)`/`test(…)`) angelegt; Test-Issues bekommen die feste Checkliste aus `.github/ISSUE_TEMPLATE/testaufgabe.yml` und ihr Schicht-Label. Gebaut wird erst nach meinem „Go" zu den Issues. Abgehakt (Issue geschlossen) wird erst, wenn eine Aufgabe gebaut **und** abgenommen ist – geschrieben allein genügt nicht.
+- **Issues vor jedem Meilenstein:** Bevor du einen Meilenstein baust, legst du die Arbeit als GitHub-Issues im zugehörigen Milestone an: je Aufgabe genau eine Datei, ein prüfbares Abnahmekriterium und die umgesetzten Anforderungs-IDs. Impl+Test-Paare werden als Eltern-Issue mit zwei Sub-Issues angelegt. Gebaut wird erst nach meinem „Go" zu den Issues. Abgehakt (Issue geschlossen) wird erst, wenn eine Aufgabe gebaut **und** abgenommen ist – geschrieben allein genügt nicht.
+- **Issue-Konvention:** Jedes Issue ist auf Englisch und trägt seinen GitHub-Issue-Typ plus genau ein `kind/*`-Label – daran ist filterbar, um welche Art Arbeit es sich handelt. Die Vorlagen unter `.github/ISSUE_TEMPLATE/` setzen beides selbst; Blanko-Issues sind abgeschaltet.
+
+  | Rolle | Typ | Label | Titel |
+  |---|---|---|---|
+  | Eltern-Aufgabe | `Task` | `kind/parent` | `task(<scope>): <text> (<IDs>)` |
+  | Umsetzung | `Feature` | `kind/feat` | `feat(<scope>): <text>` |
+  | Test | `Test` | `kind/test` | `test(<schicht>): <IDs> <text>` |
+  | Fehler | `Bug` | `kind/bug` | `fix(<scope>): <text>` |
+  | Doku | `Task` | `kind/docs` | `docs(<scope>): <text>` |
+  | Infrastruktur | `Task` | `kind/chore` | `chore(<scope>): <text>`, `spike(<scope>): <text>` |
+
+  Dazu: Der Scope ist Pflicht und benennt das Paket (`config`, `scanner`, `image`, `processing`, `output`, `outbox`, `paperless`, `service`, `batch`, `cli`, `pdf`, `logging`, `app`, `test`). Bei `test(…)` steht an der Stelle des Scopes die **Testschicht** aus `docs/teststrategie.md`, nie das Paket – und dieselbe Schicht zusätzlich als Label. Keine `T<n>`-Nummern im Titel; die Reihenfolge im Meilenstein steht als `Work order: <n>` im Eltern-Issue. Ein Eltern-Issue bekommt nur, wer Sub-Issues hat, und trägt kein Schicht-Label.
 - **Erst Plan, dann Verhalten:** Soll sich etwas gegenüber `docs/plan.md` ändern, passt du zuerst den Plan an – nach meinem OK – und erst dann den Code.
 
 ## Fortschritt

@@ -267,7 +267,15 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
 
 ## Arbeit wird in GitHub getrackt
 
-Der Fortschritt lebt nicht mehr in dieser Datei, sondern in GitHub: [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues). Jeder Meilenstein aus „Umfang von v1" ist ein Milestone, jede Aufgabe ein Issue – Impl+Test-Paare als Eltern-Issue (Typ `Task`) mit zwei Sub-Issues. Welche Anforderungen ein Meilenstein umsetzt, steht in seiner Milestone-Beschreibung. Labels, Milestones und die Issue-Vorlage sind auf Englisch – wie Code, Commits und PR-Titel; nur die Doku ist Deutsch.
+Der Fortschritt lebt nicht mehr in dieser Datei, sondern in GitHub: [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues). Jeder Meilenstein aus „Umfang von v1" ist ein Milestone, jede Aufgabe ein Issue – Impl+Test-Paare als Eltern-Issue mit zwei Sub-Issues. Welche Anforderungen ein Meilenstein umsetzt, steht in seiner Milestone-Beschreibung. Labels, Milestones, Issues und die Issue-Vorlagen sind auf Englisch – wie Code, Commits und PR-Titel; nur die Doku ist Deutsch.
+
+Damit die Art einer Aufgabe filterbar ist, trägt jedes Issue einen GitHub-Issue-Typ und genau ein `kind/*`-Label; das Titel-Schema steht in `AGENTS.md` unter „Issue-Konvention". Die Labels teilen sich in drei Gruppen, die sich nicht überschneiden:
+
+- **Rolle** (genau eine je Issue): `kind/parent`, `kind/feat`, `kind/test`, `kind/bug`, `kind/docs`, `kind/chore`
+- **Testschicht** (nur auf Test-Issues, mehrere möglich): `unit`, `property`, `slice`, `integration`, `contract`, `e2e`, `golden-master`, `mutation`, `guard`
+- **Prozess:** `blocked`, `prio-high`
+
+Die Reihenfolge der Aufgaben innerhalb eines Meilensteins steht als `Work order` im jeweiligen Eltern-Issue, nicht im Titel. Jedes Eltern-Issue führt seine Sub-Issues zusätzlich als `Sub-issues`-Zeile im Body – in der Reihenfolge, in der sie abgearbeitet werden, also Umsetzung vor dem Test, der sie prüft. Die Liste wiederholt bewusst, was GitHub schon als Sub-Issue-Beziehung kennt: Die Beziehung sagt nur, *was* dazugehört, die Zeile auch *wann*. Nummeriert wird je Meilenstein fortlaufend; Lücken entstehen nicht, auch Aufgaben ohne Sub-Issues bekommen ihre Position.
 
 ## Offene Entscheidungen – nicht vorwegnehmen, fragen
 

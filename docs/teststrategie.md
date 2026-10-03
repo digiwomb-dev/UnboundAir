@@ -114,7 +114,12 @@ Ergänzend zu den Schichten, als eigene Datei je Konzern:
 
 ## GitHub-Tracking-Modell
 
-Testarbeit lebt in GitHub (Session 1, Option A), zweistufig: Ein Impl+Test-Paar ist ein Eltern-Issue (Typ `Task`) mit zwei Sub-Issues `feat(…)` und `test(…)`. Der `test(…)`-Sub-Issue trägt das Schicht-Label und die feste Checkliste aus `.github/ISSUE_TEMPLATE/testaufgabe.yml`. Ein AI-Lauf bearbeitet genau eine Datei; ein Mensch darf ein Anliegen mit Dateiliste übernehmen.
+Testarbeit lebt in GitHub (Session 1, Option A), zweistufig: Ein Impl+Test-Paar ist ein Eltern-Issue (Typ `Task`, Label `kind/parent`) mit zwei Sub-Issues – der Umsetzung (Typ `Feature`, `kind/feat`) und dem Test (Typ `Test`, `kind/test`). Ein AI-Lauf bearbeitet genau eine Datei; ein Mensch darf ein Anliegen mit Dateiliste übernehmen. Das vollständige Titel- und Label-Schema steht in `AGENTS.md` unter „Issue-Konvention".
+
+Ein Test-Issue entsteht aus `.github/ISSUE_TEMPLATE/test.yml` und trägt damit automatisch Typ, Rolle-Label und die feste Checkliste. Zwei Dinge sind dabei wichtig:
+
+- Im Titel steht **die Schicht**, nicht das Paket: `test(unit): DL-04 …`, nicht `test(service): …`. Die Schicht ist die fachliche Einordnung aus diesem Dokument und sagt, wie geprüft wird – das Paket steht ohnehin im Dateipfad.
+- Dieselbe Schicht wird zusätzlich als Label gesetzt. Deckt ein Test mehrere Schichten ab, bestimmt die im Titel genannte die Hauptschicht; die weiteren kommen als zusätzliche Labels dazu.
 
 Checkliste für künftige Test-Issues:
 

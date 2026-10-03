@@ -118,6 +118,44 @@ sha256sum gradle/wrapper/gradle-wrapper.jar
 
 Arbeit wird über GitHub-Issues organisiert: je Aufgabe ein Issue, Commits referenzieren das Issue (`(#n)`/`Closes #n`). Commits folgen den Conventional Commits und bleiben klein.
 
+### Issues finden
+
+Jedes Issue trägt einen Issue-Typ und genau ein `kind/*`-Label (Schema in `AGENTS.md` unter „Issue-Konvention"). Damit lässt sich gezielt filtern, statt die ganze Liste zu lesen:
+
+| Was du suchst | Filter |
+|---|---|
+| alle Eltern-Aufgaben | `label:kind/parent` |
+| offene Umsetzungsarbeit | `is:open label:kind/feat` |
+| offene Tests im aktuellen Meilenstein | `is:open label:kind/test milestone:4` |
+| Tests einer Schicht | `label:kind/test label:integration` |
+| offene Fehler | `is:open label:kind/bug` |
+| was auf etwas anderes wartet | `is:open label:blocked` |
+
+Auf der Kommandozeile dasselbe über `gh`:
+
+```bash
+gh issue list --label kind/parent --milestone 4
+gh issue list --label kind/test --label integration --state open
+```
+
+### Woran du siehst, was wann dran ist
+
+Ein Filter zeigt, *welche* Arbeit es gibt – nicht, in welcher Folge. Die steht im Eltern-Issue: `Work order` ist seine Position im Meilenstein, die `Sub-issues`-Zeile listet die Sub-Issues in der Reihenfolge, in der sie abgearbeitet werden. Die Eltern-Aufgaben eines Meilensteins der Reihe nach:
+
+```bash
+gh issue list --label kind/parent --milestone 4 --state all --json number,title,body \
+  --jq 'map(. + {order: (.body | capture("\\*\\*Work order:\\*\\* (?<w>[0-9]+)").w | tonumber)})
+        | sort_by(.order) | .[] | "\(.order)  #\(.number)  \(.title)"'
+```
+
+Und für eine einzelne Aufgabe die Sub-Issues in Arbeitsreihenfolge:
+
+```bash
+gh issue view 109 --json body --jq '.body | capture("\\*\\*Sub-issues:\\*\\* (?<s>.*)").s'
+```
+
+Neue Issues entstehen immer über eine Vorlage aus `.github/ISSUE_TEMPLATE/`, weil sie Typ und Rolle-Label selbst setzen; Blanko-Issues sind abgeschaltet.
+
 ## Warum der Umweg über den Dev Container
 
 Der Container enthält dieselben Systemabhängigkeiten wie das spätere Laufzeit-Image: dieselbe JDK-Hauptversion, dasselbe `jpegtran`. Driften die beiden auseinander, laufen die Tests grün und der Dienst fällt im Betrieb um. Deshalb gilt: gebaut und getestet wird im Container, nicht daneben.

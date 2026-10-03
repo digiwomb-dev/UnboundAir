@@ -1,8 +1,15 @@
 name: Test task
-description: A test task with a fixed checklist (AI run: exactly one file; human: a file list).
-title: "test: "
-labels: []
+description: "A test task with a fixed checklist. AI run: exactly one file; human: a file list."
+title: "test(layer): "
+type: Test
+labels:
+  - kind/test
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Title: `test(<layer>): <requirement IDs> <description>` — the prefix is the
+        **test layer**, never the package. Set the layer below as a label as well.
   - type: textarea
     id: requirements
     attributes:
@@ -14,7 +21,7 @@ body:
     id: layer
     attributes:
       label: Test layer
-      description: Also set as a label.
+      description: Also set as a label, and used as the title prefix.
       options:
         - unit
         - property
@@ -41,6 +48,13 @@ body:
       description: What the acceptance is based on (verifiable).
     validations:
       required: true
+  - type: input
+    id: parent
+    attributes:
+      label: Parent
+      description: "The parent task, e.g. #109. Leave empty for standalone work."
+    validations:
+      required: false
   - type: checkboxes
     id: checklist
     attributes:
