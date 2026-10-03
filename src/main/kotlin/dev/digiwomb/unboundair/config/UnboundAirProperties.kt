@@ -19,7 +19,15 @@ import java.time.temporal.ChronoUnit
  *
  * Property names use dots and hyphens, e.g. `unboundair.poll-interval`. Environment
  * variables use upper case with underscores and hyphens dropped. Every dot becomes an
- * underscore and every hyphen is removed with no replacement. Examples:
+ * underscore and every hyphen is removed with no replacement.
+ *
+ * Spring's relaxed binding is more forgiving than that: measured, it also accepts a
+ * hyphen spelled as an underscore (`UNBOUNDAIR_OUTPUT_PAPERLESS_BASE_URL` binds just
+ * like `..._BASEURL`, and with both set the hyphen-dropped form wins). The names below
+ * are nonetheless the documented ones, and the only ones the documentation promises:
+ * one spelling per setting is what makes a configuration reviewable, and the tolerance
+ * is an implementation detail of Spring rather than a guarantee this project gives.
+ * Examples:
  * - `unboundair.poll-interval` -> `UNBOUNDAIR_POLLINTERVAL`
  * - `unboundair.offline-poll-interval` -> `UNBOUNDAIR_OFFLINEPOLLINTERVAL`
  * - `unboundair.output.modules` -> `UNBOUNDAIR_OUTPUT_MODULES`
