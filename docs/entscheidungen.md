@@ -246,6 +246,18 @@ Das ist eine Änderung an bestehendem Code aus Meilenstein 1 und geschieht desha
 
 **Kein Fallback nötig.** Da voller Byte-Determinismus über die FILEID-Naht erreichbar ist, behält die Golden-Master-Schicht ihren schärfsten Test; kein Normalisierungs-Fallback.
 
+## PDF-Engine: OpenPDF statt PDFBox, PDFBox bleibt als Prüfer (Entscheidung)
+
+**Dieser Meilenstein existiert, weil PDFBox keinen JBIG2-Strom einbetten kann.** SV-08 verlangt ein PDF mit einem gemeinsamen Symbolwörterbuch je Dokument — alle Seiten tragen `/JBIG2Decode` und verweisen auf denselben `/JBIG2Globals`-Strom. PDFBox bietet dafür keine Einbettungsmöglichkeit; OpenPDF dagegen liefert `ImgJBIG2` mit und führt in `PdfWriter` eine `JBIG2Globals`-Ablage, die identische Globals in einen einzigen PDF-Strom zusammenführt — genau die Wörterbuchform, die SV-08 braucht.
+
+**Aufgegeben wurde dafür Vertrautes.** PDFBox ist die weiter verbreitete Bibliothek, und seine `JPEGFactory` war eine verstandene Naht: bekannt, wo das rohe JPEG hineingeht und wo Neukodierung droht. Auf der neuen Engine musste der JPEG-Pfad neu verifiziert werden — das ist geschehen (Spike #141, Abschnitt oben: `/DCTDecode`, Rohstrom bytegleich). Der Wechsel kauft die JBIG2-Fähigkeit mit dem Preis einer erneut geprüften JPEG-Einbettung.
+
+**PDFBox bleibt im Test-Scope — als unabhängiger Prüfer, nicht als zweite Engine.** Ein Prüfer, der derselbe Code ist wie der Erzeuger, beweist nichts: OpenPDF, das sein eigenes PDF gegenliest, bestätigt nur sich selbst. PDFBox liest, was OpenPDF geschrieben hat, als unabhängige zweite Implementierung — und `COSStream.createRawInputStream()` ist der einzige Weg zu beweisen, dass ein JPEG ohne Neukodierung im PDF liegt. Das ist eine bewusste, dokumentierte Ausnahme von „Abhängigkeiten minimal": eine TEST-Abhängigkeit (`testImplementation("org.apache.pdfbox:pdfbox:3.0.8")`), der Laufzeit-Classpath bleibt unberührt. Die Dependency-Zeile in `build.gradle.kts` trägt dieselbe Begründung.
+
+**Determinismus: entschieden, nicht neu vermessen.** Der Mechanismus steht im Spike-Abschnitt oben (#141): die FILEID-Naht in `writer.getInfo()`, die Negativkontrolle (ohne Festschreibung genau 56 Byte nur in `/ID`) und der bytegleiche Doppellauf. **Entscheidung: Die Golden-Master-Schicht behält ihren schärfsten Voll-Byte-Vergleich; ein Normalisierungs-Fallback ist nicht nötig.** Auch die brotli4j-Entscheidung (Ausschluss) ist dort bereits mit Begründung entschieden und wird hier nur referenziert, nicht wiederholt.
+
+**Zum Clock-Abschnitt:** Der Abschnitt „PDF-Metadaten-Determinismus: injizierbare Clock" beschreibt den PDFBox-Mechanismus — das ist Geschichte, aber es ist die Geschichte, über die die Anforderung gefunden wurde (jede Quelle von Zufall oder Echtzeit im Schreibpfad muss an die Clock). **Aktuell in Kraft ist der OpenPDF-Mechanismus aus dem Spike-Abschnitt oben.** Der PDFBox-Abschnitt bleibt unverändert lesbar: Ein Entscheidungs-Log, das sich selbst überschreibt, hört auf, ein Log zu sein.
+
 ## Spike-Ergebnisse (Zusammenfassung)
 
 - **Spike A (kotest-property auf JUnit Platform 6):** läuft. 1 Test, 0 Failures auf Platform 6.0.3 (Spring Boot 4.1.1, `junit-jupiter` 6.0.3).
