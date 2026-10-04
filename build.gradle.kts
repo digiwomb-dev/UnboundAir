@@ -161,12 +161,18 @@ pitest {
     timestampedReports.set(false)
     timeoutConstInMillis.set(60000)
 
-    // Floor, not a target. 71 % is exactly what the re-measurement run over all
-    // five core packages measured (371/525 killed, 28.09.2026); pinning it
+    // Floor, not a target. 66 % is exactly what the re-measurement run over all
+    // seven core packages measured (458/695 killed, 04.10.2026); pinning it
     // here makes a later drop in assertion quality fail the task instead of
-    // passing unnoticed. Milestone 3 added `output` and `service`, changing
-    // the measurement basis as permitted by TE-04.
+    // passing unnoticed. Milestone 4 added `output.outbox` and
+    // `output.paperless`, changing the measurement basis as permitted by TE-04.
+    // This is the first run that lowered the floor, from 71 %: the two new
+    // packages and the two new `service` classes are the weakest code in the
+    // project, and leaving the threshold at 71 would have made `pitest`
+    // permanently red. A tool that is always red stops warning. The drop is
+    // written up with its cause and its countermeasure in
+    // docs/entscheidungen.md, and raising it again is a milestone-5 issue.
     // Raise this number when the score improves; never lower it silently.
     // Per-package numbers and the weak spots are in docs/entscheidungen.md.
-    mutationThreshold.set(71)
+    mutationThreshold.set(66)
 }

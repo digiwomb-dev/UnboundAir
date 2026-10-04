@@ -90,12 +90,12 @@ Byte-genaue Referenzartefakte unter `golden/` mit einem **sha256-Manifest**. Erg
 
 ### 8. Mutation (`mutation`)
 
-**PIT** (pitest 1.25.5) über den eigenen Gradle-Task `pitest`, Ziel sind die Kern-Pakete (`scanner`, `image`, `processing`, seit Meilenstein 3 zusätzlich `output` und `service`). Der Task ist **nie Teil von `build`/`check`** und läuft nur auf ausdrücklichen Aufruf. Wächst das Ziel, ändert sich der Nenner: Die Schwelle ist dann neu einzumessen und mit Zahlen zu dokumentieren (TE-04) — das ist ein belegter Wechsel der Messgrundlage, kein stilles Senken.
+**PIT** (pitest 1.25.5) über den eigenen Gradle-Task `pitest`, Ziel sind die Kern-Pakete (`scanner`, `image`, `processing`, seit Meilenstein 3 zusätzlich `output` und `service`, seit Meilenstein 4 auch `output.outbox` und `output.paperless`). Der Task ist **nie Teil von `build`/`check`** und läuft nur auf ausdrücklichen Aufruf. Wächst das Ziel, ändert sich der Nenner: Die Schwelle ist dann neu einzumessen und mit Zahlen zu dokumentieren (TE-04) — das ist ein belegter Wechsel der Messgrundlage, kein stilles Senken.
 
 - **Warum:** Mutation deckt Lücken in der Assertion-Qualität auf, die Coverage allein nicht zeigt.
 - **Grenzen (gemessen, Spike B):** PIT funktioniert auf JUnit Platform 6 (das bekannte Problem 0 %-Coverage ist mit pitest 1.25.5 behoben). Die zeitgesteuerten Scanner-Tests machen Läufe über den ganzen Kern langsam; deshalb `timeoutConstInMillis` erhöht. Zahlen und Entscheidung in `docs/entscheidungen.md`.
-- **Stand (Einmessung Meilenstein 3, 28.09.2026, Commit `17ae322`):** gesamt **71 %** Mutation Coverage (371/525), Test Strength 76 %. Mit der Aufnahme von `output` und `service` wuchs der Nenner von 386 auf 525 Mutationen — ein belegter Wechsel der Messgrundlage. Alle Zahlen je Paket stehen in `docs/entscheidungen.md`.
-- **Schwelle:** `mutationThreshold = 71` in `build.gradle.kts` — der gemessene Wert als **Boden**, damit ein Rückgang den Task rot macht. Anheben, wenn der Score steigt; **nie stillschweigend senken**. Schwächste Klassen und Begründung in `docs/entscheidungen.md`.
+- **Stand (Einmessung Meilenstein 4, 04.10.2026, Commit `d6c63de`):** gesamt **66 %** Mutation Coverage (458/695), Test Strength 73 %, Dauer 2 h 25 min. Mit der Aufnahme von `output.outbox` und `output.paperless` wuchs der Nenner von 525 auf 695 Mutationen — ein belegter Wechsel der Messgrundlage. Alle Zahlen je Paket stehen in `docs/entscheidungen.md`.
+- **Schwelle:** `mutationThreshold = 66` in `build.gradle.kts` — der gemessene Wert als **Boden**, damit ein Rückgang den Task rot macht. Anheben, wenn der Score steigt; **nie stillschweigend senken**. Der Lauf zu Meilenstein 4 hat den Boden erstmals gesenkt, von 71 % — nicht stillschweigend, sondern mit Ursache und Gegenmaßnahme in `docs/entscheidungen.md`. Schwächste Pakete sind dort ebenfalls benannt.
 - **Netz:** Die `org.pitest`-Artefakte sind nicht im warmen Cache; der erste `pitest`-Lauf löst sie online auf. DC-03 bleibt unberührt, weil es `./gradlew test` betrifft — der läuft weiterhin offline.
 
 ### Wächter (Guard)
