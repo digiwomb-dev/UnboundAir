@@ -129,6 +129,11 @@ pitest {
             "dev.digiwomb.unboundair.image.*",
             "dev.digiwomb.unboundair.processing.*",
             "dev.digiwomb.unboundair.output.*",
+            // Named explicitly beside `output.*`: milestone 4 put the risky logic of
+            // AU-04 and AU-05 into these two sub-packages, and the measurement basis
+            // should say so rather than rely on how the glob reads.
+            "dev.digiwomb.unboundair.output.outbox.*",
+            "dev.digiwomb.unboundair.output.paperless.*",
             "dev.digiwomb.unboundair.service.*",
         ),
     )
@@ -138,9 +143,17 @@ pitest {
             "dev.digiwomb.unboundair.image.*",
             "dev.digiwomb.unboundair.processing.*",
             "dev.digiwomb.unboundair.output.*",
+            "dev.digiwomb.unboundair.output.outbox.*",
+            "dev.digiwomb.unboundair.output.paperless.*",
             "dev.digiwomb.unboundair.service.*",
             // The page-log assertions live in `logging` but exercise `service`.
             "dev.digiwomb.unboundair.logging.*",
+            // `e2e` stays out, measured: the layer's tests wait on Awaitility with a
+            // 60-second ceiling, which is right for them and wrong here. A mutation
+            // that breaks delivery makes every such test burn its full timeout
+            // instead of failing fast, and the run grows from minutes into hours.
+            // The mutations in `output` and `service` are covered by the unit, slice
+            // and integration tests anyway; e2e adds runtime, not reach.
         ),
     )
     outputFormats.set(setOf("HTML"))
