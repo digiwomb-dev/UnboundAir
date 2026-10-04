@@ -47,12 +47,10 @@ import org.junit.jupiter.api.Test
  *
  * 3. **No Spring stereotypes in `..output..` (AU-03).** Modules are registered
  *    deliberately and selected at runtime; a stereotype annotation would wire them
- *    through component scanning instead. This rule is deliberately inert today: the
- *    `output` package is empty until the paperless-ngx module lands in a later
- *    milestone, so `allowEmptyShould(true)` tolerates exactly that one situation.
- *    The moment a class appears in `dev.digiwomb.unboundair.output..`, the rule checks
- *    it in full. It is kept (not removed) so the AU-03 "Laufzeit-Registrierung"
- *    decision stays guarded as an executable rule even while nothing implements it yet.
+ *    through component scanning instead. Since milestone 4 the rule has real classes to
+ *    check: the registry, the outbox and the paperless module all live under `output`.
+ *    `allowEmptyShould(true)` is kept from the milestones when the package was still
+ *    empty; it now tolerates nothing, because the package is not empty any more.
  *
  * 4. **The core stays free of Spring (`scanner`, `image`, `processing`, `output`).**
  *    No class there may import anything from `org.springframework`. This is the
@@ -72,9 +70,10 @@ import org.junit.jupiter.api.Test
  * not assigned to one (the test-only `guard` package and `TestImages` are unlayered
  * for the same reason).
  *
- * The `output` layer is declared even though it is empty today: the paperless module
- * arrives in a later milestone, and the direction constraints must already be in
- * place for it.
+ * The `output` layer was declared while it was still empty, so the direction
+ * constraints were in place before the first module arrived. Since milestone 4 it
+ * holds the registry, the outbox and the paperless module, and the constraints apply
+ * to them as written.
  */
 @Tag("guard")
 class ArchitectureRulesTest {
@@ -128,12 +127,12 @@ class ArchitectureRulesTest {
      *   the edges the `mayOnlyAccessLayers` / `mayNotAccessAnyLayer` conditions are
      *   designed for: dependencies whose source and target both belong to declared
      *   layers, which covers fields, method signatures, and return types alike.
-     * - [withOptionalLayers] because the `output` layer is empty until the
-     *   paperless-ngx module lands in a later milestone; ArchUnit otherwise requires
-     *   every declared layer to be non-empty. All direction constraints stay in
-     *   force, so the moment a class appears in `dev.digiwomb.unboundair.output..`
-     *   the rule constrains it in both directions: it may only access
-     *   `processing`/`image`, and only `service` may access it.
+     * - [withOptionalLayers] because the `output` layer was empty until the
+     *   paperless-ngx module arrived in milestone 4; ArchUnit otherwise requires every
+     *   declared layer to be non-empty. It stays switched on for the next layer that
+     *   gets declared ahead of its code. All direction constraints are in force for
+     *   the classes that now live there: they may only access `processing`/`image`,
+     *   and only `service` may access them.
      *
      * The `mayOnlyBeAccessedByLayers` clauses on `service` and `output` are the
      * incoming half of the guard. Without them the topmost layers would be
