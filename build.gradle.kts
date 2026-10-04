@@ -166,12 +166,14 @@ pitest {
     // here makes a later drop in assertion quality fail the task instead of
     // passing unnoticed. Milestone 4 added `output.outbox` and
     // `output.paperless`, changing the measurement basis as permitted by TE-04.
-    // This is the first run that lowered the floor, from 71 %: the two new
-    // packages and the two new `service` classes are the weakest code in the
-    // project, and leaving the threshold at 71 would have made `pitest`
-    // permanently red. A tool that is always red stops warning. The drop is
-    // written up with its cause and its countermeasure in
-    // docs/entscheidungen.md, and raising it again is a milestone-5 issue.
+    // This is the first run that lowered the floor, from 71 %. Only part of
+    // that is the wider basis: measured over the five packages of milestone 3
+    // alone the score still fell, from 70.7 % to 67.9 % (389/573), because
+    // `service` took on two undertested classes. Leaving the threshold at 71
+    // would have made `pitest` permanently red, and a tool that is always red
+    // stops warning. The drop is written up with both causes and its
+    // countermeasure in docs/entscheidungen.md; raising it again is milestone-5
+    // issue #138.
     // Raise this number when the score improves; never lower it silently.
     // Per-package numbers and the weak spots are in docs/entscheidungen.md.
     mutationThreshold.set(66)
