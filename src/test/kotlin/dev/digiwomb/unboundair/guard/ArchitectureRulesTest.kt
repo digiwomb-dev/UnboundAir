@@ -67,8 +67,16 @@ import org.junit.jupiter.api.Test
  * The root class `UnboundAirApplication` is deliberately excluded from the layering:
  * it is the composition root and may reference anything. `layeredArchitecture()`
  * only constrains classes that belong to a declared layer, so the root class is simply
- * not assigned to one (the test-only `guard` package and `TestImages` are unlayered
- * for the same reason).
+ * not assigned to one (the test-only `guard` and `e2e` packages and `TestImages` are
+ * unlayered for the same reason).
+ *
+ * `e2e` is unlayered on purpose, and the tests there depend on it: an end-to-end test
+ * drives the whole chain from `service` downwards, but `service` may only be accessed
+ * by `cli`. Were `e2e` a declared layer, every test in it would violate that rule. The
+ * alternative -- widening `mayOnlyBeAccessedByLayers` on `service` to let test code in
+ * -- would weaken the rule for production code too, which is the opposite of what the
+ * guard is for. Leaving the package outside the layering keeps the rule sharp where it
+ * matters.
  *
  * The `output` layer was declared while it was still empty, so the direction
  * constraints were in place before the first module arrived. Since milestone 4 it
