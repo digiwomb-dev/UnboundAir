@@ -47,3 +47,9 @@ Das Protokollwissen stammt aus eigener Analyse am Gerät, aus dem Handbuch und a
 - Läuft als Container; entwickelt und getestet wird ausschließlich gegen einen Fake-Scanner
 
 Die genauen Versionen stehen in `docs/plan.md` unter „Feste Entscheidungen".
+
+## Lizenz und Herkunft
+
+UnboundAir steht unter der Apache License 2.0 – siehe [`LICENSE`](LICENSE).
+
+Zur Herkunft des Protokollwissens: s400w ist CC0-lizenziert, übernommen wurde daraus nur Protokollwissen, kein Code. AirScan ist als Quelle genannt. Im Repository liegt kein Hersteller-Code: keine Mustek-Binärdateien, keine Installer.
