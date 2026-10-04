@@ -2,6 +2,92 @@
 
 Begründungen zu den festen Entscheidungen. Grundlage ist `docs/plan.md` („Feste Entscheidungen" und „Entschieden – nicht mehr offen"); diese Datei füllt sich nach und nach (DO-06).
 
+## Stack und Versionspolitik: neueste stabile, gepinnt — nicht LTS
+
+**Entscheidung: Kotlin + Spring Boot, Build mit Gradle (Kotlin DSL) inklusive Wrapper, jeweils die neueste stabile Version, im Build fest gepinnt — ausdrücklich nicht nur LTS.**
+
+Kotlin, weil der Dienst klein, nebenläufig und stark typgetrieben ist (Scanner-Protokoll, Verarbeitungsschritte, Outbox-Zustände): Nullsicherheit und Datenklassen tragen hier mehr als jede Framework-Wahl. Spring Boot, weil Konfiguration, Lebenszyklus und HTTP-Client damit Bordmittel sind, statt selbst gebaut zu werden. Gradle mit Kotlin DSL, weil Build-Logik damit typgeprüfter Code ist statt einer zweiten Skriptsprache; der Wrapper gehört dazu, damit jede Umgebung denselben Build fährt.
+
+**Warum nicht LTS.** Ein LTS-Grundsatz würde den Stack auf der jeweils ältesten noch gepflegten Version einfrieren und jede Neuerung um Jahre verzögern — bei einem Projekt, das keine Altsystem-Rücksichten hat und dessen einzig riskante Logik ohnehin in reinen Kotlin-Klassen ohne Framework liegt. „Neueste stabile, gepinnt" kauft dagegen aktuelle Compiler, aktuelle Bibliotheken und reproduzierbare Builds zugleich: gepinnt, damit ein Build morgen dasselbe tut wie heute; neueste stabile, damit ein Update ein kleiner Schritt bleibt statt eines Sprungs über drei Jahre.
+
+Die verworfene Alternative wäre **LTS als Obergrenze** (Java 25 statt 26, ältere Boot- und Kotlin-Linien). Ihr Preis wäre doppelt: Der Code dürfte neuere Sprach- und Bibliotheksmittel nicht nutzen, und wenn das LTS ausläuft, steht ein großer Sprung an — genau die Sorte Migrationsprojekt, die dieser Grundsatz vermeiden soll.
+
+**Die Kette begrenzt sich selbst.** Die Obergrenze setzt jeweils der älteste Baustein: Gradle begrenzt Java, Spring Boot begrenzt Kotlin. Beim Anheben einer Version ist deshalb die Tabelle in `docs/plan.md` mitzupflegen — wer Java anhebt, prüft Gradle; wer Kotlin anhebt, prüft Spring Boot. Das ist kein Zufall, sondern die Kehrseite von „neueste stabile": Ohne diese Regel würde ein Update das nächste stillschweigend sprengen.
+
+## Warum nicht Java 27
+
+**Entscheidung: Java 26, nicht 27 — obwohl 27 seit dem 15.09.2026 verfügbar ist.**
+
+Gradle 9.7.1 gibt in seiner Kompatibilitätsmatrix ausdrücklich an, JVM 27 und neuer nicht auszuführen (Spanne 17–26). Wer Java 27 nähme, könnte den Build schlicht nicht starten — kein schleichender Fehler, sondern ein harter. Die Alternative **„Java 27 trotzdem"** kostet also den Build selbst und scheidet aus, solange Gradle nicht nachzieht. Sobald Gradle nachzieht, ist Java 27 der nächste Schritt: Der Grundsatz bleibt „neueste stabile Version", nur die Decke liegt derzeit bei 26.
+
+## Kotlin über der verwalteten Version
+
+**Entscheidung: Kotlin 2.4.20 — bewusst neuer als die von Spring Boot 4.1.1 verwaltete Version 2.3.21.** Das ist die einzige Stelle, an der bewusst von Spring Boots verwalteten Versionen abgewichen wird.
+
+Der Grund ist ein Bytecode-Ziel, kein Geschmack: Der Compiler von Kotlin 2.3.21 kennt als höchstes Bytecode-Ziel `JVM_25` — mit Java 26 lässt sich damit nicht bauen. Kotlin 2.4.20 kennt `JVM_26`. Wer die verwaltete Version behielte, müsste Java auf 25 zurückdrehen und gäbe damit den Versionsgrundsatz an der ersten Kante auf. Die Überschreibung im Build kauft also Java 26 zum Preis einer einzigen, benannten Abweichung von der Boot-Verwaltung.
+
+Der benannte **Rückfallweg ist Java 25 statt 26**: Falls die Überschreibung je Probleme macht (etwa eine Inkompatibilität zwischen Boot-Verwaltung und neuerem Compiler), wird nicht an der Kotlin-Version gefeilt, sondern Java auf 25 zurückgenommen — dann passt die verwaltete Version wieder, und der Build ist ohne Sonderweg grün. Das ist bewusst ein Rückschritt auf eine definierte Stufe, kein Suchen nach einer dritten Version.
+
+## Lizenz: Apache-2.0
+
+**Entscheidung: Apache-2.0.**
+
+Wie MIT freizügig — verwenden, verändern, weitergeben, auch kommerziell —, aber mit ausdrücklicher Patentklausel. Das ist hier kein Formkram: Der Dienst baut ein Hersteller-Protokoll nach, und genau für diese Lage ist die Patentklausel da — sie gibt jedem Nutzer das Patentrecht, das zum Betrieb des Codes nötig ist, statt darüber zu schweigen wie MIT.
+
+**Herkunft wird dokumentiert, nicht vermischt.** s400w steht unter CC0 — übernommen wurde kein Code, nur Protokollwissen —, AirScan ist als Quelle genannt, Hersteller-Code liegt nicht im Repo. Die verworfene Alternative wäre **MIT** (einfacher, aber ohne Patentklausel — eine Lücke genau an der Stelle, wo dieses Projekt sie am ehesten spürte) oder **eine Copyleft-Lizenz** (würde jeden Einbetten-und-Weitergeben-Fall mit Lizenzpflichten belegen und damit schlicht weniger Nutzer erreichen, ohne dem Projekt etwas zu geben). Die `LICENSE` liegt im Wurzelverzeichnis des Repos; die Begründung steht hier.
+
+## Linter: ktlint über Spotless
+
+**Entscheidung: ktlint als Regelwerk (1.8.0), ausgeführt über das Spotless-Gradle-Plugin (8.10.2).**
+
+ktlint prüft reine Formatierung, braucht kaum Konfiguration und rauscht wenig. Die verworfene Alternative **detekt** würde mehr Feinjustierung verlangen — eigene Regelsätze, eigene Schwellen —, ohne hier mehr zu bringen: Es gibt keine komplexen Architektur- oder Komplexitätsregeln zu erzwingen, nur einheitliche Formatierung. detekt wäre mehr Werkzeug für ein Problem, das nicht vorliegt.
+
+**Der Umweg über Spotless ist nötig, nicht Geschmack.** Das ktlint-Gradle-Plugin scheiterte mit `Extensions storage is not registered`. Ursache ist eine Kette aus drei Gliedern: `spring-boot-dependencies` importiert das Kotlin-BOM, dieses verwaltet auch `kotlin-compiler-embeddable`, und `io.spring.dependency-management` wendet das auf *alle* Konfigurationen an — also auch auf die des Linters. Dadurch bekommt ktlint statt seines eigenen Compilers den des Projekts untergeschoben und stürzt ab. Spotless löst seine Werkzeuge über eine `detachedConfiguration` auf, die von `configurations.all {}` nicht erfasst wird — die Überschreibung greift dort schlicht nicht.
+
+**Erschwerend hinkt der Linter der Sprache hinterher.** ktlint ist mit Kotlin 2.4 grundsätzlich nicht kompatibel (ktlint-Issue 3289, gemeldet von einem JetBrains-Compiler-Entwickler; der Fix steckt bisher nur in ktlint 2.0.0-ALPHA). Der Linter parst deshalb bewusst mit einem älteren Compiler (2.2.21) als dem, mit dem übersetzt wird (2.4.20) — für Formatierungsregeln genügt das. Was das kostet, steht in OF-11: Syntax, die erst nach Kotlin 2.2 hinzukam, versteht der Linter nicht; äußert sich das je, dann als Parse-Fehler in einer einzelnen Datei, nicht als falsches Urteil über den Code.
+
+## Abhängigkeiten minimal
+
+**Entscheidung: Spring Boot, OpenPDF, Spring-eigener HTTP-Client; Bildanalyse mit Java-Bordmitteln (ImageIO); `jpegtran` und `jbig2` als externe Programme.**
+
+Jede Abhängigkeit ist eine Stelle, die gepflegt, aktualisiert, auf Kompatibilität geprüft und im Container mitgetragen werden muss. Deshalb gilt: Was die Plattform kann, wird nicht als Bibliothek eingezogen. ImageIO liest und analysiert Bilder mit Bordmitteln; `jpegtran` schneidet und entgraut verlustfrei auf Byte-Ebene (etwas, das keine JVM-Bibliothek ohne Neukomprimierung könnte); `jbig2` kodiert den 1-bit-Pfad als externes Programm, statt einen nativen Encoder in den Build zu holen.
+
+Die verworfene Alternative wäre **ImageMagick** (oder eine vergleichbare Allzweck-Bildbibliothek) für Verarbeitung und Normalisierung. Ihr Preis: eine große zusätzliche Systemabhängigkeit mit eigener Update- und Kompatibilitätslast — und genau deshalb bleibt SV-04 (`normalize`) zurückgestellt, bis Zweck und Werkzeug entschieden sind: Solange offen ist, was `normalize` tun soll, wird kein Werkzeug dafür eingezogen. Minimal heißt hier nicht asketisch, sondern begründet: Jede neue Abhängigkeit braucht einen Zweck, den Bordmittel nicht erfüllen.
+
+## Der Kern bleibt frei von Spring — mit einer benannten Ausnahme
+
+**Entscheidung: In keinem Kern-Paket darf `org.springframework..` auftauchen — mit genau einer benannten Ausnahme: `output.paperless` darf den Spring-eigenen HTTP-Client verwenden (`RestClient` samt `spring-web`-Typen für Multipart und Header).**
+
+Der Grund ist Testbarkeit und Lebensdauer: Der Kern (Scanner, Verarbeitung, Batch, Ausgabe-Logik) ist ohne Spring-Kontext konstruierbar und damit als reine Unit-Tests prüfbar; er überlebt Framework-Updates, weil er das Framework nicht kennt. Einstellungen kommen als Konstruktor-Werte aus der Kompositionswurzel (Muster `PageSettings`), nicht als injizierte Properties — dasselbe Muster, das die Schichten-Tabelle für `config` festschreibt.
+
+**Warum die Ausnahme existiert.** Das Hochladen ist der einzige Punkt in v1, an dem ein Kern-Paket nach außen spricht. Einen zweiten HTTP-Client (etwa `java.net.http` neben Spring oder eine eigene Bibliothek) dafür einzuziehen stünde gegen „Abhängigkeiten minimal" — der Spring-Client ist ohnehin da, weil Spring Boot ihn mitbringt. Die Ausnahme kauft also genau einen Client statt zwei.
+
+**Was selbst dort verboten bleibt:** keine Spring-Stereotypen (`@Component` und Verwandte), kein injiziertes `UnboundAirProperties`. `output.paperless` bekommt seine Werte wie überall im Kern als Konstruktor-Werte aus der Kompositionswurzel. Die verworfene Alternative wäre **Spring überall im Kern** (bequem: injizieren statt durchreichen) — ihr Preis wäre ein Kern, der nur noch im Spring-Kontext testbar ist und bei jedem Framework-Sprung mitwandern muss. Oder umgekehrt **gar kein Spring-Typ im Kern** (reiner als rein) — ihr Preis wäre ein zweiter HTTP-Client nur für einen einzigen Upload-Pfad.
+
+## Laufzeit: normale JVM
+
+**Entscheidung: normale JVM. GraalVM Native Image ist eine spätere Option, nicht v1 — aber nichts einbauen, was sie verbaut.**
+
+Ein Native Image brächte schnelleren Start und kleineren Speicherfuß — für einen Dienst, der als Container dauerhaft läuft und auf Scans wartet, ist beides in v1 kein Engpass. Was zählt, ist, die Option offenzuhalten: keine Abhängigkeiten mit nativen Bibliotheken ohne Not (siehe den brotli4j-Ausschluss), keine Konfigurationsmagie, die nur auf der HotSpot-JVM funktioniert. Die verworfene Alternative wäre **Native Image sofort**: Sie würde Meilensteine an Reflexions-Konfiguration, ImageIO/AWT-Prüfung und OpenPDF-Verhalten im Native Image binden — Arbeit, die erst lohnt, wenn der Dienst steht und seine Engpässe bekannt sind.
+
+Diese Entscheidung ist der Grund hinter der Laufzeit-Modulauswahl (kein `@ConditionalOnProperty`, siehe AU-03-Entscheidung): Was zur Laufzeit gewählt wird, statt zur Build-Zeit verdrahtet zu sein, überlebt den späteren Wechsel des Laufzeitmodells.
+
+## Eine Anwendung, keine Web-UI in v1
+
+**Entscheidung: eine Anwendung, in v1 ohne Web-Oberfläche. Den Kern so schneiden, dass später eine Web-UI andocken kann, ohne den Kern umzubauen.**
+
+Der Dienst hat genau einen Auftrag — einlegen und fertig — und eine Web-UI würde in v1 bedeuten: HTTP-Schicht, Authentifizierung, Oberflächen-Tests und -Pflege für einen Nutzen, den noch niemand eingefordert hat. Die verworfene Alternative wäre **die UI gleich mitzubauen**: Ihr Preis wäre ein verdoppelter Oberflächen- und Testaufwand für ein Produkt, dessen Kern (Scannen, Zuschneiden, PDF, Module) noch nicht einmal am echten Gerät verifiziert ist.
+
+„Keine UI" heißt dabei nicht „kein Platz für eine UI": Der Schnitt (Kern-Pakete als reine Logik, `service` als Orchestrierung, Einstellungen als Konstruktor-Werte) ist so gelegt, dass eine UI später andockt, statt den Kern aufzubrechen. Das ist dieselbe Schnitt-Logik wie bei der Batch-Senke: Wer später dazukommt, hängt sich an, statt umzubauen.
+
+## Container-Abnahme auf dem GitHub-Actions-`arm64`-Runner (CT-01)
+
+**Entscheidung: In v1 nur `linux/arm64`; die Abnahme läuft auf einem GitHub-Actions-`arm64`-Runner — nativer Hardware statt Behauptung.**
+
+Der Ziel-Host ist ARM-Hardware, und ein Image, das nur per Cross-Build für eine andere Architektur entsteht, ist ungetestet: Es baut vielleicht, aber ob `jpegtran`, `jbig2` und der Dienst darin wirklich laufen, weiß niemand. Die verworfene Alternative wäre **beide Architekturen sofort** (`arm64` + `amd64`) oder **Abnahme per Emulation** (etwa QEMU): Beides verdoppelt Prüfaufwand und Fehlersuche an einer Stelle, wo v1 nur eine Plattform braucht — und Emulation beweist gerade das nicht, worauf es ankommt (dass das Image auf echter Hardware läuft). Deshalb: ein Image, eine Architektur, echte Hardware.
+
+Das Dockerfile wird dabei so geschrieben, **dass es keine Architektur fest verdrahtet** — `linux/amd64` kommt später dazu, ohne das Dockerfile umzuschreiben. Die Abnahme ist dreiteilig und steht in CT-01: Im Container laufen `jpegtran -version`, `jbig2 -V` (schreibt nach stderr, Exit 0 — eine naive Prüfung von stdout findet nichts) und `status` gegen den Fake-Scanner.
+
 ## Test-Dependency-Set
 
 Grundsatz: Test-Dependencies ausschließlich im Test-Scope, fest gepinnt auf die neueste stabile Version, Kompatibilität mit Java 26 / JUnit Platform 6 / Kotlin 2.4.20 verifiziert (Spikes A und B), nicht angenommen.
