@@ -99,6 +99,37 @@ Vier Dinge, die man vorher wissen sollte:
 
 Es gibt eine **Schwelle**: Fällt die Mutationsabdeckung unter den in `build.gradle.kts` gepinnten Wert, schlägt der Task fehl. Der Wert ist der zuletzt gemessene Stand und wirkt als Boden – er wird angehoben, wenn der Score steigt, und nicht stillschweigend gesenkt. Die aktuellen Zahlen je Paket stehen in `entscheidungen.md`.
 
+## Laufzeit-Image bauen
+
+Das Laufzeit-Image steht in `Dockerfile` im Repository-Stamm. Gebaut wird es aus dem Repository heraus – vorher das Jar erzeugen, weil das Dockerfile `build/libs/unboundair.jar` hineinkopiert (kein Gradle im Image-Build):
+
+```bash
+./gradlew bootJar
+docker build -t <name> .
+```
+
+`<name>` ist ein Platzhalter: Image-Name und Registry sind noch nicht vergeben, es gibt bewusst keinen festen Namen.
+
+Die Abnahme des Images (CT-01) läuft nicht lokal, sondern auf dem GitHub-Actions-Runner `ubuntu-24.04-arm` im Workflow `.github/workflows/image.yml`. Der Grund ist schlicht: Eine `x86_64`-Maschine ohne QEMU kann ein `linux/arm64`-Image weder bauen noch betreten, also findet die Prüfung dort statt, wo native `arm64`-Hardware vorhanden ist. Der Workflow baut das Image für `linux/arm64` und führt darin die drei Prüfungen aus (`jpegtran` vorhanden, `jbig2` vorhanden, `status` erreicht den Scanner).
+
+Der Betrieb des fertigen Images – wohin es gehört, wie es läuft – steht in `docs/betrieb.md`, nicht hier.
+
+## Fake-Scanner als Prozess
+
+Der Gradle-Task `./gradlew fakeScanner` startet den Fake-Scanner als eigenen Prozess – denselben Fake-Scanner, den die Tests sonst als TCP-Server im Testprozess einbetten. Nützlich, sobald man die CLI von Hand gegen ein Gerät ausprobieren will, ohne den echten Scanner anzufassen:
+
+```bash
+./gradlew fakeScanner
+```
+
+Der Fake-Scanner hört per Default auf Port **2323**; mit `-PfakeScannerPort=<n>` lässt sich der Port ändern. In einem zweiten Terminal lässt sich dann `status` gegen das Fake-Gerät üben:
+
+```bash
+java -jar build/libs/unboundair.jar status --host 127.0.0.1 --port 2323
+```
+
+(Das Jar dafür vorher mit `./gradlew bootJar` bauen.)
+
 ## Gradle-Wrapper
 
 Der Wrapper gehört mit ins Repository, inklusive `gradle-wrapper.jar`. Die Datei stammt aus der offiziellen Gradle-Veröffentlichung; ihre Prüfsumme ist vorab gegen die von Gradle publizierte Angabe abgeglichen worden:
@@ -161,7 +192,7 @@ Neue Issues entstehen immer über eine Vorlage aus `.github/ISSUE_TEMPLATE/`, we
 
 ## Warum der Umweg über den Dev Container
 
-Der Container enthält dieselben Systemabhängigkeiten wie das spätere Laufzeit-Image: dieselbe JDK-Hauptversion, dasselbe `jpegtran`, dasselbe `jbig2`. Driften die beiden auseinander, laufen die Tests grün und der Dienst fällt im Betrieb um. Deshalb gilt: gebaut und getestet wird im Container, nicht daneben.
+Der Container enthält dieselben Systemabhängigkeiten wie das spätere Laufzeit-Image: dieselbe JDK-Hauptversion, dasselbe `jpegtran`, dasselbe `jbig2`. Das steht so auch im `Dockerfile` des Laufzeit-Images, und die beiden Dateien (`.devcontainer/Dockerfile`, `Dockerfile`) gehören zusammen: Wer eine von beiden ändert, prüft die andere mit. Driften die beiden auseinander, laufen die Tests grün und der Dienst fällt im Betrieb um. Deshalb gilt: gebaut und getestet wird im Container, nicht daneben.
 
 ### Bekannte Eigenheiten
 
