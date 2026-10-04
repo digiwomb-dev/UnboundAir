@@ -1,11 +1,15 @@
 package dev.digiwomb.unboundair.output
 
-import org.apache.pdfbox.pdmodel.PDDocument
-import org.apache.pdfbox.pdmodel.PDPage
-import org.apache.pdfbox.pdmodel.PDPageContentStream
-import org.apache.pdfbox.pdmodel.common.PDRectangle
-import org.apache.pdfbox.pdmodel.graphics.image.JPEGFactory
+import org.openpdf.text.Document
+import org.openpdf.text.Image
+import org.openpdf.text.Rectangle
+import org.openpdf.text.pdf.PdfDate
+import org.openpdf.text.pdf.PdfEncryption
+import org.openpdf.text.pdf.PdfName
+import org.openpdf.text.pdf.PdfString
+import org.openpdf.text.pdf.PdfWriter
 import java.io.OutputStream
+import java.nio.ByteBuffer
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Clock
@@ -35,10 +39,11 @@ data class PdfPage(
  * this class is deliberately small:
  *
  * - **Never recompress.** The JPEGs go in exactly as they arrive, through
- *   [JPEGFactory.createFromByteArray], which stores the compressed stream as-is
+ *   [Image.getInstance], which stores the compressed stream as-is (`/DCTDecode`)
  *   rather than decoding and re-encoding it. Every pixel in the finished PDF is
- *   the one the scanner produced. Anything that decodes an image here would
- *   break the promise the whole pipeline is built on.
+ *   the one the scanner produced. Anything going through `java.awt.Image` or
+ *   `BufferedImage` would decode the image here and break the promise the whole
+ *   pipeline is built on.
  * - **Page size is pixels divided by dpi (SV-05).** No rounding to A4 or any
  *   other standard format. A page measures `pixels / dpi * 72` points, which is
  *   what a viewer and a printer need to reproduce the original dimensions.
@@ -89,40 +94,42 @@ class PdfBuilder(
         out: OutputStream,
     ) {
         require(pages.isNotEmpty()) { "a PDF needs at least one page" }
-        PDDocument().use { document ->
-            pages.forEach { page -> document.addPage(renderPage(document, page)) }
-            applyMetadata(document)
-            // The trailer /ID is the one remaining source of run-to-run
-            // variation: PDFBox seeds it from the current time and a random
-            // number, so two saves of the same document differ in 32 bytes.
-            // Deriving it from the clock instead makes the output reproducible
-            // for a pinned clock, while production still gets a per-document
-            // value because the clock moves.
-            document.documentId = clock.millis()
-            document.save(out)
-        }
+        val document = Document()
+        val writer = PdfWriter.getInstance(document, out)
+        // The caller owns the stream: without this, document.close() would
+        // close [out] as a side effect.
+        writer.setCloseStream(false)
+        document.open()
+        applyMetadata(writer)
+        pages.forEach { page -> renderPage(document, page) }
+        document.close()
     }
 
     /**
-     * Builds one PDF page: a page box of the image's physical size with the
-     * JPEG drawn across the whole of it.
+     * Draws one page: a page box of the image's physical size with the JPEG
+     * across the whole of it.
+     *
+     * The size must be set before starting the page: OpenPDF applies a page
+     * size to the *next* page, so setting it after `newPage()` would size the
+     * following page instead -- the first page would come out right and every
+     * other page wrong.
      */
     private fun renderPage(
-        document: PDDocument,
+        document: Document,
         page: PdfPage,
-    ): PDPage {
-        // createFromByteArray stores the compressed JPEG stream unchanged. This
-        // is the "never recompress" guardrail; createFromImage would decode and
-        // re-encode and must not be used here.
-        val image = JPEGFactory.createFromByteArray(document, Files.readAllBytes(page.file))
-        val width = pointsFor(image.width, page.dpi)
-        val height = pointsFor(image.height, page.dpi)
+    ) {
+        // getInstance stores the compressed JPEG stream unchanged. This is the
+        // "never recompress" guardrail; anything via java.awt.Image or
+        // BufferedImage would decode and re-encode and must not be used here.
+        val image = Image.getInstance(Files.readAllBytes(page.file))
+        val width = pointsFor(image.plainWidth, page.dpi)
+        val height = pointsFor(image.plainHeight, page.dpi)
 
-        val pdPage = PDPage(PDRectangle(width, height))
-        PDPageContentStream(document, pdPage).use { content ->
-            content.drawImage(image, 0f, 0f, width, height)
-        }
-        return pdPage
+        document.setPageSize(Rectangle(width, height))
+        document.newPage()
+        image.setAbsolutePosition(0f, 0f)
+        image.scaleToFit(width, height)
+        document.add(image)
     }
 
     /**
@@ -133,35 +140,63 @@ class PdfBuilder(
      * says it is.
      */
     private fun pointsFor(
-        pixels: Int,
+        pixels: Float,
         dpi: Int,
-    ): Float = pixels.toFloat() / dpi.toFloat() * POINTS_PER_INCH
+    ): Float = pixels / dpi.toFloat() * POINTS_PER_INCH
 
     /**
-     * Sets the document metadata from the injected clock.
+     * Pins the document metadata from the injected clock.
      *
-     * `CreationDate` is the scan time -- for a batch, the start of its first page
-     * -- and comes from the clock so tests can pin it and compare PDFs byte for
-     * byte. `ModificationDate` is set to the same instant: PDFBox would
-     * otherwise leave it unset for some writers and fill it for others, and a
-     * field that sometimes appears is exactly what breaks a byte comparison.
+     * `Document.open()` stamps the info dictionary with the library version as
+     * producer and the current time as creation date, so both are overwritten
+     * here. `CreationDate` is the scan time -- for a batch, the start of its
+     * first page -- and comes from the clock so tests can pin it and compare
+     * PDFs byte for byte. `ModDate` is set to the same instant: a field that
+     * sometimes appears is exactly what breaks a byte comparison.
+     *
+     * The trailer /ID is the one remaining source of run-to-run variation: the
+     * trailer writer reuses the info dictionary's /FileID entry when present
+     * and otherwise generates 16 random bytes, so two saves of the same
+     * document would differ. Deriving it from the clock instead makes the
+     * output reproducible for a pinned clock, while production still gets a
+     * per-document value because the clock moves. The clock alone is not
+     * enough -- without the /FileID entry the random fallback applies no
+     * matter how the dates are pinned.
      *
      * The producer string is fixed rather than carrying the application version,
      * for the same reason: a version number in the metadata would make every
      * release change every golden file, with no gain.
      */
-    private fun applyMetadata(document: PDDocument) {
+    private fun applyMetadata(writer: PdfWriter) {
         val created = GregorianCalendar.from(clock.instant().atZone(clock.zone))
-        document.documentInformation.apply {
-            producer = PRODUCER
-            creationDate = created
-            modificationDate = created
+        writer.info.apply {
+            put(PdfName.PRODUCER, PdfString(PRODUCER))
+            put(PdfName.CREATIONDATE, PdfDate(created))
+            put(PdfName.MODDATE, PdfDate(created))
+            put(PdfName.FILEID, PdfEncryption.createInfoId(documentId(), documentId()))
         }
     }
+
+    /**
+     * Derives the 16 document-id bytes from the injected clock.
+     *
+     * The first 8 bytes are zero; the last 8 are the clock millis in big-endian
+     * order. Deterministic for a pinned clock, per-document in production
+     * because the clock moves.
+     */
+    private fun documentId(): ByteArray =
+        ByteBuffer
+            .allocate(DOCUMENT_ID_BYTES)
+            .putLong(0L)
+            .putLong(clock.millis())
+            .array()
 
     private companion object {
         /** A PostScript point is 1/72 inch. */
         const val POINTS_PER_INCH = 72f
+
+        /** The trailer /ID and /FileID are 16 bytes. */
+        const val DOCUMENT_ID_BYTES = 16
 
         /**
          * Deliberately without a version number, so a release does not change
