@@ -34,7 +34,7 @@ Fachliche Grundlage ist `docs/protokoll.md` – solange es die noch nicht gibt, 
 
 Kurzfassung. Maßgeblich sind die ausführlichen Formulierungen in `docs/plan.md` unter „Feste Entscheidungen" – bei Abweichungen gilt der Plan.
 
-- **Nie neu komprimieren:** Zuschnitt und Graustufen nur per `jpegtran`, JPEGs unverändert ins PDF (PDFBox `JPEGFactory`). Einzige Ausnahme: optionales `normalize`, Default aus.
+- **Nie neu komprimieren:** Zuschnitt und Graustufen nur per `jpegtran`, JPEGs unverändert ins PDF (OpenPDF, roh als `/DCTDecode`). Zwei benannte Ausnahmen: optionales `normalize` (Default aus) und `bw` (SV-08: 1-bit ist keine DCT-Transformation).
 - **Scanner-Antworten per Präfix vergleichen** – das Gerät hängt Füllbytes an.
 - **Ausgabe-Module per Laufzeit-Auswahl,** kein `@ConditionalOnProperty` o. Ä. (hält GraalVM Native Image offen).
 - **Nichts am Protokoll erfinden.** Was offen ist, konfigurierbar bauen und in `docs/offene-fragen.md` führen.
