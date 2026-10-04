@@ -76,7 +76,10 @@ class MonochromeStep(
          *   at or above it becomes white.
          * @return the complete `P4` file content (header plus bitmap).
          */
-        private fun pack(
+        // Internal (not private) so the property test can drive the pure
+        // packing function directly with in-memory images — the deliberate
+        // testability seam; production callers use it exactly as before.
+        internal fun pack(
             luma: LumaImage,
             threshold: Int,
         ): ByteArray {
