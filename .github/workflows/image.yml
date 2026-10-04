@@ -1,0 +1,90 @@
+# CT-01 image check: builds the container image on native arm64 hardware and
+# runs the three acceptance checks inside it (jpegtran, jbig2, status).
+#
+# This workflow pushes nothing and uses no secrets: the image is only built
+# for local verification, and the full CI (tests, releases, publishing) is
+# milestone 6. The narrow trigger set keeps documentation commits from paying
+# for an image build that tells them nothing.
+name: image
+
+on:
+  push:
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.github/workflows/image.yml'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle/**'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - 'src/**'
+  workflow_dispatch:
+
+jobs:
+  image-check:
+    # Native arm64: under QEMU a build can pass while the real thing fails,
+    # and emulated builds are slow enough that people stop running them.
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Java 26 (Temurin)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '26'
+
+      - name: Set up Gradle caching
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build application jar
+        run: ./gradlew bootJar
+
+      - name: Build image for linux/arm64
+        # No push: nothing has decided where images are published yet.
+        # On this native arm64 runner the platform flag is a no-op, but it
+        # states the requirement instead of relying on the runner default.
+        run: docker build --platform linux/arm64 -t unboundair:ci --load .
+
+      - name: Check jpegtran is present
+        # The entrypoint is `java -jar`, so the check must override it: with
+        # the default entrypoint the arguments would reach the application as
+        # a subcommand instead of running jpegtran.
+        run: docker run --rm --entrypoint jpegtran unboundair:ci -version
+
+      - name: Check jbig2 is present
+        # jbig2 -V writes to stderr and exits 0, so a naive capture of
+        # stdout finds nothing. The step relies on the exit code: a missing
+        # binary fails the run, the version line on stderr does not.
+        # --entrypoint for the same reason as the jpegtran check above.
+        run: docker run --rm --entrypoint jbig2 unboundair:ci -V
+
+      - name: Check status reaches the scanner
+        run: |
+          ./gradlew fakeScanner > fake-scanner.log 2>&1 &
+          echo $! > fake-scanner.pid
+          for i in $(seq 1 30); do
+            if (echo > /dev/tcp/127.0.0.1/2323) >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          # Host networking: the container reaches the scanner over the
+          # host's network (docs/plan.md DO-03), so the FakeScanner on
+          # 127.0.0.1:2323 is directly reachable from inside the container.
+          docker run --rm --network host unboundair:ci status --host 127.0.0.1 --port 2323
+          kill "$(cat fake-scanner.pid)"
+
+      - name: Assert no hardcoded architecture in Dockerfile
+        # CT-01 requires the Dockerfile to work without a pinned
+        # architecture; this keeps the requirement enforced rather than
+        # remembered.
+        run: |
+          if grep -Ei 'arm64|amd64|x86[_-]64|aarch64|--platform' Dockerfile; then
+            echo "Dockerfile pins an architecture, which CT-01 forbids."
+            exit 1
+          fi
+          echo "Dockerfile carries no hardcoded architecture."
