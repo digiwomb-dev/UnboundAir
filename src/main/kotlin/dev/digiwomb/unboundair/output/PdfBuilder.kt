@@ -1,13 +1,17 @@
 package dev.digiwomb.unboundair.output
 
+import dev.digiwomb.unboundair.image.BitmapInfo
+import dev.digiwomb.unboundair.image.Jbig2Enc
 import org.openpdf.text.Document
 import org.openpdf.text.Image
+import org.openpdf.text.ImgJBIG2
 import org.openpdf.text.Rectangle
 import org.openpdf.text.pdf.PdfDate
 import org.openpdf.text.pdf.PdfEncryption
 import org.openpdf.text.pdf.PdfName
 import org.openpdf.text.pdf.PdfString
 import org.openpdf.text.pdf.PdfWriter
+import java.io.IOException
 import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.nio.file.Files
@@ -16,15 +20,19 @@ import java.time.Clock
 import java.util.GregorianCalendar
 
 /**
- * One page of a document: the processed JPEG and the resolution it was scanned
- * at.
+ * One page of a document: the processed page file and the resolution it was
+ * scanned at.
+ *
+ * The file is a JPEG for the color and grayscale modes, and a binary PBM (`P4`)
+ * for the `bw` mode (SV-08); [PdfBuilder] detects which by content, not by
+ * extension.
  *
  * The resolution travels with the file rather than being passed once for the
  * whole document, because it is a property of the individual scan (SC-08) and
  * determines that page's size (SV-05). Pages of differing resolution in one
  * document therefore come out at their correct individual sizes.
  *
- * @property file the processed JPEG, embedded unchanged.
+ * @property file the processed page file, embedded unchanged.
  * @property dpi the resolution the page was actually scanned at.
  */
 data class PdfPage(
@@ -94,15 +102,88 @@ class PdfBuilder(
         out: OutputStream,
     ) {
         require(pages.isNotEmpty()) { "a PDF needs at least one page" }
+        val (document, writer) = openDocument(out)
+        document.open()
+        applyMetadata(writer)
+        pages.forEach { page -> renderPage(document, page) }
+        document.close()
+    }
+
+    /**
+     * Writes [pages] with the JBIG2 encoding [jbig2] as a multi-page PDF to
+     * [target] (SV-08).
+     *
+     * The explicit sibling of [build]: the batch encodes the whole document
+     * once with `jbig2` and calls this, rather than the builder running the
+     * encoder itself. Every page file must be a binary PBM (`P4`); a JPEG here
+     * is a mixed document and fails.
+     *
+     * @param pages the processed pages, in document order. Must not be empty.
+     * @param jbig2 the shared globals plus one page stream per page, in
+     *   document order; its page count must match [pages].
+     * @param target the file to write; parent directories are created.
+     * @throws IllegalArgumentException [pages] is empty, the page counts
+     *   differ, or a page file is not a PBM.
+     */
+    fun build(
+        pages: List<PdfPage>,
+        jbig2: Jbig2Enc.Jbig2Output,
+        target: Path,
+    ) {
+        require(pages.isNotEmpty()) { "a PDF needs at least one page" }
+        target.parent?.let { Files.createDirectories(it) }
+        Files.newOutputStream(target).use { out -> writeTo(pages, jbig2, out) }
+    }
+
+    /**
+     * Writes [pages] with the JBIG2 encoding [jbig2] as a multi-page PDF to
+     * [out] (SV-08).
+     *
+     * [out] is not closed here; the caller owns it.
+     *
+     * @param pages the processed pages, in document order. Must not be empty.
+     * @param jbig2 the shared globals plus one page stream per page, in
+     *   document order; its page count must match [pages].
+     * @throws IllegalArgumentException [pages] is empty, the page counts
+     *   differ, or a page file is not a PBM.
+     */
+    fun writeTo(
+        pages: List<PdfPage>,
+        jbig2: Jbig2Enc.Jbig2Output,
+        out: OutputStream,
+    ) {
+        require(pages.isNotEmpty()) { "a PDF needs at least one page" }
+        require(jbig2.pages.size == pages.size) {
+            "jbig2 encoded ${jbig2.pages.size} page(s) for ${pages.size} page(s): every page needs its stream"
+        }
+        val (document, writer) = openDocument(out)
+        document.open()
+        applyMetadata(writer)
+        // The same globals instance is passed for every page on purpose:
+        // PdfWriter deduplicates identical globals into a single shared
+        // /JBIG2Globals stream by content equality, which is the saving SV-08
+        // rests on. Per-page copies would still be correct PDF but would defeat
+        // the saving entirely, silently.
+        pages.forEachIndexed { index, page -> renderJbig2Page(document, page, jbig2.pages[index], jbig2.globals) }
+        document.close()
+    }
+
+    /**
+     * Opens a document on [out] without closing the stream when done.
+     *
+     * Shared by both entry points so the metadata and /ID pinning cannot drift
+     * apart between the JPEG and the JBIG2 branch.
+     *
+     * @return the document and its writer; the caller still opens the document,
+     *   applies the metadata and closes it.
+     */
+    private fun openDocument(out: OutputStream): Pair<Document, PdfWriter> {
         val document = Document()
         val writer = PdfWriter.getInstance(document, out)
         // The caller owns the stream: without this, document.close() would
         // close [out] as a side effect.
         writer.setCloseStream(false)
-        document.open()
-        applyMetadata(writer)
-        pages.forEach { page -> renderPage(document, page) }
-        document.close()
+        return document to writer
     }
 
     /**
@@ -118,6 +199,10 @@ class PdfBuilder(
         document: Document,
         page: PdfPage,
     ) {
+        val format = pageFormat(page.file)
+        require(format == PageFormat.JPEG) {
+            "Cannot embed ${page.file} as a JPEG page: it is a ${format.name} file (mixed documents are rejected)"
+        }
         // getInstance stores the compressed JPEG stream unchanged. This is the
         // "never recompress" guardrail; anything via java.awt.Image or
         // BufferedImage would decode and re-encode and must not be used here.
@@ -130,6 +215,85 @@ class PdfBuilder(
         image.setAbsolutePosition(0f, 0f)
         image.scaleToFit(width, height)
         document.add(image)
+    }
+
+    /**
+     * Draws one JBIG2 page: a page box of the bitmap's physical size with the
+     * encoded page stream across the whole of it (SV-08).
+     *
+     * The pixel dimensions come from the PBM header via [BitmapInfo], not from
+     * the encoded stream: a JBIG2 page stream carries no dimensions of its own,
+     * which is why [ImgJBIG2] takes the width and height explicitly.
+     *
+     * The size must be set before starting the page, for the same reason as in
+     * [renderPage]: OpenPDF applies a page size to the *next* page.
+     */
+    private fun renderJbig2Page(
+        document: Document,
+        page: PdfPage,
+        encoded: ByteArray,
+        globals: ByteArray,
+    ) {
+        val format = pageFormat(page.file)
+        require(format == PageFormat.PBM) {
+            "Cannot embed ${page.file} as a JBIG2 page: it is a ${format.name} file (mixed documents are rejected)"
+        }
+        val info = BitmapInfo.read(page.file)
+        val image = ImgJBIG2(info.width, info.height, encoded, globals)
+        val width = pointsFor(info.width.toFloat(), page.dpi)
+        val height = pointsFor(info.height.toFloat(), page.dpi)
+
+        document.setPageSize(Rectangle(width, height))
+        document.newPage()
+        image.setAbsolutePosition(0f, 0f)
+        image.scaleToFit(width, height)
+        document.add(image)
+    }
+
+    /**
+     * Detects the page format from the file content (SV-08).
+     *
+     * Detection is by magic bytes, not by extension: the extension is a naming
+     * convention of the batch step, and a second place that has to agree with
+     * that naming is one place too many.
+     *
+     * @param file the page file to inspect.
+     * @return [PageFormat.JPEG] for `FF D8` (the SOI marker), [PageFormat.PBM]
+     *   for `P4` (binary PBM).
+     * @throws IllegalArgumentException the file cannot be read or starts with
+     *   anything else; the message names [file] and the bytes found.
+     */
+    private fun pageFormat(file: Path): PageFormat {
+        val firstTwo =
+            try {
+                Files.newInputStream(file).use { input -> input.readNBytes(MAGIC_BYTES) }
+            } catch (e: IOException) {
+                throw IllegalArgumentException("Cannot detect the format of $file: ${e.message}", e)
+            }
+        if (firstTwo.size >= MAGIC_BYTES &&
+            firstTwo[0] == JPEG_SOI_FIRST &&
+            firstTwo[1] == JPEG_SOI_SECOND
+        ) {
+            return PageFormat.JPEG
+        }
+        if (firstTwo.size >= MAGIC_BYTES && firstTwo[0] == PBM_MAGIC_FIRST && firstTwo[1] == PBM_MAGIC_SECOND) {
+            return PageFormat.PBM
+        }
+        throw IllegalArgumentException(
+            "Cannot detect the format of $file: " +
+                "expected FF D8 (JPEG) or P4 (PBM), found ${describeBytes(firstTwo)}",
+        )
+    }
+
+    /**
+     * Describes the first bytes of [bytes] for the unknown-format error: up to
+     * two bytes as hex, or an explicit note when the file is empty.
+     */
+    private fun describeBytes(bytes: ByteArray): String {
+        if (bytes.isEmpty()) {
+            return "an empty file"
+        }
+        return bytes.take(MAGIC_BYTES).joinToString(separator = " ") { "%02X".format(it.toInt() and 0xFF) }
     }
 
     /**
@@ -191,12 +355,35 @@ class PdfBuilder(
             .putLong(clock.millis())
             .array()
 
+    /**
+     * The page formats the builder accepts, detected by content (SV-08).
+     */
+    private enum class PageFormat {
+        JPEG,
+        PBM,
+    }
+
     private companion object {
         /** A PostScript point is 1/72 inch. */
         const val POINTS_PER_INCH = 72f
 
         /** The trailer /ID and /FileID are 16 bytes. */
         const val DOCUMENT_ID_BYTES = 16
+
+        /** The format detection reads the first two bytes (the magic). */
+        const val MAGIC_BYTES = 2
+
+        /** The first two bytes of a JPEG: the SOI marker FF D8. */
+        val JPEG_SOI_FIRST: Byte = 0xFF.toByte()
+
+        /** The second byte of the JPEG SOI marker. */
+        val JPEG_SOI_SECOND: Byte = 0xD8.toByte()
+
+        /** The first byte of the binary PBM magic `P4`. */
+        val PBM_MAGIC_FIRST: Byte = 0x50.toByte()
+
+        /** The second byte of the binary PBM magic `P4`. */
+        val PBM_MAGIC_SECOND: Byte = 0x34.toByte()
 
         /**
          * Deliberately without a version number, so a release does not change
