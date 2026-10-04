@@ -1,5 +1,8 @@
 package dev.digiwomb.unboundair.output.paperless
 
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
@@ -19,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import org.slf4j.LoggerFactory
 import org.springframework.http.client.JdkClientHttpRequestFactory
 import org.springframework.web.client.RestClient
 import tools.jackson.databind.ObjectMapper
@@ -44,7 +48,9 @@ import java.time.ZoneId
  *
  * The successful paperless answer is a **bare JSON string** holding the consumption task UUID
  * (`PostDocumentView.post` ends in `return Response(async_task.id)`), not an object with an `id` field. The
- * schema below encodes that contract; the negative probe proves the schema can actually fail.
+ * schema below encodes that contract; the negative probe proves the schema can actually fail. AU-05 also
+ * asks for that UUID to reach the log, which is asserted here rather than in the slice test: the id only
+ * exists once a real response body has travelled over the socket.
  *
  * Offline (DC-03): WireMock binds to localhost only; nothing reaches the internet.
  */
@@ -114,6 +120,39 @@ class PaperlessContractTest {
             assertThat(thrown).`as`("a 2xx answer with the task id must complete without throwing").isNull()
             val errors = taskSchema.validate("\"$taskId\"", InputFormat.JSON)
             assertThat(errors).`as`("the bare UUID string is the contract; it must validate cleanly").isEmpty()
+        }
+
+        /**
+         * AU-05 asks for the task UUID to appear **in the log** -- that is how an operator
+         * follows a document into paperless-ngx after the upload. The sibling test above
+         * only proves the module accepts the answer without throwing, which is a different
+         * statement: a module that discarded the id entirely would pass it.
+         *
+         * The id is read back out of Logback rather than compared against a whole expected
+         * message, so rephrasing the log line does not break the test while a vanished id
+         * still does.
+         */
+        @Test
+        fun `AU-05 the consumption task id appears in the log`(
+            @TempDir dir: Path,
+        ) {
+            val fixture = fixture(dir, settings())
+            val taskId = "8d1c0b2e-1111-2222-3333-444455556666"
+            server.stubFor(post(urlEqualTo(POST_PATH)).willReturn(aResponse().withStatus(200).withBody("\"$taskId\"")))
+
+            val logger = LoggerFactory.getLogger(PaperlessModule::class.java) as Logger
+            val appender = ListAppender<ILoggingEvent>().apply { start() }
+            logger.addAppender(appender)
+            try {
+                fixture.module.send(fixture.document)
+            } finally {
+                logger.detachAppender(appender)
+                appender.stop()
+            }
+
+            assertThat(appender.list.map { it.formattedMessage })
+                .`as`("the consumption task id must be logged, so a document can be followed into paperless-ngx")
+                .anySatisfy { assertThat(it).contains(taskId) }
         }
     }
 
