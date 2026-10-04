@@ -2,6 +2,7 @@ package dev.digiwomb.unboundair.cli
 
 import dev.digiwomb.unboundair.processing.CropStep
 import dev.digiwomb.unboundair.processing.GrayscaleStep
+import dev.digiwomb.unboundair.processing.MonochromeStep
 import dev.digiwomb.unboundair.processing.PageProcessor
 import dev.digiwomb.unboundair.processing.PageSettings
 import dev.digiwomb.unboundair.processing.pageImage
@@ -14,14 +15,16 @@ import java.time.format.DateTimeFormatter
 
 /**
  * The `scan` command (BE-02): scans one page and writes the processed page
- * (crop plus grayscale according to [PageSettings.colorMode], SV-03) to a
- * file.
+ * (crop, grayscale and monochrome according to [PageSettings.colorMode],
+ * SV-03) to a file.
  *
  * The page is scanned through the [ScannerClient] and the raw JPEG is then
- * run through the processing chain: a [CropStep] and a [GrayscaleStep]
- * driven by [PageSettings]. Like [CropCommand], the chain runs in a
- * temporary working directory and its final result is moved to the target
- * path; the working directory is deleted afterwards.
+ * run through the processing chain: a [CropStep], a [GrayscaleStep] and a
+ * [MonochromeStep] driven by [PageSettings]. Like [CropCommand], the chain
+ * runs in a temporary working directory and its final result is moved to
+ * the target path; the working directory is deleted afterwards. The
+ * monochrome step passes the page through untouched unless the color mode
+ * is `bw`, so `gray` and `color` pages are unaffected by its presence.
  *
  * Processing warnings (for example: no paper found, page carried through
  * uncropped) are reported through [warn] instead of being printed by the
@@ -32,6 +35,16 @@ import java.time.format.DateTimeFormatter
  * With [PageSettings.keepRaw] set, the raw JPEG is additionally written to
  * a file derived from the target name: the same name with `_raw` inserted
  * before the extension (SV-06, [rawFileName]).
+ *
+ * In `bw` mode the processed page is a binary PBM (`P4`), not a JPEG, so
+ * the default file name ends in `.pbm` instead of `.jpg`. An explicit
+ * `--out` name is always honoured as given — the caller's file, the
+ * caller's name — even when the name ends in `.jpg` while the content is
+ * PBM; the result line the caller prints names [Result.path], which is
+ * where the bytes actually landed. This command does not encode JBIG2: a
+ * single page has no other page to share a dictionary with, and the output
+ * here is a page file, not a PDF — the PBM is the honest artefact and
+ * JBIG2 encoding happens once per document at batch close.
  *
  * @property client the scanner client to scan the page through.
  * @property settings the page settings of the processing chain; defaults to
@@ -69,17 +82,23 @@ class ScanCommand(
     )
 
     /**
-     * Scans one page at [dpi], processes it (crop, then color mode), and
-     * writes the processed page to [out] or to the default file name,
-     * [defaultFileName]. With [PageSettings.keepRaw] set, the raw JPEG is
-     * additionally written to [rawFileName] of the target name.
+     * Scans one page at [dpi], processes it (crop, then color mode, then
+     * monochrome), and writes the processed page to [out] or to the default
+     * file name, [defaultFileName]. With [PageSettings.keepRaw] set, the
+     * raw JPEG is additionally written to [rawFileName] of the target name.
      *
      * The raw bytes are written to a temporary working directory, the
-     * processing chain ([CropStep], [GrayscaleStep]) runs there, and the
-     * final result is moved to the target path. When the chain changed
-     * nothing (color mode, and a crop that covers the whole frame), the
-     * result *is* the raw file and gets copied instead, so the raw file
-     * stays available for the keep-raw write.
+     * processing chain ([CropStep], [GrayscaleStep], [MonochromeStep]) runs
+     * there, and the final result is moved to the target path. When the
+     * chain changed nothing (color mode, and a crop that covers the whole
+     * frame), the result *is* the raw file and gets copied instead, so the
+     * raw file stays available for the keep-raw write.
+     *
+     * The target name follows the content, not the request: the result
+     * file's first two bytes are peeked once, and a `P4` magic means the
+     * default name ends in `.pbm` instead of `.jpg`. An explicit [out] is
+     * kept as given; the command itself prints nothing, so the caller's
+     * result message names the file that was actually written.
      *
      * @param dpi the resolution to scan at (300 or 600); validated by the
      *   [ScannerClient].
@@ -99,21 +118,34 @@ class ScanCommand(
     ): Result {
         val scan = client.scan(dpi)
         val bytes = scan.bytes
-        // The effective resolution, not the requested one (SC-08): if the
-        // firmware forced a downgrade to 300 dpi, a file named "600dpi" would
-        // be a lie, and the number is what SV-05 later derives the page size
-        // from.
-        val target = out ?: Path.of(defaultFileName(scan.dpi))
-        target.parent?.let { Files.createDirectories(it) }
 
         val workDir = Files.createTempDirectory("unboundair-scan")
         try {
             val rawFile = workDir.resolve("raw.jpg")
             Files.write(rawFile, bytes)
 
-            val processor = PageProcessor(listOf(CropStep(settings), GrayscaleStep(settings)))
+            val processor = PageProcessor(listOf(CropStep(settings), GrayscaleStep(settings), MonochromeStep(settings)))
             val image = pageImage(rawFile)
             val result = processor.process(image, workDir, warn)
+
+            // The target name follows the content: a `P4` magic means the
+            // chain produced a binary PBM, and a `.jpg` holding a PBM would
+            // be the same small lie the batch step avoids. Peek the first
+            // two bytes once — no second read, no re-parse. An explicit
+            // `--out` is the caller's name and stays as given; only the
+            // default name gets its extension swapped.
+            val isPbm = isPbm(result.file)
+            // The effective resolution, not the requested one (SC-08): if the
+            // firmware forced a downgrade to 300 dpi, a file named "600dpi" would
+            // be a lie, and the number is what SV-05 later derives the page size
+            // from.
+            val target =
+                out ?: if (isPbm) {
+                    Path.of(defaultFileName(scan.dpi).substringBeforeLast('.') + ".pbm")
+                } else {
+                    Path.of(defaultFileName(scan.dpi))
+                }
+            target.parent?.let { Files.createDirectories(it) }
 
             if (result.file == rawFile) {
                 // The chain changed nothing: the result is the raw file
@@ -141,6 +173,18 @@ class ScanCommand(
         }
     }
 
+    /**
+     * Peeks at the first two bytes of [file] for the binary PBM magic `P4`.
+     *
+     * The same two-byte content check the batch step and the PDF builder
+     * use: the extension is a naming convention, so the name is never
+     * trusted here — the bytes decide.
+     */
+    private fun isPbm(file: Path): Boolean {
+        val firstTwo = Files.newInputStream(file).use { input -> input.readNBytes(MAGIC_BYTES) }
+        return firstTwo.size >= MAGIC_BYTES && firstTwo[0] == PBM_MAGIC_FIRST && firstTwo[1] == PBM_MAGIC_SECOND
+    }
+
     private fun deleteRecursively(dir: Path) {
         Files.list(dir).use {
             it.forEach { entry ->
@@ -157,6 +201,15 @@ class ScanCommand(
     companion object {
         /** Timestamp format of the default file name, e.g. `20260922-143500`. */
         private val TIMESTAMP = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
+
+        /** The format detection peeks at the first two bytes (the magic). */
+        private const val MAGIC_BYTES = 2
+
+        /** The first byte of the binary PBM magic `P4`. */
+        val PBM_MAGIC_FIRST: Byte = 0x50.toByte()
+
+        /** The second byte of the binary PBM magic `P4`. */
+        val PBM_MAGIC_SECOND: Byte = 0x34.toByte()
 
         /**
          * The default file name for a scanned page: `iscan_<timestamp>_<dpi>dpi.jpg`

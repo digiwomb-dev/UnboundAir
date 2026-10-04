@@ -29,12 +29,12 @@ import javax.imageio.stream.ImageInputStream
  *   sampling factor of the first (luma) component.
  */
 data class JpegInfo(
-    val width: Int,
-    val height: Int,
+    override val width: Int,
+    override val height: Int,
     val components: Int,
     val imcuWidth: Int,
     val imcuHeight: Int,
-) {
+) : PageInfo {
     companion object {
         // The standard metadata format of the JDK's built-in JPEG reader.
         private const val METADATA_FORMAT_NAME = "javax_imageio_jpeg_image_1.0"

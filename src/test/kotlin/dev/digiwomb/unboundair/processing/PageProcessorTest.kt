@@ -83,7 +83,7 @@ class PageProcessorTest {
     fun `SV-07 the real chain crops and grayscales the page and returns a new single-luma page`() {
         val src = TestImages.copy("envelope_dl_300dpi_raw.jpg", tempDir)
         val image = PageImage(src, JpegInfo.read(src))
-        assertThat(image.info.components)
+        assertThat((image.info as JpegInfo).components)
             .`as`("the envelope fixture is a color page, so a single luma below proves the conversion")
             .isEqualTo(3)
 
@@ -98,7 +98,7 @@ class PageProcessorTest {
         assertThat(Files.exists(result.file))
             .`as`("the result file must exist in the working directory")
             .isTrue()
-        assertThat(result.info.components)
+        assertThat((result.info as JpegInfo).components)
             .`as`("the grayscale step converts the three color components to a single luma")
             .isEqualTo(1)
     }

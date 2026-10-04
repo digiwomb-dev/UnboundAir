@@ -1,21 +1,29 @@
 # Development environment for UnboundAir.
 #
 # Deliberately mirrors the system dependencies of the runtime image (CT-01):
-# same JDK major version, same jpegtran. If the two drift apart, tests pass
-# here and the service breaks in production.
+# same JDK major version, same jpegtran, same jbig2. If the two drift
+# apart, tests pass here and the service breaks in production.
 #
 # No architecture is hardcoded. The base image is a multi-arch manifest, so
 # this builds on arm64 and amd64 alike; the runtime image will do the same.
 
 # Ubuntu Noble variant, because it ships a package manager - jpegtran has to
-# come from somewhere. Pinned by digest so the environment is reproducible;
-# the tag alone would silently move.
+# come from somewhere. jbig2 lives in Ubuntu universe (package `jbig2`,
+# source package `jbig2enc`), so the base image must have universe enabled -
+# this is where it would show if not. Pinned by digest so the environment is
+# reproducible; the tag alone would silently move.
 FROM eclipse-temurin:26-jdk-noble@sha256:abe71c9b7140affd9a80d6ed313c428e3393d4d18c235823b1745670d4702053
 
 # jpegtran (libjpeg-turbo-progs) does the lossless cropping and grayscale
-# conversion. git is needed to work in the repository, curl to fetch the
-# Gradle distribution on first wrapper run, sudo to run privileged commands
-# inside the container.
+# conversion. jbig2 is the second system dependency beside jpegtran - it
+# encodes 1-bit pages to JBIG2 for the PDF path (SV-08). The package is
+# named `jbig2`, not `jbig2enc` - `jbig2enc` is the source package, and
+# installing by the wrong name fails the build. It lives in Ubuntu
+# universe; Noble carries 0.29, and since the base image is pinned by
+# digest, that version is fixed and is the basis for the golden files of
+# this milestone. git is needed to work in the repository, curl to fetch
+# the Gradle distribution on first wrapper run, sudo to run privileged
+# commands inside the container.
 #
 # APT::Sandbox::User=root disables the unprivileged download sandbox. apt
 # normally drops to the "_apt" user for downloads, which needs a second UID.
@@ -26,6 +34,7 @@ FROM eclipse-temurin:26-jdk-noble@sha256:abe71c9b7140affd9a80d6ed313c428e3393d4d
 RUN apt-get -o APT::Sandbox::User=root update \
     && apt-get -o APT::Sandbox::User=root install --no-install-recommends --yes \
         libjpeg-turbo-progs \
+        jbig2 \
         git \
         curl \
         sudo \

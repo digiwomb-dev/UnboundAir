@@ -91,7 +91,8 @@ class UnboundAirApplication :
             }
 
             "scan" -> {
-                val settings = PageSettings(colorMode = cli.colorMode, keepRaw = cli.keepRaw)
+                val settings =
+                    PageSettings(colorMode = cli.colorMode, keepRaw = cli.keepRaw, bwThreshold = cli.bwThreshold)
                 val result =
                     ScanCommand(client, settings, ::warn).run(cli.dpi, cli.out?.let { Path.of(it) })
                 val message =
@@ -167,6 +168,7 @@ class UnboundAirApplication :
         var out: String? = null
         var colorMode = ColorMode.GRAY
         var keepRaw = false
+        var bwThreshold = PageSettings().bwThreshold
         var minutes = DEFAULT_MEASURE_MINUTES
         var pollSeconds = DEFAULT_POLL_SECONDS
 
@@ -202,6 +204,11 @@ class UnboundAirApplication :
                     keepRaw = true
                 }
 
+                "--bw-threshold" -> {
+                    bwThreshold = intAfter(raw, i, "--bw-threshold")
+                    i++
+                }
+
                 "--minutes" -> {
                     minutes = intAfter(raw, i, "--minutes")
                     i++
@@ -225,18 +232,32 @@ class UnboundAirApplication :
             }
             i++
         }
-        return CliArgs(command, host, port, dpi, out, colorMode, keepRaw, minutes, pollSeconds, positional.toList())
+        return CliArgs(
+            command,
+            host,
+            port,
+            dpi,
+            out,
+            colorMode,
+            keepRaw,
+            bwThreshold,
+            minutes,
+            pollSeconds,
+            positional.toList(),
+        )
     }
 
     /**
      * Maps the `--color-mode` value to a [ColorMode] (SV-03): `gray` is the
-     * default, `color` keeps the page in its scanned color.
+     * default, `color` keeps the page in its scanned color, `bw` thresholds
+     * the page to 1-bit black and white.
      */
     private fun parseColorMode(value: String): ColorMode =
         when (value) {
             "gray" -> ColorMode.GRAY
             "color" -> ColorMode.COLOR
-            else -> throw IllegalArgumentException("Invalid --color-mode: $value (expected 'gray' or 'color')")
+            "bw" -> ColorMode.BW
+            else -> throw IllegalArgumentException("Invalid --color-mode: $value (expected 'gray', 'color' or 'bw')")
         }
 
     private fun valueAfter(
@@ -261,6 +282,7 @@ class UnboundAirApplication :
         val out: String?,
         val colorMode: ColorMode,
         val keepRaw: Boolean,
+        val bwThreshold: Int,
         val minutes: Int,
         val pollSeconds: Int,
         val positional: List<String>,
@@ -289,7 +311,8 @@ class UnboundAirApplication :
                 "  --port PORT                       Scanner port (default ${ScannerClient.DEFAULT_PORT}).\n" +
                 "  --dpi 300|600                     Scan resolution (default 300).\n" +
                 "  --out FILE                        Target file for scan (default: a timestamped file).\n" +
-                "  --color-mode gray|color           Color mode of scan (default gray).\n" +
+                "  --color-mode gray|color|bw        Color mode of scan (default gray).\n" +
+                "  --bw-threshold N                  Luma threshold for --color-mode bw (default ${PageSettings().bwThreshold}).\n" +
                 "  --keep-raw                        Also store the raw JPEG of scan.\n" +
                 "  --minutes N                       Duration of measure (default $DEFAULT_MEASURE_MINUTES).\n" +
                 "  --poll-seconds N                  Poll interval of measure (default $DEFAULT_POLL_SECONDS).\n"

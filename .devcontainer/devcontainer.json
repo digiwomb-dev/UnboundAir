@@ -15,8 +15,11 @@
     "source=unboundair-gradle-cache,target=/home/ubuntu/.gradle,type=volume"
   ],
 
-  // DC-01 acceptance criterion: both have to answer inside the container.
-  "postAttachCommand": "java -version && jpegtran -version",
+  // DC-01 acceptance criterion: all three have to answer inside the container.
+  // `jbig2 -V` prints its version to stderr and exits 0 (a naive stdout
+  // check finds nothing; `jbig2` with no arguments would exit non-zero and
+  // break the && chain - `-V` is required).
+  "postAttachCommand": "java -version && jpegtran -version && jbig2 -V",
 
   "customizations": {
     "vscode": {

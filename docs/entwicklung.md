@@ -8,7 +8,7 @@ Wie man `UnboundAir` baut und testet. Gearbeitet wird ausschließlich im Dev Con
 - Dev-Container-Unterstützung: entweder die Erweiterung „Dev Containers" in VS Code oder die `devcontainer`-CLI
 - Git
 
-Mehr nicht. Das JDK und `jpegtran` bringt der Container mit; Gradle lädt der Wrapper beim ersten Lauf selbst herunter.
+Mehr nicht. Das JDK, `jpegtran` und `jbig2` bringt der Container mit; Gradle lädt der Wrapper beim ersten Lauf selbst herunter.
 
 ## Dev Container starten
 
@@ -41,9 +41,10 @@ Danach prüfen, ob die Umgebung stimmt:
 ```bash
 java -version      # erwartet: Temurin, Version 26
 jpegtran -version  # erwartet: eine libjpeg-turbo-Version
+jbig2 -V           # erwartet: eine jbig2enc-Version; schreibt auf stderr, Exit 0
 ```
 
-Beides muss antworten. `jpegtran` ist keine Kür: Zuschnitt und Graustufen-Umwandlung laufen ausschließlich darüber, ohne das Programm schlagen die entsprechenden Tests fehl.
+Alle drei müssen antworten. `jpegtran` ist keine Kür: Zuschnitt und Graustufen-Umwandlung laufen ausschließlich darüber, ohne das Programm schlagen die entsprechenden Tests fehl. Dasselbe gilt für `jbig2`: die 1-bit-Kodierung des `bw`-Modus (SV-08) läuft ausschließlich darüber, ohne das Programm schlagen `Jbig2EncTest`, `PdfBuilderJbig2Test` und `PdfBwGoldenTest` fehl.
 
 ### Warnung beim Auflösen des Image-Namens
 
@@ -87,8 +88,8 @@ Zusätzlich zu den gewöhnlichen Tests gibt es einen Mutationslauf: Er veränder
 
 Vier Dinge, die man vorher wissen sollte:
 
-- **Nicht Teil von `build`.** Der Task hängt bewusst nicht an `check` oder `build` – er läuft nur, wenn man ihn ausdrücklich aufruft. Ziel sind die Kern-Pakete `scanner`, `image` und `processing`.
-- **Er dauert.** Rund **23 Minuten**, weil die zeitgesteuerten Scanner-Tests für jede Mutation erneut laufen. Der Bericht landet in `build/reports/pitest/index.html`.
+- **Nicht Teil von `build`.** Der Task hängt bewusst nicht an `check` oder `build` – er läuft nur, wenn man ihn ausdrücklich aufruft. Ziel sind die Kern-Pakete `scanner`, `image`, `processing`, `output` (mit `output.outbox` und `output.paperless`) und `service` – die Liste in `build.gradle.kts` und `docs/teststrategie.md` ist maßgeblich.
+- **Er dauert.** Rund **2,5 Stunden** beim vollen Lauf über alle sieben Pakete, weil die zeitgesteuerten Scanner-Tests für jede Mutation erneut laufen. Ein Lauf über ein einzelnes Paket (z. B. nur `processing`) dauert dagegen nur Sekunden. Der Bericht landet in `build/reports/pitest/index.html`.
 - **Der erste Lauf braucht Netz.** Die `org.pitest`-Artefakte liegen nicht im normalen Abhängigkeits-Cache, weil sie nur dieser Task verwendet. `--offline` schlägt deshalb beim ersten Mal fehl. Das berührt DC-03 nicht: Die Anforderung gilt `./gradlew test`, und der bleibt offline.
 - **Er braucht Speicher.** Gradle-Daemon, Kotlin-Daemon und die PIT-Prozesse liegen gleichzeitig im RAM. Auf einem kleinen Container-Host kann der Gradle-Daemon dabei abstürzen („daemon disappeared"). Bricht ein Lauf ab, bleibt der PIT-Hauptprozess verwaist zurück und startet weiter Unterprozesse – er blockiert dann den nächsten Lauf. Vorher aufräumen:
 
@@ -160,7 +161,7 @@ Neue Issues entstehen immer über eine Vorlage aus `.github/ISSUE_TEMPLATE/`, we
 
 ## Warum der Umweg über den Dev Container
 
-Der Container enthält dieselben Systemabhängigkeiten wie das spätere Laufzeit-Image: dieselbe JDK-Hauptversion, dasselbe `jpegtran`. Driften die beiden auseinander, laufen die Tests grün und der Dienst fällt im Betrieb um. Deshalb gilt: gebaut und getestet wird im Container, nicht daneben.
+Der Container enthält dieselben Systemabhängigkeiten wie das spätere Laufzeit-Image: dieselbe JDK-Hauptversion, dasselbe `jpegtran`, dasselbe `jbig2`. Driften die beiden auseinander, laufen die Tests grün und der Dienst fällt im Betrieb um. Deshalb gilt: gebaut und getestet wird im Container, nicht daneben.
 
 ### Bekannte Eigenheiten
 

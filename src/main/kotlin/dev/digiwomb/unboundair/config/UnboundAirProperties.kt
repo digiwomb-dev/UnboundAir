@@ -34,12 +34,14 @@ import java.time.temporal.ChronoUnit
  * - `unboundair.outbox.path` -> `UNBOUNDAIR_OUTBOX_PATH`
  * - `unboundair.output.paperless.base-url` -> `UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL`
  * - `unboundair.output.paperless.token-file` -> `UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE`
+ * - `unboundair.bw-threshold` -> `UNBOUNDAIR_BWTHRESHOLD`
  *
  * @property pollInterval Poll interval for status checks (DL-01). Default 3 seconds.
  * @property offlinePollInterval Poll interval when scanner is offline (DL-02). Default 10 seconds.
  * @property batchTimeout Seconds after last page to close batch (DL-04). Default 20 seconds.
  * @property idleMinutes Idle handling in minutes, null means off (DL-06). Default null.
  * @property colorMode Color mode for processing, plain string to keep `config` leaf (SV-03). Default "gray".
+ * @property bwThreshold Luma threshold for color-mode bw, 1..255 (SV-08). Default 128.
  * @property keepRaw Keep raw JPEGs for debug (SV-06). Default false.
  * @property scanner where the scanner is reached (SC-06); see [ScannerProperties].
  * @property output which output modules are active (AU-03); see [OutputProperties].
@@ -57,9 +59,15 @@ data class UnboundAirProperties(
     /**
      * The `config` package is an architecture leaf and must not depend on `processing`,
      * so the value is carried as a plain string here and mapped to the `ColorMode` enum
-     * by the composition root. Valid values are `gray` and `color`.
+     * by the composition root. Valid values are `gray`, `color` and `bw`.
      */
     val colorMode: String = "gray",
+    /**
+     * Luma threshold for color-mode `bw` (SV-08). Carried here, validated where
+     * `PageSettings` is built (#153): no `@Min`/`@Max` here on purpose, so one bad
+     * value produces one error message where it is easiest to read.
+     */
+    val bwThreshold: Int = 128,
     val keepRaw: Boolean = false,
     val scanner: ScannerProperties = ScannerProperties(),
     val output: OutputProperties = OutputProperties(),

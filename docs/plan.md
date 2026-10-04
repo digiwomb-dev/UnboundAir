@@ -34,7 +34,7 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
   | Gradle | 9.7.1 | unterstützt laut Kompatibilitätsmatrix JVM 17–26, JVM 27+ noch nicht |
   | Spring Boot | 4.1.1 | |
   | Kotlin | 2.4.20 | **bewusst neuer** als die von Spring Boot 4.1.1 verwaltete 2.3.21 – siehe Hinweis unten |
-  | Apache PDFBox | 3.0.8 | |
+  | OpenPDF (`com.github.librepdf:openpdf`, Paket `org.openpdf`) | 3.0.5 | Laufzeit-Engine, ersetzt PDFBox (Spike #141). Spring Boot verwaltet OpenPDF nicht – von uns gepinnt. |
   | spring-boot-starter-restclient | (verwaltet, 4.1.1) | HTTP-Client für das paperless-Modul (AU-05); bringt `spring-web` und Jackson mit. Kommt mit Meilenstein 4 dazu. |
   | jackson-module-kotlin | (verwaltet, 3.x) | liest und schreibt `metadata.json` der Outbox (AU-04) als Kotlin-Datenklasse. Gruppe ist **`tools.jackson.module`** – Jackson 3 hat die Koordinaten gewechselt, `com.fasterxml.jackson` ist die alte Welt. Kommt mit Meilenstein 4 dazu. |
   | Spotless-Gradle-Plugin | 8.10.2 | führt den Linter aus, siehe TE-03 |
@@ -48,6 +48,7 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
   |---|---|---|
   | kotest-property | 6.2.5 | Property-Tests. jqwik entfällt wegen der Anti-AI-Klausel ab 1.10. |
   | WireMock (standalone) | 3.13.2 | Contract-Tests gegen paperless; 4.x ist noch Beta. |
+  | Apache PDFBox | 3.0.8 | unabhängiger Prüfer: liest, was OpenPDF geschrieben hat (Raw-Stream). Ein Prüfer, der derselbe Code ist wie der Erzeuger, beweist nichts. Spring Boot verwaltet PDFBox nicht – von uns gepinnt. |
   | ArchUnit (`archunit-junit6`) | 1.5.0 | Architektur-Wächter, JUnit-6-Unterstützung seit 1.5.0. |
   | gradle-pitest-plugin / pitest | 1.19.0 / 1.25.5 | Mutation, eigener Task, nie Teil von `build`. |
   | pitest-junit5-plugin | 1.2.2 | PIT-Anbindung an JUnit 5/6. |
@@ -78,15 +79,15 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
   **Der Kern bleibt frei von Spring.** In keinem der Kern-Pakete darf `org.springframework..` auftauchen – mit genau **einer benannten Ausnahme: `output.paperless` darf den Spring-eigenen HTTP-Client verwenden** (`RestClient` samt `spring-web`-Typen für Multipart und Header). Das Hochladen ist der einzige Punkt in v1, an dem ein Kern-Paket nach außen spricht, und einen zweiten HTTP-Client dafür einzuziehen stünde gegen „Abhängigkeiten minimal". Alles andere bleibt verboten, auch in `output.paperless`: keine Spring-Stereotypen (`@Component` und Verwandte), kein injiziertes `UnboundAirProperties`. Die Einstellungen kommen als Konstruktor-Werte aus der Kompositionswurzel, wie überall im Kern.
 - **Logging über SLF4J,** Ausgabe per Logback auf stdout. Beides bringt `spring-boot-starter` bereits mit – keine neue Abhängigkeit. Kommandos und Verarbeitungsschritte loggen weiterhin **nicht** selbst, sondern melden über ihre `warn: (String) -> Unit`-Senke nach oben; nur die äußeren Schichten (`service`, Kompositionswurzel) schreiben Log-Zeilen. Begründung in `docs/entscheidungen.md`.
 - **Batch-Übergabe als Senke.** Ein geschlossener Batch wird an eine Senke vom Typ `(ScannedDocument) -> Unit` übergeben – dasselbe Lambda-Muster wie `warn`. Bis die Outbox existiert (AU-04), schreibt die Senke das PDF in ein Verzeichnis; danach wird die Outbox eingehängt, **ohne den Batch zu ändern**. Damit braucht es keine Wegwerf-Abstraktion und AU-02 („andocken ohne Änderung am Kern") ist an einer echten Stelle belegt.
-- **Abhängigkeiten minimal:** Spring Boot, Apache PDFBox, Spring-eigener HTTP-Client. Bildanalyse mit Java-Bordmitteln (ImageIO). Systemabhängigkeit: `jpegtran` (libjpeg-turbo) als externes Programm.
+- **Abhängigkeiten minimal:** Spring Boot, OpenPDF, Spring-eigener HTTP-Client. Bildanalyse mit Java-Bordmitteln (ImageIO). Systemabhängigkeiten: `jpegtran` (libjpeg-turbo) und `jbig2` (Quellpaket `jbig2enc`, Ubuntu *universe*) als externe Programme.
 - Kein SANE, kein AirScan, kein eSCL.
-- **Nie neu komprimieren:** Der Scanner liefert JPEG mit Qualität ~50. Zuschnitt und Graustufen verlustfrei per `jpegtran` (`-crop`, `-grayscale`). PDF mit PDFBox, JPEGs per `JPEGFactory` unverändert einbetten, Seitengröße aus Pixeln und DPI. Einzige Ausnahme: optionales `normalize`, Default aus.
+- **Nie neu komprimieren:** Der Scanner liefert JPEG mit Qualität ~50. Zuschnitt und Graustufen verlustfrei per `jpegtran` (`-crop`, `-grayscale`). PDF mit OpenPDF, JPEGs per `Image.getInstance` unverändert als `/DCTDecode` eingebettet, Seitengröße aus Pixeln und DPI. Zwei benannte Ausnahmen: optionales `normalize` (Default aus) und `bw` (SV-08) – eine 1-bit-Umwandlung kann keine DCT-Koeffizienten-Transformation sein und verlässt den `jpegtran`-Pfad zwangsläufig. Benannt und begrenzt, keine Aufweichung.
 - **Modulare Ausgabe:** Fertige Dokumente gehen an austauschbare, konfigurierbare Ausgabe-Module. Erstes und in v1 einziges Modul: paperless-ngx über die REST-API (kein Consume-Ordner).
 - **Module per Laufzeit-Auswahl:** Alle Module sind immer registriert; welche aktiv sind, entscheidet die Konfiguration zur Laufzeit. Kein `@ConditionalOnProperty` oder Ähnliches, weil Spring das in GraalVM Native Images nicht unterstützt.
 - **Laufzeit:** normale JVM. GraalVM Native Image ist eine spätere Option, nicht v1 – aber nichts einbauen, was sie verbaut.
 - Mehrseitige Dokumente über ein Zeitfenster.
 - **Drehen und Geraderücken** kommt später in den Dienst, nicht in v1. Bis dahin übernimmt das beim paperless-Modul paperless (OCRmyPDF).
-- **Artefakte:** ausführbares JAR + Container-Image (in v1 `linux/arm64`, `linux/amd64` später – siehe CT-01) auf Basis eines OpenJDK-JRE-Image, das die Anforderungen erfüllt. `jpegtran` muss im Image sein: also eine JRE-Variante mit Paketmanager oder die JRE in ein eigenes Debian-Image kopieren.
+- **Artefakte:** ausführbares JAR + Container-Image (in v1 `linux/arm64`, `linux/amd64` später – siehe CT-01) auf Basis eines OpenJDK-JRE-Image, das die Anforderungen erfüllt. `jpegtran` und `jbig2` müssen im Image sein: also eine JRE-Variante mit Paketmanager oder die JRE in ein eigenes Debian-Image kopieren.
 - **Betrieb als Container** steht fest. Die WLAN-Verbindung zum Scanner hält der Host, der Container braucht Zugriff darauf. Ein konkretes Deployment-Beispiel kommt erst mit Meilenstein 6.
 
 ## Anforderungen
@@ -143,8 +144,8 @@ Jede Anforderung hat eine feste ID und ein Abnahmekriterium. IDs werden nie umnu
   Der zweite Fall ist kein Sonderfall, sondern normales Geräteverhalten: Der Scanner erzeugt nicht immer einen Rand. Darauf, dass ein Rand da ist, darf sich der Algorithmus nicht verlassen.
 - **SV-02** Plausibilitätsprüfung (z. B. Papierfläche < 10 % des Bildes oder absurdes Seitenverhältnis) → Seite unbeschnitten übernehmen und warnen.
   *Abnahme:* Ein dunkles Testbild bleibt unbeschnitten, im Log steht eine Warnung.
-- **SV-03** `color-mode`: `gray` (Default, `jpegtran -grayscale`) oder `color`.
-  *Abnahme:* Bei `gray` hat das Ergebnis genau eine Komponente (Luma) mit unveränderten Luma-Werten, bei `color` bleibt es farbig.
+- **SV-03** `color-mode`: `gray` (Default, `jpegtran -grayscale`), `color` oder `bw` (1-bit, siehe SV-08). Der Default bleibt `gray`.
+  *Abnahme:* Bei `gray` hat das Ergebnis genau eine Komponente (Luma) mit unveränderten Luma-Werten, bei `color` bleibt es farbig, bei `bw` entsteht die 1-bit-Seite aus SV-08.
 - **SV-04** `normalize` optional (Default aus): einziger Pfad mit Neukomprimierung, in der Doku klar als verlustbehaftet markiert.
   *Abnahme:* Ohne `normalize` ist das Ergebnis bytegleich zur `jpegtran`-Ausgabe; mit `normalize` gibt es einen eigenen Test und den Hinweis in der Doku.
 - **SV-05** Seitengröße im PDF = Pixel ÷ DPI. Keine Umrechnung auf Normformate.
@@ -153,10 +154,12 @@ Jede Anforderung hat eine feste ID und ein Abnahmekriterium. IDs werden nie umnu
   *Abnahme:* Test: Mit `keep-raw` liegt die Rohdatei zusätzlich vor, ohne nicht.
 - **SV-07** Die Verarbeitung als Kette einzelner Schritte bauen (Zuschnitt, Graustufen, …), damit Drehen und Geraderücken später als weitere Schritte dazukommen, ohne den Rest umzubauen.
   *Abnahme:* Test hängt einen Dummy-Schritt in die Kette, ohne bestehende Schritte zu ändern.
+- **SV-08** `bw` wandelt die Seite in echtes 1-bit-Schwarzweiß: Luma-Schwellwert (Default 128), unter dem Schwellwert schwarz. Die Seite verlässt die Kette als PBM (P4) und erreicht das PDF als JBIG2 mit **einem** gemeinsamen Symbolwörterbuch je Dokument.
+  *Abnahme:* Mit `color-mode = bw` stimmen die Pixel der Seite exakt mit dem Schwellwert überein; alle Seiten eines PDFs tragen `/JBIG2Decode` und verweisen auf denselben `/JBIG2Globals`-Strom; das bw-PDF ist deutlich kleiner als das graue desselben Dokuments.
 
 ### PDF & Ausgabe-Module (AU)
 
-- **AU-01** PDFBox, mehrseitig, JPEGs unverändert eingebettet, DPI explizit.
+- **AU-01** OpenPDF, mehrseitig, JPEGs unverändert eingebettet, DPI explizit.
   *Abnahme:* Test: 3 Seiten → PDF mit 3 Seiten; jedes eingebettete Bild ist bytegleich zu seiner Eingabedatei.
 - **AU-02** Modul-Schnittstelle: Ein Ausgabe-Modul bekommt ein fertiges Dokument (PDF plus Metadaten wie Scan-Zeitpunkt und Seitenzahl) und meldet Erfolg oder Fehler zurück. Neue Module lassen sich ergänzen, ohne den Kern zu ändern.
   *Abnahme:* Ein Modul, das nur im Test existiert, lässt sich ohne Änderung am Kern einhängen und empfängt Dokument und Metadaten.
@@ -202,13 +205,13 @@ Unterbefehle der Anwendung (Umsetzung entscheidest du, z. B. Startskript `unboun
 
 ### Container (CT)
 
-- **CT-01** Container-Image auf Basis eines OpenJDK-JRE-Image, das die Anforderungen erfüllt, mit `jpegtran`. **In v1 nur `linux/arm64`** – das ist die Architektur der Entwicklungsumgebung, nur dort kann der Build verifiziert werden. `linux/amd64` kommt später; das Dockerfile wird so geschrieben, dass es keine Architektur fest verdrahtet.
-  *Abnahme:* Das Image baut für `linux/arm64`; im Container laufen `jpegtran -version` und `status` gegen den Fake-Scanner. Im Dockerfile steht keine feste Architektur.
+- **CT-01** Container-Image auf Basis eines OpenJDK-JRE-Image, das die Anforderungen erfüllt, mit `jpegtran` und `jbig2`. **In v1 nur `linux/arm64`** – das ist die Architektur der Entwicklungsumgebung, nur dort kann der Build verifiziert werden. `linux/amd64` kommt später; das Dockerfile wird so geschrieben, dass es keine Architektur fest verdrahtet.
+  *Abnahme:* Das Image baut für `linux/arm64`; im Container laufen `jpegtran -version`, `jbig2 -V` und `status` gegen den Fake-Scanner. `jbig2 -V` schreibt auf stderr und endet mit Exit 0 – eine naive Prüfung von stdout findet nichts. Im Dockerfile steht keine feste Architektur.
 
 ### Dev Container (DC)
 
-- **DC-01** `.devcontainer/` mit allem, was Build und Tests brauchen: JDK passend zur Laufzeit, Gradle über den Wrapper, `jpegtran` (libjpeg-turbo) – dieselben Systemabhängigkeiten wie im Runtime-Image.
-  *Abnahme:* Im Dev Container liefern `java -version` und `jpegtran -version` Ausgaben, passend zum Runtime-Image.
+- **DC-01** `.devcontainer/` mit allem, was Build und Tests brauchen: JDK passend zur Laufzeit, Gradle über den Wrapper, `jpegtran` (libjpeg-turbo) und `jbig2` (Quellpaket `jbig2enc`) – dieselben Systemabhängigkeiten wie im Runtime-Image.
+  *Abnahme:* Im Dev Container liefern `java -version`, `jpegtran -version` und `jbig2 -V` Ausgaben, passend zum Runtime-Image.
 - **DC-02** Auf dem Host muss außer Container-Runtime und Dev-Container-Tooling nichts installiert sein.
   *Abnahme:* `docs/entwicklung.md` nennt keine weiteren Voraussetzungen für den Host.
 - **DC-03** `./gradlew test` läuft im Dev Container komplett durch, ohne Netzwerkzugriff auf echte Geräte oder Dienste.
@@ -234,6 +237,7 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
 - **TE-03** Linting mit ktlint, ausgeführt über das Spotless-Gradle-Plugin (entschieden, siehe „Entschieden – nicht mehr offen").
   *Abnahme:* Der Linter läuft im Build mit (`spotlessCheck` hängt an `check`) und meldet nichts.
 - **TE-04** Der Mutationslauf zielt auf die Kern-Pakete. „Kern" heißt: die Pakete, in denen die riskante Logik liegt – ab Meilenstein 3 also zusätzlich `output` (PDF-Erzeugung) und `service` (Loop und Batch), ab Meilenstein 4 die neuen Unterpakete `output.outbox` (Persistenz, Backoff, Wiederholung) und `output.paperless` (Aufbau des Upload-Requests). `config` bleibt außen vor, weil eine reine Datenklasse mit Defaults nichts Mutierbares enthält, und `cli` ebenso, weil dort nur Argumente auf Kommandos abgebildet werden.
+  Der Meilenstein „black and white and openpdf" fügt Klassen in Pakete hinzu, die bereits in der Messgrundlage liegen (`image`, `processing`, `output`) und kein neues Kern-Paket – der Neu-Einmessungs-Auslöser feuert hier also nicht; die Neueinmessung ist #138 in Meilenstein 5. Die Schwelle bleibt 66 (gemessen 04.10.2026, 458/695) und wird von diesem Meilenstein nicht angefasst.
   Wächst das Ziel, ändert sich der Nenner: Die Schwelle ist dann **neu einzumessen** und mit Datum, Commit und Zahlen in `docs/entscheidungen.md` als bewusste neue Grundlage festzuhalten. Das ist kein stilles Senken – das bleibt verboten –, sondern ein dokumentierter Wechsel der Messgrundlage.
   *Abnahme:* Nach jedem Meilenstein, der ein Kern-Paket hinzufügt, steht in `docs/entscheidungen.md` ein voller Lauf mit den Zahlen je Paket, und `mutationThreshold` in `build.gradle.kts` entspricht dem gemessenen Gesamtwert.
 
@@ -285,12 +289,12 @@ Hier stehen nur Punkte, die **eine Entscheidung** brauchen. Was sich dagegen nur
 - **CI:** Tests und Image-Build. Welches CI-System, ist egal – wird erst mit Meilenstein 6 festgelegt.
 - **Web-UI:** Umfang und Technik – kommt perspektivisch, nicht in v1.
 - **Drehen und Geraderücken (kommt später):** Drehen um 90/180/270° geht mit `jpegtran -rotate` ohne Qualitätsverlust. Geraderücken um kleine Winkel geht nur mit Neukomprimierung – das widerspricht „Nie neu komprimieren" und muss vorher entschieden werden. Offen ist auch, wie die Leserichtung erkannt wird.
-- **GraalVM Native Image:** später prüfen, vor allem ob ImageIO/AWT und PDFBox darin laufen.
+- **GraalVM Native Image:** später prüfen, vor allem ob ImageIO/AWT und OpenPDF darin laufen.
 - **Mehrere Ausgabe-Module gleichzeitig** (ein Dokument an mehrere Ziele) oder immer genau eins? Die Konfiguration nimmt bereits eine Komma-Liste entgegen (AU-03), damit diese Entscheidung offen bleibt; in v1 ist nur ein Wert sinnvoll.
 - **Englische Doku:** wie die Übersetzung ins Repo kommt und mit der deutschen Fassung synchron bleibt (Struktur, Werkzeug, Ablauf).
 - **Defaults** für `poll-interval`, `batch-timeout` und Leerlauf – nach Messung mit `measure` (Messgrundlagen: OF-01 bis OF-03). Bis dahin gelten die vorläufigen Defaults aus DL-01/DL-04 (3 s bzw. 20 s).
 - **Seitengrößen-Abweichung:** ob der Dienst die Abweichung ausgleicht oder die Pixelmaße unverändert übernimmt – erst nach der Messung zu entscheiden (OF-05).
-- **`normalize`:** was es genau tun soll – Kontrast strecken, Weißpunkt setzen, etwas anderes – und mit welchem Werkzeug. ImageMagick wäre eine zusätzliche Systemabhängigkeit und stünde gegen „Abhängigkeiten minimal". Bis zur Entscheidung wird SV-04 nicht gebaut.
+- **`normalize`:** was es genau tun soll – Kontrast strecken, Weißpunkt setzen, etwas anderes – und mit welchem Werkzeug. ImageMagick wäre eine zusätzliche Systemabhängigkeit und stünde gegen „Abhängigkeiten minimal". Bis zur Entscheidung wird SV-04 nicht gebaut. Die 1-bit-Ausgabe von SV-08 ändert nichts daran, wie `normalize` zu beurteilen wäre: Es bleibt ein optionaler, verlustbehafteter Zusatzschritt im Graustufen-/Farbpfad – offen ist nur, was es genau tun soll.
 - **`linux/amd64`-Image:** wann es dazukommt und wie es verifiziert wird (siehe CT-01).
 
 ## Entschieden – nicht mehr offen
@@ -322,7 +326,7 @@ Der Auftrag ist fertig, wenn alles hier stimmt – vorher nicht:
 3. **Befehle:** `status`, `scan`, `measure` und `run` funktionieren gegen den Fake-Scanner; `crop` arbeitet auf einer vorhandenen Datei und braucht keinen Scanner.
 4. **Dienst:** `run` gegen Fake-Scanner und Mock-paperless: 3 Seiten → 1 PDF mit 3 Seiten in korrekter Größe, ans paperless-Modul übergeben und hochgeladen. Scanner offline schließt den Batch. Outbox-Retry funktioniert nach Neustart.
 5. **Zuschnitt:** Das Kuvert-Testbild wird verlustfrei auf ca. 1216 × 2494 px zugeschnitten (Luma identisch); das A4-Testbild ohne schwarzen Rand bleibt unverändert (bytegleich).
-6. **Container:** Image baut für `arm64` (amd64 später), `jpegtran` ist darin verfügbar, `status` läuft im Container gegen den Fake-Scanner.
+6. **Container:** Image baut für `arm64` (amd64 später), `jpegtran` und `jbig2` sind darin verfügbar, `status` läuft im Container gegen den Fake-Scanner.
 7. **Doku:** alle Dateien in `docs/` vollständig auf Deutsch, `betrieb.md` beschreibt den Container-Betrieb, README mit Schnellstart (DO-08).
 8. **Git:** alles in kleinen Commits nach Conventional Commits.
 9. **Anforderungen:** Für jede ID oben ist das Abnahmekriterium erfüllt – ausgenommen die unter „Bewusst noch nicht erledigt" aufgeführten.
