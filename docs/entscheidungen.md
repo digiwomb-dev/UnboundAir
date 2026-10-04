@@ -261,6 +261,14 @@ Drei Punkte, die dabei bewusst so und nicht anders entschieden sind:
 - **`cli` darf `service` sehen, aber weiterhin nicht `output`.** Der Befehl `run` startet den Dienst, deshalb braucht die CLI Zugriff auf `service`. Der Weg zur Ausgabe führt aber weiter ausschließlich über `service` – die CLI soll kein PDF bauen und kein Modul ansprechen.
 - **Der Wächter bekommt erstmals auch eingehende Regeln.** Bisher prüfte er nur, worauf eine Schicht zugreifen darf. Eine Schicht, die niemand deklariert, wäre damit völlig ungeprüft geblieben. Mit `service` als oberster Nutzschicht kommt die Gegenrichtung dazu: Auf `service` darf nur `cli` zugreifen, nicht der Kern.
 
+## Dokument-Typ der Modul-Schnittstelle: eigenes `output.OutputDocument` (AU-02)
+
+**Entscheidung: Die Modul-Schnittstelle bekommt einen eigenen Typ `output.OutputDocument`; die Batch-Senke bildet `service.ScannedDocument` darauf ab — nicht umgekehrt.**
+
+Der Grund ist die Richtungstabelle oben: `output` darf `service` nicht sehen. Bekäme die Schnittstelle `ScannedDocument` direkt, müsste entweder `output` auf `service` zugreifen (Regelbruch, vom Wächter verboten) oder `ScannedDocument` nach `output` wandern — dann hinge aber die CLI, die Batches baut und übergibt, an der Ausgabe-Schicht. Die paar Zeilen Abbildung in der Senke sind der günstigere Preis: Sie halten beide Richtungen sauber — `service` kennt `output`, nie umgekehrt — und belegen zugleich AU-02 an einer echten Stelle (siehe „Batch-Übergabe"): Ein neues Modul hängt sich an `OutputDocument`, ohne den Kern zu ändern.
+
+Die verworfenen Alternativen wären **`ScannedDocument` direkt als Dokument-Typ** (spart die Abbildung, kostet aber einen Schichtbruch oder eine Kopplung der CLI an `output` — beides teurer als ein Mapping) oder **`ScannedDocument` nach `output` verschieben** (hält den Wächter grün, zieht aber die CLI in die Abhängigkeit der Ausgabe-Schicht hinein: Wer `run` startet, müsste `output` kennen, obwohl der Weg dorthin ausschließlich über `service` führen soll).
+
 ## Logging: SLF4J mit Logback, Senken bleiben Lambdas
 
 Bis Meilenstein 2 gab es kein Logging-Framework – Ausgaben liefen über `println`/`System.err.println` in der Kompositionswurzel, Meldungen aus dem Kern über `warn: (String) -> Unit`-Lambdas. Für KL-02 (Zeile je Seite mit vier Messwerten) und DL-02 („nur beim Zustandswechsel loggen") reicht das nicht: Es fehlen Level, Zeitstempel und ein sauberer Zugriff im Test.
@@ -284,6 +292,22 @@ Die beiden Alternativen waren schlechter:
 
 Nebeneffekt: Damit ist AU-02 („neue Module lassen sich ergänzen, ohne den Kern zu ändern") an einer echten Stelle belegt, statt nur behauptet zu werden.
 
+## Mehrseitige Dokumente über ein Zeitfenster; Drehen und Geraderücken später
+
+**Entscheidung: Mehrseitige Dokumente entstehen über ein Zeitfenster (`batch-timeout`, vorläufiger Default 20 s, endgültig nach der Messung zu OF-03); Drehen und Geraderücken kommen später in den Dienst, nicht in v1 — im paperless-Pfad übernimmt das paperless selbst (OCRmyPDF).**
+
+Der Grund ist Unwissen, das ehrlich gebaut wird: Wie lange jemand zum Nachlegen braucht, ist nicht gemessen (OF-03), also wird das Fenster konfigurierbar gebaut statt geraten-fest verdrahtet. Die verworfene Alternative wäre **eine feste, „vernünftig" wirkende Grenze** (etwa: jedes Blatt ein Dokument, oder ein hart verdrahtetes Fenster) — ihr Preis wäre ein Dienst, der Dokumente zerreißt oder Nutzer warten lässt, ohne dass jemand sagen könnte, warum genau diese Grenze gilt.
+
+**Warum Rotation wartet — und warum Geraderücken um kleine Winkel auf die guard rail trifft.** Drehen um 90/180/270° ginge mit `jpegtran -rotate` verlustfrei und bleibt deshalb als späterer Verarbeitungsschritt offen (die Kette nach SV-07 nimmt ihn ohne Umbau auf). Geraderücken um kleine Winkel geht dagegen nur mit Neukomprimierung — das widerspricht „Nie neu komprimieren" (Abschnitt unten) und muss vorher entschieden werden (siehe „Offene Entscheidungen" im Plan). Dass paperless im v1-Pfad via OCRmyPDF geraderückt, kauft Zeit: In v1 muss der Dienst das Problem nicht lösen, das er sich mit der guard rail selbst verbietet.
+
+## Scanner-Antworten per Präfix vergleichen (SC-03)
+
+**Entscheidung: Antworten werden per Präfix verglichen — ohne eine bestimmte Länge oder ein bestimmtes Padding vorauszusetzen.**
+
+Das Gerät hängt Füllbytes an: Status- und Bestätigungsantworten sind 11 Byte (Wort + `\x00`-Padding + `H`, etwa `nopaper\x00\x00\x00H`). Wer auf exakte Gleichheit mit einer 11-Byte-Erwartung prüfte, wäre an diese Form gekettet. Die `version`-Antwort folgt dem Schema aber nicht — der Referenz-Fake sendet `NB0a.032\x00`, also 9 Byte ohne abschließendes `H`, und ob das echte Gerät es genauso macht, ist offen (OF-07). Der Vergleich darf deshalb weder die Länge noch das Padding annehmen: Er prüft, ob die Antwort mit dem erwarteten Wort beginnt, und sonst nichts.
+
+Die verworfene Alternative wäre **exakter Byte-Vergleich** (einfach zu schreiben, einfach zu lesen). Ihr Preis wäre Sprödigkeit genau an der Stelle, wo das Protokoll am unsichersten ist: Passt eine einzige Antwort nicht ins 11-Byte-Schema — wie `version` heute schon —, bricht der Client an einer funktionierenden Antwort. Der Präfix-Vergleich kostet eine Zeile mehr und kauft dafür einen Client, der in beiden OF-07-Fällen funktioniert.
+
 ## `scan` liefert die effektive Auflösung mit (SC-08)
 
 `ScannerClient.scan(dpi)` gab bisher nur die JPEG-Bytes zurück. Fällt der Firmware-Check nach SC-07 aus – Gerät kann kein 600 dpi –, stuft der Client still auf 300 zurück und meldet das nur als Warnung an die `warn`-Senke. Der Aufrufer bekommt die tatsächlich verwendete Auflösung nicht.
@@ -293,6 +317,24 @@ Bis Meilenstein 2 war das folgenlos: Die DPI landete nur im Dateinamen. Mit SV-0
 **Entscheidung: `scan` liefert Bytes und effektive Auflösung gemeinsam zurück.** Damit ist die Zahl, die die Seitengröße bestimmt, dieselbe, die das Gerät tatsächlich benutzt hat. Die Warnung bleibt zusätzlich bestehen – sie erklärt dem Menschen, warum die Auflösung abweicht.
 
 Das ist eine Änderung an bestehendem Code aus Meilenstein 1 und geschieht deshalb früh in Meilenstein 3, bevor PDF-Erzeugung und Dienst-Loop darauf aufbauen.
+
+## DPI-Quelle: befohlene Auflösung gilt, Header warnt (SV-05)
+
+**Entscheidung: Maßgeblich ist die befohlene Auflösung (`dpi300`/`dpi600` setzen wir selbst); der JPEG-Header wird zusätzlich gelesen, und eine Abweichung warnt statt abzubrechen.**
+
+Der Grund steht in OF-05: Die physische Größe stimmt ohnehin nicht (A4 misst 206,9 × 291,3 mm statt 210 × 297 mm, das DL-Kuvert 103,0 × 211,2 mm statt 110 × 220 mm) — unklar ist, ob der Scanner beschneidet, der Einzug staucht oder die Header-Angabe schlicht nicht der optischen Auflösung entspricht. Der Header ist also nicht vertrauenswürdiger als unser eigener Befehl. Ihn zur zweiten Autorität zu machen hieße, einer unsicheren Quelle Vetorecht zu geben. Zugleich ist eine Abweichung ein wertvoller Hinweis (falscher Modus, unerwartetes Gerät), deshalb wird sie geloggt statt verschwiegen — siehe dazu den Nachbarabschnitt zu SC-08: Die Zahl, die die Seitengröße (Pixel ÷ DPI) bestimmt, ist die effektive aus dem Scan-Rückgabewert, nicht eine still angenommene.
+
+Die verworfenen Alternativen wären **Header maßgeblich** (der Scan „weiß, was er ist" — kostet aber Abbrüche oder Maßfehler, sobald der Header lügt, was er nach OF-05 gerade tut) oder **Header ignorieren** (spart das Lesen, kostet aber den einzigen Hinweis, dass Befehl und Wirklichkeit auseinanderlaufen).
+
+## Nie neu komprimieren — mit zwei benannten Ausnahmen
+
+**Entscheidung: Der Scanner liefert JPEG mit Qualität ~50; Zuschnitt und Graustufen laufen ausschließlich über `jpegtran` (`-crop`, `-grayscale`), JPEGs werden per `Image.getInstance` unverändert als `/DCTDecode` ins PDF eingebettet, die Seitengröße kommt aus Pixeln und DPI. Zwei benannte Ausnahmen: optionales `normalize` (Default aus, SV-04) und `bw` (1-bit, SV-08).**
+
+Das ist die zentrale Leitplanke des Projekts: Jede Neukomprimierung würde aus einem Qualität-50-JPEG ein schlechteres machen — irreversibel, pro Seite, ohne dass ein Betrachter je sagen könnte, woher die Artefakte kommen. `jpegtran` arbeitet dagegen auf DCT-Koeffizienten: Schneiden und Entgrauen ohne einen einzigen Dekodier-Kodier-Zyklus. Dass das Roh-Einbetten wirklich roh ist, ist gemessen, nicht behauptet (Spike #141: `/DCTDecode`, Rohstrom bytegleich; der Code-Kommentar in `PdfBuilder` warnt vor jedem Weg über `java.awt.Image`/`BufferedImage`, der neu kodierte).
+
+**Warum die Ausnahmen keine Aufweichung sind.** `normalize` ist der einzige Pfad mit Neukomprimierung — ausdrücklich optional, Default aus, in der Doku als verlustbehaftet markiert — und solange Zweck und Werkzeug offen sind, wird er gar nicht gebaut (OF-09 ist in den Plan verschoben; ImageMagick als Werkzeug stünde gegen „Abhängigkeiten minimal"). `bw` verlässt den `jpegtran`-Pfad zwangsläufig: Eine 1-bit-Umwandlung kann keine DCT-Koeffizienten-Transformation sein, also läuft sie über Schwellwert (Default 128) nach PBM und von dort als JBIG2 mit gemeinsamem Wörterbuch ins PDF (Abschnitt zu `jbig2` unten). Benannt und begrenzt heißt: Die Regel nennt ihre Ausnahmen beim Namen, statt zu schweigen, wo sie endet — eine dritte Ausnahme gibt es nicht, ohne dass sie hier stehen müsste.
+
+Die verworfene Alternative wäre **Verarbeitung mit einer Allzweck-Bibliothek** (bequem: schneiden, skalieren, normalisieren aus einer Hand). Ihr Preis wäre eine stille Neukomprimierung jeder Seite — genau der Qualitätsverlust, den diese Entscheidung verbietet — plus eine große zusätzliche Systemabhängigkeit.
 
 ## JBIG2-Kodierung über das externe Programm jbig2 (Spike #140)
 
@@ -343,6 +385,50 @@ Das ist eine Änderung an bestehendem Code aus Meilenstein 1 und geschieht desha
 **Determinismus: entschieden, nicht neu vermessen.** Der Mechanismus steht im Spike-Abschnitt oben (#141): die FILEID-Naht in `writer.getInfo()`, die Negativkontrolle (ohne Festschreibung genau 56 Byte nur in `/ID`) und der bytegleiche Doppellauf. **Entscheidung: Die Golden-Master-Schicht behält ihren schärfsten Voll-Byte-Vergleich; ein Normalisierungs-Fallback ist nicht nötig.** Auch die brotli4j-Entscheidung (Ausschluss) ist dort bereits mit Begründung entschieden und wird hier nur referenziert, nicht wiederholt.
 
 **Zum Clock-Abschnitt:** Der Abschnitt „PDF-Metadaten-Determinismus: injizierbare Clock" beschreibt den PDFBox-Mechanismus — das ist Geschichte, aber es ist die Geschichte, über die die Anforderung gefunden wurde (jede Quelle von Zufall oder Echtzeit im Schreibpfad muss an die Clock). **Aktuell in Kraft ist der OpenPDF-Mechanismus aus dem Spike-Abschnitt oben.** Der PDFBox-Abschnitt bleibt unverändert lesbar: Ein Entscheidungs-Log, das sich selbst überschreibt, hört auf, ein Log zu sein.
+
+## Modul-Auswahl per Laufzeit, nicht per Build-Verdrahtung (AU-03)
+
+**Entscheidung: Welche Module aktiv sind, steht in `unboundair.output.modules` (Env-Var `UNBOUNDAIR_OUTPUT_MODULES`) als Komma-Liste — in v1 `paperless` — und wird zur Laufzeit ausgewertet; alle Module sind immer registriert. Kein `@ConditionalOnProperty` oder Ähnliches.**
+
+Der Grund ist zweigeteilt. Erstens GraalVM: Spring wertet `@ConditionalOn*` zur Build-Zeit aus, was in Native Images nicht trägt — deshalb verbietet der `ArchitectureRulesTest`-Wächter `@ConditionalOn*` outright, und die Laufzeit-Entscheidung („Laufzeit: normale JVM", Abschnitt oben) verweist genau hierher. Zweitens Offenheit: Die Komma-Liste kostet jetzt nichts und nimmt die offene Frage „mehrere Module gleichzeitig oder immer genau eins?" nicht vorweg — in v1 ist nur ein Wert sinnvoll, aber die Konfiguration muss dafür nicht umgebaut werden.
+
+Die verworfene Alternative wäre **`@ConditionalOnProperty` pro Modul** (idiomatisches Spring, weniger eigene Auswahl-Logik). Ihr Preis wäre eine Architektur, die den späteren Native-Image-Wechsel schon heute verbaut — plus eine Konfiguration, die bei jedem neuen Modul eine neue Bedingung bräuchte, statt eine Liste zu verlängern.
+
+## Outbox: erst persistieren, dann zustellen, dann löschen (AU-04)
+
+**Entscheidung: Ablage unter `unboundair.outbox.path` (Default `/var/lib/unboundair/outbox`); je Dokument ein Unterordner mit `document.pdf` und `metadata.json`; Retry mit exponentiellem Backoff (Start 30 s, Faktor 2, Deckel 1 h, unbegrenzte Versuche); nach erfolgreicher Zustellung wird der Ordner gelöscht.**
+
+Der Reihe nach, jeweils mit dem Grund: Der Pfad liegt unter `/var/lib`, weil die Outbox Zustand ist, der einen Neustart überleben muss — `betrieb.md` legt sie deshalb auf ein persistentes Volume. `metadata.json` wird mitpersistiert, weil Metadaten sonst den Neustart nicht überleben: Ein PDF ohne Scan-Zeitpunkt und Seitenzahl wäre nach einem Absturz ein Waisenkind, das niemand mehr zuordnen kann. Der Backoff (30 s → 1 h, unbegrenzt) behandelt einen Ausfall des Ziels als Normalfall, nicht als Ausnahme: paperless kann Stunden weg sein, und kein Dokument darf deshalb verloren gehen — gelöscht wird erst nach Erfolg.
+
+**Die Backoff-Werte sind Konstruktor-Parameter, keine Einstellungen** (Muster `PageSettings`). Tests kürzen sie darüber ab; `konfiguration.md` wächst nicht um Schrauben, an denen im Betrieb niemand drehen soll. Das ist dieselbe Schnitt-Logik wie im Kern: Was der Betrieb nicht entscheiden muss, wird nicht konfigurierbar getan.
+
+Die verworfene Alternative wäre **direkte Zustellung ohne Persistenz** (einfacher: kein Verzeichnis, kein Backoff, kein Neustart-Pfad). Ihr Preis wäre Datenverlust bei jedem Ausfall zwischen Batch-Schluss und Upload — genau das Fenster, das die Outbox schließt. Oder umgekehrt **Backoff als Konfiguration** (flexibel klingend) — ihr Preis wären Einstellungs-Knöpfe, die niemand begründet drehen kann und deren falsche Werte Dokumente verzögern oder das Ziel fluten.
+
+## Wer die Wiederholung antreibt: passiver Outbox, `OutboxRunner` in `service` (AU-04)
+
+**Entscheidung: Die Outbox ist passiv — reine Logik mit injizierter `Clock`, ohne eigenen Thread. Die Uhr dreht ein `OutboxRunner` in `service`, mit injizierter `Clock` und injiziertem Sleeper, genau wie `ScanLoop` es schon tut.**
+
+Der Grund ist Testbarkeit: Eine Outbox, die sich selbst startet, müsste in jedem Test nebenläufig geprüft werden — Threads, Timing, Flackern. Nebenläufigkeit in Tests war in Meilenstein 3 die Quelle der sporadisch roten Läufe. Passiv heißt: persistieren, fällige Einträge nennen, Erfolg oder Fehlschlag vermerken — alles deterministisch gegen eine gepinnte Clock prüfbar. Der Runner trägt die einzige Schleife, und weil er Clock und Sleeper injiziert bekommt, läuft er im Test gegen gesteuerte Zeit statt gegen die Wanduhr.
+
+Die verworfene Alternative wäre **eine Outbox mit eigenem Thread** (architektonisch „sauber" gekapselt: wer wiederholt, treibt sich selbst an). Ihr Preis wäre Nebenläufigkeit in jedem Outbox-Test — genau die Sorte sporadisch roter Läufe, die Meilenstein 3 gekostet hat — plus eine zweite Thread-Lebenszyklus-Verwaltung neben `ScanLoop`, ohne einen einzigen zusätzlichen Fall abzudecken.
+
+## Dateiname und paperless-Felder: für Menschen, nicht für Maschinen (AU-05)
+
+**Entscheidung: Zeitstempel = Beginn der ersten Seite des Batches, in der lokalen Zeitzone des Containers (über `TZ` steuerbar), Dateiname `scan-YYYYMMDD-HHMMSS.pdf`. `tags`, `correspondent` und `document_type` sind optional als numerische IDs konfigurierbar. `title` und `created` werden nicht gesetzt.**
+
+Der Name ist für Menschen gedacht, nicht für Maschinen: Wer im paperless-Eingang `scan-20260928-143205.pdf` sieht, weiß, welcher Stapel das war — dafür zählt die Ortszeit am Gerät, nicht UTC. Der Batch-Anfang (nicht das Batch-Ende, nicht „jetzt beim Upload") ist der Zeitpunkt, den der Nutzer mit dem Einlegen verbindet; ein Retry Stunden später darf den Namen nicht verändern. Die drei optionalen Felder als numerische IDs entsprechen dem, was die paperless-API erwartet — Namen aufzulösen wäre Aufgabe des Clients, die ihm nicht zusteht.
+
+**Warum `title` und `created` fehlen.** paperless leitet beides aus dem Dokument besser ab, als ein Uploader es raten könnte: Wer `title` setzt, überschreibt die eigene Ableitung mit einer schlechteren; wer `created` setzt, behauptet ein Erstellungsdatum, das der Scan-Zeitpunkt nur ungefähr ist. Weglassen ist hier die bessere Übergabe.
+
+Die verworfene Alternative wäre **UTC-Zeitstempel oder Upload-Zeitpunkt** (maschinen-sauber, zeitzonenfest). Ihr Preis wäre ein Name, der dem Menschen am Gerät nichts sagt — und ein Name, der sich bei jedem Retry ändert, obwohl es dasselbe Dokument ist. Oder **alles setzen, was die API hergibt** (`title`, `created` dazu) — ihr Preis wäre schlechtere Metadaten durch gut gemeinte, aber schlechtere Behauptungen.
+
+## Doppelscan-Schutz: in v1 weggelassen (OF-04)
+
+**Entscheidung: Kein Doppelscan-Schutz in v1 — und was das in der Praxis heißt: Falls das Gerät nach einem Scan noch einmal kurz `scanready` meldet, ohne dass ein neues Blatt eingelegt wurde, erzeugt der Dienst eine einseitige Leerseite als eigenes Dokument.**
+
+Der Grund ist die Leitplanke „nichts am Protokoll erfinden": Ob das Problem überhaupt auftritt, ist nicht gemessen (OF-04). Jede Sperrzeit wäre geraten — und eine geratene Sperrzeit im Dienst ist etwas anderes als eine geratene Meldeschwelle im Messwerkzeug: `measure` meldet Abstände unter 2 Sekunden als „possible double scans" in seiner Zusammenfassung, weil das nur einem Menschen etwas zur Ansicht zeigt und am Verhalten nichts ändert. Im Dienst wäre derselbe Wert eine Verhaltensentscheidung: Echte Seiten, die jemand schnell nachlegt, würden verworfen — ein Datenverlust durch eine Zahl, die niemand gemessen hat.
+
+Die verworfene Alternative wäre **eine Sperrzeit „zur Sicherheit"** (etwa: Scans im Abstand unter N Sekunden verwerfen). Ihr Preis wäre der schlimmste im Projekt: still verworfene echte Seiten, ohne dass ein Log je erklärte, warum ein Blatt fehlt. Liefert die Messung zu OF-04 je den Befund, kommt der Schutz mit gemessener Schwelle — bis dahin bleibt das sichtbare, korrigierbare Übel (eine Leerseite zu viel) dem unsichtbaren (eine Seite zu wenig) vorzuziehen.
 
 ## Spike-Ergebnisse (Zusammenfassung)
 
