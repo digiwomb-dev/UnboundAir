@@ -52,8 +52,11 @@ Beide sind einstellbar, damit die Tests gegen den Fake-Scanner auf einem freien 
 
 | Property | Umgebungsvariable | Default | Bedeutung |
 |---|---|---|---|
-| `unboundair.color-mode` | `UNBOUNDAIR_COLORMODE` | `gray` | `gray` wandelt die Seite verlustfrei in Graustufen (`jpegtran -grayscale`), `color` lässt sie farbig (SV-03). |
+| `unboundair.color-mode` | `UNBOUNDAIR_COLORMODE` | `gray` | `gray` wandelt die Seite verlustfrei in Graustufen (`jpegtran -grayscale`), `color` lässt sie farbig (SV-03). `bw` wandelt die Seite in 1-bit-Schwarz-Weiß – das ist im Gegensatz zu den beiden anderen **nicht** verlustfrei: Aus 256 Graustufen wird je Pixel ein einziges Bit, was einmal verworfen ist, lässt sich nicht wiederherstellen (SV-08). |
+| `unboundair.bw-threshold` | `UNBOUNDAIR_BWTHRESHOLD` | `128` | Helligkeits-Schwelle für `bw`, gültig `1..255`: Was dunkler als die Schwelle ist, wird schwarz. Ein **niedrigerer** Wert ergibt eine hellere Seite mit weniger zugelaufener Schrift, ein **höherer** eine dunklere, fettere. Gilt nur mit `color-mode = bw` (SV-08). |
 | `unboundair.keep-raw` | `UNBOUNDAIR_KEEPRAW` | `false` | Legt zusätzlich das unbearbeitete JPEG ab (SV-06). Zur Fehlersuche gedacht, kostet den doppelten Platz. |
+
+`bw` braucht für den PDF-Weg das Programm `jbig2` – ohne es lässt sich keine Schwarz-Weiß-Seite ins PDF übernehmen.
 
 ### Ausgabe
 
