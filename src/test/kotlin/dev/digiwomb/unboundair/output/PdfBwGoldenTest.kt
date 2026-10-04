@@ -47,9 +47,11 @@ import java.time.ZoneOffset
  * looking in the wrong place.
  *
  * A third test pins the point of the feature itself: the bw document of the
- * same three pages must be measurably smaller than the gray one. SV-08 exists
- * to make documents smaller; if the ratio ever inverts, the feature has
- * stopped earning its keep while every other assertion stays green.
+ * same three pages must be measurably smaller than the color one.
+ * `three_pages_300dpi.pdf` holds the raw color scans on purpose (it pins the
+ * never-recompress embedding path); SV-08 exists to make documents smaller;
+ * if the ratio ever inverts, the feature has stopped earning its keep while
+ * every other assertion stays green.
  *
  * **This is the most version-sensitive artefact in the repository.** The
  * bytes depend on the pinned versions of `jpegtran`, `jbig2` (spikes
@@ -107,7 +109,7 @@ class PdfBwGoldenTest {
     }
 
     @Test
-    fun `SV-08 the bw document is measurably smaller than the gray one`(
+    fun `SV-08 the bw document is measurably smaller than the color one`(
         @TempDir dir: Path,
     ) {
         val target = dir.resolve("bw.pdf")
@@ -115,14 +117,14 @@ class PdfBwGoldenTest {
         buildBwDocument(dir.resolve("doc"), target)
 
         val bwBytes = Files.readAllBytes(target)
-        val grayBytes = goldenBytes(GRAY_GOLDEN_NAME)
+        val colorBytes = goldenBytes(COLOR_GOLDEN_NAME)
 
         assertThat(bwBytes.size * SIZE_WIN_FACTOR)
             .`as`(
-                "the bw document of the same three pages must be smaller than the gray golden " +
-                    "($GRAY_GOLDEN_NAME) by at least factor $SIZE_WIN_FACTOR; SV-08 exists to make " +
+                "the bw document of the same three pages must be smaller than the color golden " +
+                    "($COLOR_GOLDEN_NAME) by at least factor $SIZE_WIN_FACTOR; SV-08 exists to make " +
                     "documents smaller, and an inverted ratio means the feature stopped earning its keep",
-            ).isLessThan(grayBytes.size)
+            ).isLessThan(colorBytes.size)
     }
 
     /**
@@ -189,11 +191,17 @@ class PdfBwGoldenTest {
         const val ENVELOPE = "envelope_dl_300dpi_raw.jpg"
         const val A4 = "din_a4_300dpi_raw.jpg"
         const val GOLDEN_NAME = "three_pages_300dpi_bw.pdf"
-        const val GRAY_GOLDEN_NAME = "three_pages_300dpi.pdf"
+
+        /**
+         * The raw color document of the same three pages ([PdfGoldenTest]'s
+         * golden) — the baseline SV-08 must beat. Color on purpose: that
+         * golden pins the never-recompress embedding of the raw scans.
+         */
+        const val COLOR_GOLDEN_NAME = "three_pages_300dpi.pdf"
         const val DPI = 300
 
         /**
-         * The bw document must beat the gray one by at least this factor.
+         * The bw document must beat the color one by at least this factor.
          * Measured (04.10.2026): 38 942 B vs 1 818 260 B, a factor of 46.7.
          * The factor comes from spike #140's measurement (~36x on raw pages);
          * the PDF overhead actually improves on it. 10 keeps the relation
@@ -205,7 +213,7 @@ class PdfBwGoldenTest {
         /**
          * The pinned instant. Any fixed value would do; this one is the
          * project's golden convention (see [PdfGoldenTest]), so the
-         * metadata inside the bw golden matches its gray sibling.
+         * metadata inside the bw golden matches its color sibling.
          */
         val FIXED_CLOCK: Clock = Clock.fixed(Instant.parse("2026-09-27T10:15:30Z"), ZoneOffset.UTC)
     }
