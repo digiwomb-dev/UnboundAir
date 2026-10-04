@@ -72,7 +72,7 @@ class ChainGrayGoldenTest {
                     "expected the golden hash",
             ).isEqualTo(sha256(golden))
 
-        assertThat(result.info.components)
+        assertThat((result.info as JpegInfo).components)
             .`as`("the grayscale step converts the three color components to a single luma")
             .isEqualTo(1)
         assertThat(Files.exists(workDir.resolve("cropped.jpg")))

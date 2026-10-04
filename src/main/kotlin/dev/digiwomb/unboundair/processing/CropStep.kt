@@ -53,7 +53,15 @@ class CropStep(
         workDir: Path,
         warn: (String) -> Unit,
     ): PageImage {
-        val info = image.info
+        // In practice the crop runs first and always sees a JPEG, so this
+        // guard is unreachable today. It is here because the chain is
+        // explicitly built to be reordered (SV-07): whoever reorders it gets
+        // a warning, not a `ClassCastException`.
+        val info =
+            image.info as? JpegInfo ?: run {
+                warn("${image.file} is not a JPEG, keeping the page uncropped")
+                return image
+            }
         val luma = LumaImage.read(image.file)
         val box = PaperDetector.detect(luma)
         if (box == null) {
