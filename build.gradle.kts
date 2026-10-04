@@ -54,11 +54,28 @@ dependencies {
     implementation("tools.jackson.module:jackson-module-kotlin")
 
     // PDF assembly. Version pinned here rather than inherited, since
-    // Spring Boot does not manage PDFBox.
-    implementation("org.apache.pdfbox:pdfbox:3.0.8")
+    // Spring Boot does not manage OpenPDF.
+    //
+    // brotli4j is excluded: OpenPDF's POM lists it without <optional>true</optional>
+    // (unlike its other optional deps), so it would land on the runtime classpath
+    // transitively. Its Brotli content-stream compression is opt-in and default-off
+    // (Document.useBrotliCompression = false, spike #141), it carries native
+    // libraries, and "Abhängigkeiten minimal" plus the GraalVM option the plan
+    // keeps open argue against it. Spike #141 built a PDF fine without it.
+    implementation("com.github.librepdf:openpdf:3.0.5") {
+        exclude(group = "com.aayushatharva.brotli4j")
+    }
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation(kotlin("test"))
+
+    // PDFBox is the independent verifier of what OpenPDF produced - test scope
+    // only, the runtime classpath stays untouched. A verifier that is the same
+    // code as the producer proves nothing, and COSStream.createRawInputStream()
+    // is how the tests prove a JPEG went into the PDF without re-encoding.
+    // Version pinned here rather than inherited, since Spring Boot does not
+    // manage PDFBox.
+    testImplementation("org.apache.pdfbox:pdfbox:3.0.8")
 
     // Test tooling, pinned to the newest stable release and test-scope only so
     // the runtime classpath stays untouched (DC-03, "Abhängigkeiten minimal").
