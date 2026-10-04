@@ -205,7 +205,7 @@ Unterbefehle der Anwendung (Umsetzung entscheidest du, z. B. Startskript `unboun
 
 ### Container (CT)
 
-- **CT-01** Container-Image auf Basis eines OpenJDK-JRE-Image, das die Anforderungen erfüllt, mit `jpegtran` und `jbig2`. **In v1 nur `linux/arm64`** – das ist die Architektur der Entwicklungsumgebung, nur dort kann der Build verifiziert werden. `linux/amd64` kommt später; das Dockerfile wird so geschrieben, dass es keine Architektur fest verdrahtet.
+- **CT-01** Container-Image auf Basis eines OpenJDK-JRE-Image, das die Anforderungen erfüllt, mit `jpegtran` und `jbig2`. **In v1 nur `linux/arm64`** – die Abnahme läuft auf einem GitHub-Actions-`arm64`-Runner (native `arm64`-Hardware), sodass der Build für `linux/arm64` dort auf echter Hardware geprüft wird statt nur behauptet. `linux/amd64` kommt später; das Dockerfile wird so geschrieben, dass es keine Architektur fest verdrahtet.
   *Abnahme:* Das Image baut für `linux/arm64`; im Container laufen `jpegtran -version`, `jbig2 -V` und `status` gegen den Fake-Scanner. `jbig2 -V` schreibt auf stderr und endet mit Exit 0 – eine naive Prüfung von stdout findet nichts. Im Dockerfile steht keine feste Architektur.
 
 ### Dev Container (DC)
@@ -286,7 +286,7 @@ Die Reihenfolge der Aufgaben innerhalb eines Meilensteins steht als `Work order`
 Hier stehen nur Punkte, die **eine Entscheidung** brauchen. Was sich dagegen nur **am Gerät klären** lässt, steht in `docs/offene-fragen.md` – dort ist die Abgrenzung erklärt. Zweistufige Punkte (erst messen, dann entscheiden) stehen in beiden Listen und verweisen aufeinander.
 
 - **Deployment:** Ziel-Host und konkretes Deployment-Beispiel. Dass als Container betrieben wird, steht fest.
-- **CI:** Tests und Image-Build. Welches CI-System, ist egal – wird erst mit Meilenstein 6 festgelegt.
+- **CI:** Tests und Image-Build. Welches CI-System für Tests, Release und Caching-Strategie, ist egal – das wird erst mit Meilenstein 6 festgelegt. Nur die CT-01-Imageprüfung (Build für `linux/arm64` plus die drei Prüfungen im Container) landet bereits in Meilenstein 5 auf GitHub Actions.
 - **Web-UI:** Umfang und Technik – kommt perspektivisch, nicht in v1.
 - **Drehen und Geraderücken (kommt später):** Drehen um 90/180/270° geht mit `jpegtran -rotate` ohne Qualitätsverlust. Geraderücken um kleine Winkel geht nur mit Neukomprimierung – das widerspricht „Nie neu komprimieren" und muss vorher entschieden werden. Offen ist auch, wie die Leserichtung erkannt wird.
 - **GraalVM Native Image:** später prüfen, vor allem ob ImageIO/AWT und OpenPDF darin laufen.
@@ -326,12 +326,12 @@ Der Auftrag ist fertig, wenn alles hier stimmt – vorher nicht:
 3. **Befehle:** `status`, `scan`, `measure` und `run` funktionieren gegen den Fake-Scanner; `crop` arbeitet auf einer vorhandenen Datei und braucht keinen Scanner.
 4. **Dienst:** `run` gegen Fake-Scanner und Mock-paperless: 3 Seiten → 1 PDF mit 3 Seiten in korrekter Größe, ans paperless-Modul übergeben und hochgeladen. Scanner offline schließt den Batch. Outbox-Retry funktioniert nach Neustart.
 5. **Zuschnitt:** Das Kuvert-Testbild wird verlustfrei auf ca. 1216 × 2494 px zugeschnitten (Luma identisch); das A4-Testbild ohne schwarzen Rand bleibt unverändert (bytegleich).
-6. **Container:** Image baut für `arm64` (amd64 später), `jpegtran` und `jbig2` sind darin verfügbar, `status` läuft im Container gegen den Fake-Scanner.
+6. **Container:** Image baut für `arm64` (amd64 später), `jpegtran` und `jbig2` sind darin verfügbar, `status` läuft im Container gegen den Fake-Scanner – geprüft auf dem GitHub-Actions-`arm64`-Runner (siehe CT-01).
 7. **Doku:** alle Dateien in `docs/` vollständig auf Deutsch, `betrieb.md` beschreibt den Container-Betrieb, README mit Schnellstart (DO-08).
 8. **Git:** alles in kleinen Commits nach Conventional Commits.
 9. **Anforderungen:** Für jede ID oben ist das Abnahmekriterium erfüllt – ausgenommen die unter „Bewusst noch nicht erledigt" aufgeführten.
 
-**Bewusst noch nicht erledigt:** Test am echten Scanner, Web-UI, Drehen und Geraderücken, **SV-04 (`normalize`)**, weitere Ausgabe-Module, Native Image, CI, Deployment-Beispiel, englische Doku.
+**Bewusst noch nicht erledigt:** Test am echten Scanner, Web-UI, Drehen und Geraderücken, **SV-04 (`normalize`)**, weitere Ausgabe-Module, Native Image, CI (ausgenommen die CT-01-Imageprüfung auf GitHub Actions in Meilenstein 5), Deployment-Beispiel, englische Doku.
 
 **Umfang von v1:** Die Meilensteine 1 bis 5. Meilenstein 6 (Deployment-Beispiel und CI) gehört ausdrücklich nicht dazu.
 
