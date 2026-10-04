@@ -209,3 +209,15 @@ Zwei getrennte Probleme treffen hier zusammen:
 **Wie damit umgegangen wird:** Der Container ist zum Bauen und Testen da – der Gradle-Build braucht kein Git. Git-Befehle laufen daneben, nicht darin.
 
 **Klärt sich,** sobald Git 2.48 oder neuer überall verfügbar ist, wo der Dev Container gebaut wird. Dann lassen sich Worktrees mit relativen Pfaden anlegen (`git worktree add --relative-paths`), und die `devcontainer`-CLI kann das gemeinsame Git-Verzeichnis mitmounten (`--mount-git-worktree-common-dir`). Aktuell scheitert das an den ausgelieferten Git-Versionen: Debian Trixie liefert 2.47, Ubuntu Noble 2.43.
+
+---
+
+## OF-13 Ist der verlustbehaftete Symbol-Modus -s für gescannte Seiten gut genug?
+
+**Status:** beobachtet · **Herkunft:** [Analyse] – gemessen an den Testbildern dieser Arbeit
+
+`-s` (Symbol-Modus) vereinheitlicht ähnliche Symbole und ist damit verlustbehaftet; die verlustlose Variante `-r` ist in den aktuellen Releases tot (Meldung „Refinement broke …", Exit 1, im Quelltext vor dem Setzen des Flags). Gemessen am Kuvert-Testbild: 287 von 4.917.744 Pixeln weichen nach Kodieren+Dekodieren vom Schwellwertbild ab (0,0058 %). Ob das auf echten, vielfältigen Scans immer unsichtbar bleibt, ist nicht bewiesen — die Golden-Master-Tests (Meilenstein „black and white and openpdf") prüfen die Referenzseiten zusätzlich per Blick in einem Viewer.
+
+**So gebaut:** nichts Zusätzliches — die Kette verlässt sich darauf, dass -s für Textscans praktisch verlustfrei ist; die Golden Files werden vor dem Festschreiben visuell geprüft.
+
+**Klärt:** ein Blick auf die fertigen bw-Seiten am echten Gerät, spätestens beim ersten Gerätetest (Measure-Lauf am echten Scanner).

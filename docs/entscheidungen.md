@@ -208,7 +208,28 @@ Bis Meilenstein 2 war das folgenlos: Die DPI landete nur im Dateinamen. Mit SV-0
 
 Das ist eine Änderung an bestehendem Code aus Meilenstein 1 und geschieht deshalb früh in Meilenstein 3, bevor PDF-Erzeugung und Dienst-Loop darauf aufbauen.
 
+## JBIG2-Kodierung über das externe Programm jbig2 (Spike #140)
+
+**Das gemeinsame Symbolwörterbuch existiert.** Der Aufruf `jbig2 -s -p -b out seite1.pbm seite2.pbm` erzeugt `out.sym` plus `out.0000` und `out.0001` — genau die Aufrufform, die der Wrapper später verwendet. Zwei ähnliche Seiten (das echte Kuvert-Testbild, Schwellwert 128, zweimal als Seiten kodiert): `out.sym` 10.169 Byte, Seitenströme 2.259 + 2.259 Byte — die Seitenströme zusammen sind deutlich kleiner als die Globals, die Symbole liegen also wirklich im Wörterbuch. Zwei VERSCHIEDENE Seiten (Kuvert- + A4-Testbild): sym 7.207 Byte, Seiten 12.177 + 15.756. Bei zwei verschiedenen Seiten zahlt sich das Wörterbuch also noch nicht aus (Größen siehe unten).
+
+**Determinismus: JA.** Dieselben zwei Seiten, zweimal in verschiedene Basisnamen kodiert, sind in allen drei Dateien bytegleich (`cmp`). Das ist die Voraussetzung für Golden-Master-Tests über sw-PDFs.
+
+**Das Programm und seine Version.** Das Programm heißt `jbig2`, Paket `jbig2`, Quellpaket `jbig2enc`, Ubuntu noble, Sektion universe/utils. Installierte Version 0.29-2.1build1 (gepinnt über den Digest des Dev-Container-Basisimages); `jbig2 -V` meldet `jbig2enc 0.28` — nach **stderr**, Exit-Code 0. Eine naive Prüfung von stdout findet also nichts (wichtig für #143).
+
+**Unser Schwellwert wird nicht übersteuert.** Quelltextprüfung (jbig2enc 0.29, src/jbig2.cc): Bei 1-bit-Eingabe nimmt der Zweig `if (pixl->d > 1) { ... pixThresholdToBinary ... } else { pixt = pixClone(pixl); }` die Seite als Kopie und überspringt das Schwellwertverfahren vollständig. Experiment: Eine Seite mit Schwellwert 128 (BT.601-Luma wie LumaImage, unter dem Schwellwert → schwarz, geschrieben als P4-PBM), kodiert und mit `jbig2dec` 0.20 zurückdekodiert, weicht in 287 von 4.917.744 Pixeln ab = 0,0058 % — dieser Rest ist die verlustbehaftete `-s`-Symbolvereinheitlichung, kein zweiter Schwellwert. Darum übergibt MonochromeStep ein PBM: Nur 1-bit-Eingabe garantiert, dass der Kodierer unsere Pixel verwendet.
+
+**Was es bringt.** Zwei echte Seiten: JBIG2 gesamt 35.140 Byte gegenüber den beiden Graustufen-JPEGs mit 1.264.306 Byte → 2,8 %, also etwa 36× kleiner. Gegenüber der seitenweisen Symbolkodierung derselben zwei Seiten (12.428 + 22.095 = 34.523 Byte) bringt das gemeinsame Wörterbuch bei zwei *verschiedenen* Seiten noch nichts — es zahlt sich erst bei wiederkehrenden Formen aus: Zwei ähnliche (gleiche) Seiten kosten gemeinsam 14.687 Byte gegenüber 2×12.428 = 24.856 einzeln, also 41 % Ersparnis, und genau dieses gemessene Verhältnis verwenden die späteren Tests (Seitenströme zusammen ≈ 44 % der Globals-Größe).
+
+**Die Verlustwarnung.** `-s` (Symbol-Modus) ist verlustbehaftet by design: Ähnliche Symbole werden vereinheitlicht; gemessen 0,0058 % der Pixel an einem echten Scan, für gescannten Text vertretbar. `-r` (Refinement, die verlustlose Variante) ist TOT: Die Quelle kehrt mit 1 und der Meldung `Refinement broke in recent releases since it's rarely used. If you need it you should bug agl@imperialviolet.org to fix it` zurück, bevor das Flag je gesetzt wird — per Experiment bestätigt (Exit 1, keine Ausgabedateien).
+
+**PDF-Modus.** `-p`-Seitenströme tragen keinen JBIG2-Dateikopf (erste Bytes `00 00 00 01 30 00 01 00`, nicht die Magie `97 4A 42 32`) — genau das macht sie in ein PDF einbettbar. jbig2dec kann `-p`-Ströme nicht direkt dekodieren (erwartet, kein Dateikopf); die Pixelprüfung nutzte daher den Dateimodus (Ausgabe nach stdout).
+
+**Randnotiz zur Methode.** Die zwei 1-bit-Seiten entstanden aus den eingecheckten Testbildern `envelope_dl_300dpi_raw.jpg` und `din_a4_300dpi_raw.jpg`: `jpegtran -grayscale`, dann ein Wegwerf-Java-Programm, das die BT.601-Formel von LumaImage `(299R+587G+114B)/1000` nachbildet, Schwellwert 128 (darunter → schwarz), geschrieben als P4-PBM. Davon ist nichts eingecheckt; der Spike checkt nur diese Niederschrift ein.
+
+**Entscheidung: Der Entwurf der Work Orders 7 und 8 (MonochromeStep → PBM, Jbig2Enc mit `-s -p -b`, gemeinsame Globals je Dokument) stützt sich auf diesen Spike und hält.**
+
 ## Spike-Ergebnisse (Zusammenfassung)
 
 - **Spike A (kotest-property auf JUnit Platform 6):** läuft. 1 Test, 0 Failures auf Platform 6.0.3 (Spring Boot 4.1.1, `junit-jupiter` 6.0.3).
 - **Spike B (Mutation):** PIT funktioniert (Zahlen oben), kein Fallback nötig.
+- **Spike C (jbig2enc, #140):** Gemeinsames Symbolwörterbuch bestätigt, byte-deterministisch, Version jbig2 0.29-2.1build1 / Programm meldet jbig2enc 0.28, auf zwei echten Seiten 36× kleiner als die Grau-JPEGs; -r ist tot, -s verlustbehaftet mit 0,0058 % Pixeln.
