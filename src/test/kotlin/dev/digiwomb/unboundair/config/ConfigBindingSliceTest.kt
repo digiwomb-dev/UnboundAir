@@ -105,6 +105,35 @@ class ConfigBindingSliceTest {
                 assertThat(properties.keepRaw)
                     .`as`("unboundair.keep-raw default (SV-06)")
                     .isFalse()
+                assertThat(properties.bwThreshold)
+                    .`as`("unboundair.bw-threshold default (SV-08)")
+                    .isEqualTo(128)
+
+                // Reflection on purpose, approved by the client: the architecture
+                // guard applies to test classes too (config is a leaf and may not
+                // access any layer), so importing PageSettings here would turn
+                // ArchitectureRulesTest red. A string class name creates no
+                // bytecode dependency, yet still ties the two defaults together.
+                // Cheap because PageSettings is a plain data class, no Spring
+                // involved. No range check here: validation lives in
+                // PageSettings (#153) and is tested there; a second assertion
+                // here would invite a second validator.
+                val pageSettingsDefault =
+                    Class
+                        .forName("dev.digiwomb.unboundair.processing.PageSettings")
+                        .getDeclaredConstructor()
+                        .newInstance()
+                        .let { instance ->
+                            instance.javaClass
+                                .getDeclaredField("bwThreshold")
+                                .apply { isAccessible = true }
+                                .get(instance)
+                        }
+                assertThat(properties.bwThreshold)
+                    .`as`(
+                        "the config default must equal PageSettings().bwThreshold" +
+                            " - two defaults for one value drift silently",
+                    ).isEqualTo(pageSettingsDefault)
             }
         }
 
@@ -193,6 +222,27 @@ class ConfigBindingSliceTest {
                     assertThat(context.getBean(UnboundAirProperties::class.java).output.modules)
                         .`as`("a comma list keeps the 'several modules at once' question open (AU-03)")
                         .containsExactly("paperless", "archive")
+                }
+        }
+
+        @Test
+        fun `KL-01 the bw threshold binds from its property name`() {
+            runner
+                .withPropertyValues("unboundair.bw-threshold=90")
+                .run { context ->
+                    assertThat(context.getBean(UnboundAirProperties::class.java).bwThreshold)
+                        .`as`("unboundair.bw-threshold=90 must bind (SV-08)")
+                        .isEqualTo(90)
+                }
+        }
+
+        @Test
+        fun `KL-01 the bw threshold binds from its documented environment variable`() {
+            runnerWithEnvironment(mapOf("UNBOUNDAIR_BWTHRESHOLD" to "90"))
+                .run { context ->
+                    assertThat(context.getBean(UnboundAirProperties::class.java).bwThreshold)
+                        .`as`("UNBOUNDAIR_BWTHRESHOLD must override the 128 default (SV-08)")
+                        .isEqualTo(90)
                 }
         }
     }
