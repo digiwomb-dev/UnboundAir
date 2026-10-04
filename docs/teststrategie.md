@@ -14,6 +14,8 @@ Wie `UnboundAir` getestet wird: die Testschichten, die Werkzeuge je Schicht und 
 
 Die Labels im GitHub-Tracking sind deckungsgleich mit den Schichten: `unit`, `property`, `slice`, `integration`, `contract`, `e2e`, `golden-master`, `mutation`.
 
+**Kein Container-Check als Schicht.** Die CT-01-Abnahme (`.github/workflows/image.yml` auf `ubuntu-24.04-arm`: Image bauen, darin `jpegtran -version`, `jbig2 -V` und `status` gegen den standalone gestarteten Fake-Scanner prüfen) ist ein zusätzliches Tor **außerhalb** von `./gradlew test`, keine neunte Schicht. Sie schwächt DC-03 nicht: `./gradlew test` läuft weiterhin vollständig offline gegen Fake-Scanner und Mock, ohne echtes Gerät und ohne fremden Dienst.
+
 ### 1. Unit (`unit`)
 
 Reine JVM-Tests für einzelne Einheiten ohne Spring-Kontext, ohne Netz und ohne externes Programm. Assertions mit **AssertJ**.
@@ -47,7 +49,7 @@ Gezielte Spring-Boot-Slices statt voller Kontext. Konkret:
 
 Zusammenwirken mehrerer echter Bausteine, aber ohne echte Geräte/Dienste:
 
-- **FakeScanner-TCP** (TE-01): der Scanner-Client spricht über einen echten TCP-Socket mit dem im Test laufenden Fake-Scanner (Füllbytes, geteilte `jpegsize`-Antwort, `devbusy`, Offline, `battlow`). Seit Meilenstein 3 zusätzlich skriptfähig: Blattfach für mehrere Seiten, Statusfolgen und ein **umschaltbares Offline auf demselben Port**, ohne das sich ein Dienst-Loop nicht prüfen ließe.
+- **FakeScanner-TCP** (TE-01): der Scanner-Client spricht über einen echten TCP-Socket mit dem im Test laufenden Fake-Scanner (Füllbytes, geteilte `jpegsize`-Antwort, `devbusy`, Offline, `battlow`). Seit Meilenstein 3 zusätzlich skriptfähig: Blattfach für mehrere Seiten, Statusfolgen und ein **umschaltbares Offline auf demselben Port**, ohne das sich ein Dienst-Loop nicht prüfen ließe. Dieselbe Klasse läuft seit Meilenstein 5 zusätzlich **standalone** (`FakeScannerMain`, Gradle-Task `fakeScanner`) für den Container-Check — bewusst keine zweite Fake-Implementierung: Zwei Fakes driften auseinander und entwerten die Contract-Tests stillschweigend.
 - **`jpegtran`**: Zuschnitt/Graustufen laufen über das echte externe Programm (SV-01, SV-03) — dieselbe Systemabhängigkeit wie im Laufzeit-Image.
 - **`jbig2`**: 1-bit-Schwarz-Weiß-Encodierung (SV-08) läuft über das echte externe Programm — dieselbe Systemabhängigkeit wie im Laufzeit-Image.
 - **Awaitility + injizierbare Clock**: asynchrone Abläufe (Dienst-Loop DL-01 bis DL-07, Outbox-Retry AU-04) werden mit Awaitility synchronisiert, Zeit mit einer injizierbaren Clock gesteuert statt `Thread.sleep`.
@@ -60,6 +62,14 @@ Zusammenwirken mehrerer echter Bausteine, aber ohne echte Geräte/Dienste:
 
 1. **Awaitility-Grenzen großzügig wählen.** Eine Statusabfrage kostet nach SC-02 rund 0,7 s an vorgeschriebenen Pausen – unabhängig vom eingestellten Intervall. Sechs Abfragen brauchen also über vier Sekunden, bevor die übrige Testsuite um dieselbe Maschine konkurriert. Eine 10-Sekunden-Grenze war allein grün und im vollen `build` rot. Die Grenze wird nie ausgeschöpft, wenn alles funktioniert; eine großzügige kostet nichts, eine knappe erkauft sporadische Fehlschläge.
 2. **Auf den Zustand warten, nicht auf eine Anzahl Durchläufe.** Der Loop dreht viele Runden, während der Fake-Scanner seinen Port neu bindet. Ein Test, der „noch vier Abfragen" abwartet, ist fertig, bevor die Zustandsänderung überhaupt eingetreten ist.
+
+**Langlebige Kommandos testen (`run`, DL-07):** Anders als alles davor hält `run` zwei Threads und endet erst auf ein Signal. Seine Tests starten es, beobachten es und halten es wieder an — dafür gelten drei Regeln:
+
+1. **Alles Warten mit Awaitility, niemals `Thread.sleep`.**
+2. **Die Zeit kommt aus einer injizierbaren Clock.**
+3. **Der Test weist nach, dass die Threads wirklich enden.** Ein Test, der einen Thread laufen lässt, macht einen *späteren, unbeteiligten* Test flaky — den am schwersten aufzuspürenden Fehler in diesem Projekt.
+
+**Den Shutdown-Pfad testen, nicht das Signal:** Geprüft wird der Körper des Shutdown-Hooks — derselbe `stop()`-Pfad, den das Signal auslösen würde —, aufgerufen aus dem Test-Thread. Die Signal-Registrierung (`Runtime.addShutdownHook`) selbst bleibt bewusst ungeprüft: Die JVM zu töten hieße, den Gradle-Worker zu töten, und der Build wäre rot statt grün. Das ist die allgemeine Regel für jeden Shutdown-Test, kein Einzelfall.
 
 - **Warum:** die riskantesten Stellen des Dienstes sind die Protokoll-/Zeit- und Prozessgrenzen; genau die werden hier mit den echten Mechanismen (Socket, externes Programm) geprüft.
 - **Prozess-Wrapper hart testen — Lehre aus `JpegTran`:** Prozessaufrufe lassen sich leicht unter-assertieren, und das rächt sich messbar: `JpegTran` ist mit 27 % Mutation Coverage die schwächste Klasse des Projekts. `Jbig2Enc` ist bewusst härter geprüft (Integrationstest über beide Fehlermodi, den Anzahl-Wächter und die Größenrelation — Issue #159). Der nächste Prozess-Wrapper startet von dieser Lehre, statt sie neu zu entdecken.
@@ -77,7 +87,7 @@ Schnittstellenverträge nach außen:
 
 ### 6. E2E offline (`e2e`)
 
-Der ganze Dienst offline: `run` gegen Fake-Scanner **und** WireMock-paperless. Drei Seiten → ein dreiseitiges PDF, an das Modul übergeben und hochgeladen; Scanner offline schließt den Batch; Outbox-Retry nach Neustart. Kein echtes Gerät, kein echtes paperless.
+Der ganze Dienst offline: `run` gegen Fake-Scanner **und** WireMock-paperless. Drei Seiten → ein dreiseitiges PDF, an das Modul übergeben und hochgeladen; Scanner offline schließt den Batch; Outbox-Retry nach Neustart. Kein echtes Gerät, kein echtes paperless. Seit Meilenstein 5 startet der E2E-Test dabei den ausgelieferten `run`-Einstiegspunkt selbst (Adresse und paperless-URL allein über Spring-Properties, kein `--host`-Flag) — was der Anwender startet, startet der Test.
 
 - **Warum:** bestätigt, dass die Bausteine im Zusammenspiel das Ergebnis aus `docs/plan.md` („Ergebnis", Punkt 4) liefern.
 
@@ -100,6 +110,7 @@ Byte-genaue Referenzartefakte unter `golden/` mit einem **sha256-Manifest**. Erg
 - **Grenzen (gemessen, Spike B):** PIT funktioniert auf JUnit Platform 6 (das bekannte Problem 0 %-Coverage ist mit pitest 1.25.5 behoben). Die zeitgesteuerten Scanner-Tests machen Läufe über den ganzen Kern langsam; deshalb `timeoutConstInMillis` erhöht. Zahlen und Entscheidung in `docs/entscheidungen.md`.
 - **Stand (Einmessung Meilenstein 4, 04.10.2026, Commit `d6c63de`):** gesamt **66 %** Mutation Coverage (458/695), Test Strength 73 %, Dauer 2 h 25 min. Mit der Aufnahme von `output.outbox` und `output.paperless` wuchs der Nenner von 525 auf 695 Mutationen — ein belegter Wechsel der Messgrundlage. Alle Zahlen je Paket stehen in `docs/entscheidungen.md`.
 - **Schwelle:** `mutationThreshold = 66` in `build.gradle.kts` — der gemessene Wert als **Boden**, damit ein Rückgang den Task rot macht. Anheben, wenn der Score steigt; **nie stillschweigend senken**. Der Lauf zu Meilenstein 4 hat den Boden erstmals gesenkt, von 71 % — nicht stillschweigend, sondern mit Ursache und Gegenmaßnahme in `docs/entscheidungen.md`. Schwächste Pakete sind dort ebenfalls benannt.
+- **Neueinmessung zu Meilenstein 5:** Issue #138 schärft die Tests der schwächsten Pakete (`service`, `output.outbox`, `output.paperless`) und misst danach neu; die Schwellenanhebung läuft dort. Zahlen stehen danach — wie bisher — nur in `docs/entscheidungen.md` mit Datum und Commit, nicht hier.
 - **Die Schicht `e2e` ist aus den `targetTests` ausgenommen** (gemessen, seit Meilenstein 4). Ihre Tests warten mit Awaitility und einer Obergrenze von 60 Sekunden — richtig für sie, falsch als Mutationsbasis: Eine Mutation, die die Zustellung kaputtmacht, lässt jeden solchen Test seine volle Wartezeit verbrennen, statt schnell rot zu werden. **Gemessen** an denselben 8 Mutationen von `OutputModules`: gegen `e2e` als `targetTests` dauert die Mutationsanalyse **4 min 53 s**, gegen den Unit-Test `OutputModulesTest` **1 s** — rund 37 Sekunden je Mutation gegenüber 0,13, also Faktor ~290. Auf die 695 Mutationen der vollen Messgrundlage hochgerechnet wären das etwa 7 Stunden allein für diesen Anteil. Dabei tötet `e2e` sogar **weniger**: 6 von 8 gegenüber 7 von 8. Die Mutationen in `output` und `service` werden von den Unit-, Slice- und Integrationstests ohnehin erreicht; `e2e` bringt Laufzeit, aber keine zusätzliche Reichweite. Das ist eine Einschränkung der Messgrundlage und steht deshalb hier, nicht nur als Kommentar in `build.gradle.kts`.
 - **Netz:** Die `org.pitest`-Artefakte sind nicht im warmen Cache; der erste `pitest`-Lauf löst sie online auf. DC-03 bleibt unberührt, weil es `./gradlew test` betrifft — der läuft weiterhin offline.
 
