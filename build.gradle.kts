@@ -151,9 +151,14 @@ pitest {
             // `e2e` stays out, measured: the layer's tests wait on Awaitility with a
             // 60-second ceiling, which is right for them and wrong here. A mutation
             // that breaks delivery makes every such test burn its full timeout
-            // instead of failing fast, and the run grows from minutes into hours.
+            // instead of failing fast. Measured over the same 8 mutations of
+            // `OutputModules`: 4 min 53 s of mutation analysis against `e2e` versus
+            // 1 s against `OutputModulesTest` -- roughly 37 seconds per mutation
+            // against 0.13, a factor of ~290, which extrapolates to some 7 hours
+            // for the full basis of 695. And e2e kills fewer: 6 of 8 against 7 of 8.
             // The mutations in `output` and `service` are covered by the unit, slice
             // and integration tests anyway; e2e adds runtime, not reach.
+            // Numbers and method are written up in docs/teststrategie.md.
         ),
     )
     outputFormats.set(setOf("HTML"))
