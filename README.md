@@ -15,6 +15,26 @@ Kein Knopfdruck, keine Hersteller-Software, keine Windows-Anwendung. Kotlin und 
 
 Zwei Dinge sind dabei nicht verhandelbar: **Es wird nie neu komprimiert** – Zuschnitt und Graustufen laufen ausschließlich über `jpegtran`, die JPEGs wandern unverändert ins PDF. Und **am Protokoll wird nichts erfunden**: Was über das Gerät nicht bekannt ist, wird konfigurierbar gebaut und in `docs/offene-fragen.md` geführt, statt geraten zu werden.
 
+## Schnellstart
+
+Voraussetzungen: ein Rechner, der im WLAN des Scanners hängt, und eine Container-Runtime. Das Image musst du (noch) selbst bauen – wie, steht in [`docs/entwicklung.md`](docs/entwicklung.md); wohin Images veröffentlicht werden, ist noch offen (siehe [`docs/betrieb.md`](docs/betrieb.md)). Wo unten ein Image-Name stehen müsste, steht deshalb ein Platzhalter.
+
+Container starten (Beispiel, sinngemäß auch bei anderen Runtimes): Outbox auf ein dauerhaftes Volume legen, paperless-Adresse und Token-Datei mitgeben, Scanner-Adresse nur falls sie von `192.168.18.33` abweicht:
+
+```sh
+docker run --network=host \
+  -v unboundair-outbox:/var/lib/unboundair/outbox \
+  -v /pfad/zum/tokenfile:/run/secrets/paperless-token:ro \
+  -e UNBOUNDAIR_OUTPUT_MODULES=paperless \
+  -e UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL=https://paperless.example.org \
+  -e UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE=/run/secrets/paperless-token \
+  <image-platzhalter>
+```
+
+Blatt einlegen – der Dienst scannt von selbst, wartet kurz auf weitere Seiten und legt das fertige PDF in paperless-ngx ab (sichtbar dort und im Container-Log auf stdout). Kommt nichts an, hilft [`docs/betrieb.md`](docs/betrieb.md) beim Betrieb weiter.
+
+Und sonst: [`docs/konfiguration.md`](docs/konfiguration.md) für jede Einstellung, [`docs/betrieb.md`](docs/betrieb.md) für den echten Betrieb, [`docs/entwicklung.md`](docs/entwicklung.md) zum Bauen und Testen.
+
 ## Wegweiser durch die Dokumentation
 
 Die Doku ist auf Deutsch. Je nachdem, was du vorhast:
@@ -29,9 +49,10 @@ Die Doku ist auf Deutsch. Je nachdem, was du vorhast:
 | wissen, wie getestet wird | [`docs/teststrategie.md`](docs/teststrategie.md) – die acht Testschichten, die Werkzeuge je Schicht und die Gründe dafür |
 | wissen, warum etwas so entschieden wurde | [`docs/entscheidungen.md`](docs/entscheidungen.md) – Begründungen zu den festen Entscheidungen, inklusive der gemessenen Zahlen |
 | wissen, was am Gerät noch unklar ist | [`docs/offene-fragen.md`](docs/offene-fragen.md) – offene Punkte mit Status, Herkunft und dem Umgang damit im Code |
+| wissen, was der Scanner über die Leitung schickt | [`docs/protokoll.md`](docs/protokoll.md) – das TCP-Protokoll auf Port 23: Nachrichten, Abläufe, was gemessen und was noch offen ist |
+| wissen, was die Hardware kann und was nicht | [`docs/hardware.md`](docs/hardware.md) – Gerät, WLAN-Verhalten, gemessene Scan-Eigenschaften |
+| den Dienst als Container betreiben | [`docs/betrieb.md`](docs/betrieb.md) – Host-Voraussetzungen, Netzwerk, Volume, Secrets, Beenden, Logs |
 | am Projekt mitarbeiten | [`AGENTS.md`](AGENTS.md) – Arbeitsweise, Leitplanken, Regeln |
-
-Weitere Dateien entstehen später: `protokoll.md` und `hardware.md` (Gerät und Protokoll) sowie `betrieb.md` (Container-Betrieb). Sie sind in `plan.md` als Anforderungen DO-01 bis DO-04 beschrieben und gehören zu Meilenstein 5.
 
 ## Warum es das gibt
 
@@ -42,7 +63,7 @@ Das Protokollwissen stammt aus eigener Analyse am Gerät, aus dem Handbuch und a
 ## Stand der Technik
 
 - Kotlin, Spring Boot, Gradle mit Kotlin DSL
-- Apache PDFBox für die PDF-Erzeugung
+- OpenPDF für die PDF-Erzeugung (Apache PDFBox nur als unabhängiger Prüfer in Tests)
 - `jpegtran` aus libjpeg-turbo für verlustfreie Bildoperationen
 - Läuft als Container; entwickelt und getestet wird ausschließlich gegen einen Fake-Scanner
 
