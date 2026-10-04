@@ -343,6 +343,14 @@ class FakeScanner : AutoCloseable {
         if (offline.getAndSet(true)) return
         serverSocket?.let { runCatching { it.close() } }
         serverSocket = null
+        // Closing a ServerSocket while a thread sits in accept() does not close
+        // the file descriptor right away: since Java 13 the close is deferred
+        // until the accepting thread wakes up. Until then the port still
+        // completes handshakes, so a client calling immediately after
+        // goOffline() could still be served. Waiting for the loop to end makes
+        // "offline" mean offline from the first call on.
+        acceptThread?.join(ACCEPT_LOOP_SHUTDOWN_MILLIS)
+        acceptThread = null
         activeSockets.forEach { socket -> runCatching { socket.close() } }
         activeSockets.clear()
     }
@@ -727,5 +735,8 @@ class FakeScanner : AutoCloseable {
 
         /** Pause between two rebind attempts. */
         const val REBIND_PAUSE_MILLIS = 20L
+
+        /** How long [goOffline] waits for the accept loop to notice the close. */
+        const val ACCEPT_LOOP_SHUTDOWN_MILLIS = 1000L
     }
 }

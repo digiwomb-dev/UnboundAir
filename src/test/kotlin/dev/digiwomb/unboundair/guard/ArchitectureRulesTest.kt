@@ -4,6 +4,7 @@ import com.tngtech.archunit.base.DescribedPredicate
 import com.tngtech.archunit.core.domain.JavaAnnotation
 import com.tngtech.archunit.core.domain.JavaClasses
 import com.tngtech.archunit.core.importer.ClassFileImporter
+import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.lang.ArchRule
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
@@ -46,12 +47,10 @@ import org.junit.jupiter.api.Test
  *
  * 3. **No Spring stereotypes in `..output..` (AU-03).** Modules are registered
  *    deliberately and selected at runtime; a stereotype annotation would wire them
- *    through component scanning instead. This rule is deliberately inert today: the
- *    `output` package is empty until the paperless-ngx module lands in a later
- *    milestone, so `allowEmptyShould(true)` tolerates exactly that one situation.
- *    The moment a class appears in `dev.digiwomb.unboundair.output..`, the rule checks
- *    it in full. It is kept (not removed) so the AU-03 "Laufzeit-Registrierung"
- *    decision stays guarded as an executable rule even while nothing implements it yet.
+ *    through component scanning instead. Since milestone 4 the rule has real classes to
+ *    check: the registry, the outbox and the paperless module all live under `output`.
+ *    `allowEmptyShould(true)` is kept from the milestones when the package was still
+ *    empty; it now tolerates nothing, because the package is not empty any more.
  *
  * 4. **The core stays free of Spring (`scanner`, `image`, `processing`, `output`).**
  *    No class there may import anything from `org.springframework`. This is the
@@ -68,12 +67,21 @@ import org.junit.jupiter.api.Test
  * The root class `UnboundAirApplication` is deliberately excluded from the layering:
  * it is the composition root and may reference anything. `layeredArchitecture()`
  * only constrains classes that belong to a declared layer, so the root class is simply
- * not assigned to one (the test-only `guard` package and `TestImages` are unlayered
- * for the same reason).
+ * not assigned to one (the test-only `guard` and `e2e` packages and `TestImages` are
+ * unlayered for the same reason).
  *
- * The `output` layer is declared even though it is empty today: the paperless module
- * arrives in a later milestone, and the direction constraints must already be in
- * place for it.
+ * `e2e` is unlayered on purpose, and the tests there depend on it: an end-to-end test
+ * drives the whole chain from `service` downwards, but `service` may only be accessed
+ * by `cli`. Were `e2e` a declared layer, every test in it would violate that rule. The
+ * alternative -- widening `mayOnlyBeAccessedByLayers` on `service` to let test code in
+ * -- would weaken the rule for production code too, which is the opposite of what the
+ * guard is for. Leaving the package outside the layering keeps the rule sharp where it
+ * matters.
+ *
+ * The `output` layer was declared while it was still empty, so the direction
+ * constraints were in place before the first module arrived. Since milestone 4 it
+ * holds the registry, the outbox and the paperless module, and the constraints apply
+ * to them as written.
  */
 @Tag("guard")
 class ArchitectureRulesTest {
@@ -82,6 +90,17 @@ class ArchitectureRulesTest {
      */
     private val classes: JavaClasses =
         ClassFileImporter().importPackages("dev.digiwomb.unboundair")
+
+    /**
+     * The compiled classes that actually ship, without the test source set.
+     *
+     * Used by the single rule whose claim is about production code alone, the Spring ban
+     * on the core packages. Everything else deliberately checks the tests as well.
+     */
+    private val mainClasses: JavaClasses =
+        ClassFileImporter()
+            .withImportOption(ImportOption.DoNotIncludeTests())
+            .importPackages("dev.digiwomb.unboundair")
 
     /**
      * Matches any Spring `@ConditionalOn*` annotation (e.g. `@ConditionalOnProperty`)
@@ -116,12 +135,12 @@ class ArchitectureRulesTest {
      *   the edges the `mayOnlyAccessLayers` / `mayNotAccessAnyLayer` conditions are
      *   designed for: dependencies whose source and target both belong to declared
      *   layers, which covers fields, method signatures, and return types alike.
-     * - [withOptionalLayers] because the `output` layer is empty until the
-     *   paperless-ngx module lands in a later milestone; ArchUnit otherwise requires
-     *   every declared layer to be non-empty. All direction constraints stay in
-     *   force, so the moment a class appears in `dev.digiwomb.unboundair.output..`
-     *   the rule constrains it in both directions: it may only access
-     *   `processing`/`image`, and only `service` may access it.
+     * - [withOptionalLayers] because the `output` layer was empty until the
+     *   paperless-ngx module arrived in milestone 4; ArchUnit otherwise requires every
+     *   declared layer to be non-empty. It stays switched on for the next layer that
+     *   gets declared ahead of its code. All direction constraints are in force for
+     *   the classes that now live there: they may only access `processing`/`image`,
+     *   and only `service` may access them.
      *
      * The `mayOnlyBeAccessedByLayers` clauses on `service` and `output` are the
      * incoming half of the guard. Without them the topmost layers would be
@@ -202,12 +221,16 @@ class ArchitectureRulesTest {
      * Spring stereotype annotation would wire them through component scanning instead
      * and defeat the runtime selection (and break GraalVM Native Images).
      *
-     * [ArchRule.allowEmptyShould] is set because `dev.digiwomb.unboundair.output..`
-     * is empty until the paperless-ngx module lands in a later milestone, and
-     * ArchUnit 1.5.0 fails a rule whose `that()` clause matches nothing (its
-     * default `failOnEmptyShould` is `true`). This tolerates exactly that one
-     * situation: today the rule checks zero classes, and the moment a class
-     * appears in the `output` package it is checked in full.
+     * `allowEmptyShould` is gone as of this milestone. It existed because
+     * `dev.digiwomb.unboundair.output..` was empty and ArchUnit 1.5.0 fails a rule
+     * whose `that()` clause matches nothing. The package now holds the interface, the
+     * outbox and the paperless module, so the rule checks real classes -- and dropping
+     * the flag means an empty `output` package would itself turn the build red, which
+     * is the right alarm: this rule going quiet is how it would rot unnoticed.
+     *
+     * Deliberately checked against [classes], tests included, and deliberately not
+     * narrowed for `output.paperless`: that package may use the Spring HTTP client,
+     * but a stereotype there would still defeat the runtime module selection.
      */
     @Test
     fun `AU-03 output modules are not wired through component scanning`() {
@@ -216,7 +239,6 @@ class ArchitectureRulesTest {
             .resideInAPackage("dev.digiwomb.unboundair.output..")
             .should()
             .beAnnotatedWith(stereotypeAnnotations)
-            .allowEmptyShould(true)
             .check(classes)
     }
 
@@ -236,6 +258,24 @@ class ArchitectureRulesTest {
      *
      * `cli` and `service` are deliberately **not** covered: the composition root and the
      * service layer are where Spring legitimately lives.
+     *
+     * `output.paperless` is the one named exception inside the core (docs/plan.md, "Der
+     * Kern bleibt frei von Spring"): it may use the Spring `RestClient` and the
+     * `spring-web` types for multipart and headers, because uploading is the single
+     * point in v1 where a core package talks outward and a second HTTP client for it
+     * would stand against "keep dependencies minimal". The exception is carved out by
+     * package, not by class, so a new file there inherits it -- which is why the two
+     * rules below fence that package in from the other side: no stereotypes (the AU-03
+     * rule above covers all of `output..`) and no `UnboundAirProperties`.
+     *
+     * This is the one rule evaluated against [mainClasses] rather than [classes]. The
+     * claim it makes is about what *ships*: production code takes its values through
+     * constructors and needs no context. A slice test of a core type legitimately boots
+     * Spring to prove the shipped object behaves -- `MetadataJsonSliceTest` uses
+     * `@JsonTest` for exactly that -- and it is never in a native image, so counting it
+     * as a violation would forbid testing the very property this rule protects. The
+     * other rules keep seeing the tests: a *test* that wires a core class through
+     * component scanning is a real smell, and nothing here relaxes that.
      */
     @Test
     fun `the core packages do not depend on Spring`() {
@@ -246,12 +286,43 @@ class ArchitectureRulesTest {
                 "dev.digiwomb.unboundair.image..",
                 "dev.digiwomb.unboundair.processing..",
                 "dev.digiwomb.unboundair.output..",
-            ).should()
+            ).and()
+            .resideOutsideOfPackage("dev.digiwomb.unboundair.output.paperless..")
+            .should()
             .dependOnClassesThat()
             .resideInAPackage("org.springframework..")
             .because(
                 "the core must stay constructible without an application context, so it can be " +
                     "unit-tested and later compiled to a native image (docs/plan.md)",
+            ).check(mainClasses)
+    }
+
+    /**
+     * The named exception stays narrow: `output.paperless` may speak HTTP, nothing more.
+     *
+     * The rule above exempts the whole package, which is the only way to express the
+     * decision in docs/plan.md -- but an exemption written by package is an open door
+     * for everything else Spring offers. The plan names what remains forbidden there:
+     * stereotypes and an injected `UnboundAirProperties`. Stereotypes are already
+     * covered for all of `output..` by the AU-03 rule; this rule adds the second half,
+     * so the settings keep arriving as constructor values from the composition root.
+     *
+     * `config` is reached through its own package, not through Spring, so the layering
+     * rule alone would also catch this -- deliberately duplicated here, because the
+     * reason differs: there it is about direction, here about the exemption not
+     * widening into "paperless may do anything".
+     */
+    @Test
+    fun `AU-05 the paperless module takes its settings as constructor values`() {
+        noClasses()
+            .that()
+            .resideInAPackage("dev.digiwomb.unboundair.output.paperless..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage("dev.digiwomb.unboundair.config..")
+            .because(
+                "the Spring exception for this package covers the HTTP client only; the settings " +
+                    "arrive as constructor values from the composition root (docs/plan.md)",
             ).check(classes)
     }
 

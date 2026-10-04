@@ -2,7 +2,7 @@
 description: Maintains the GitHub issue/milestone/label workflow via the gh CLI.
 mode: subagent
 temperature: 0.1
-model: opencode-go/deepseek-v4-pro
+model: ollama-cloud/deepseek-v4-pro:0813
 permission:
   bash:
     "gh issue *": allow
@@ -26,9 +26,9 @@ Milestones are managed through `gh api repos/digiwomb-dev/UnboundAir/milestones`
 The one-off migration is done. Milestones, labels and the issue template already exist —
 do not create them again, maintain them:
 
-- Milestones `1`, `2`, `3` and `top tier testing` are **closed**; `4` is the **active** one;
-  `5` and `6` are open. Milestone `1` deliberately has no issues (completed before the
-  migration and not recreated).
+- Milestones `1`, `2`, `3` and `top tier testing` (number 7) are **closed**; `4` is the
+  **active** one; `5` and `6` are open. Milestone `1` deliberately has no issues (completed
+  before the migration and not recreated).
 - The labels, the four issue forms and the org-level issue types (`Task`, `Feature`, `Test`,
   `Bug`) are in place.
 - The legacy `docs/meilenstein-*.md` files are deleted. Never recreate work tracking as a

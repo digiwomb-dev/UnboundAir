@@ -55,6 +55,7 @@ Kurzfassung. Maßgeblich sind die ausführlichen Formulierungen in `docs/plan.md
   | Infrastruktur | `Task` | `kind/chore` | `chore(<scope>): <text>`, `spike(<scope>): <text>` |
 
   Dazu: Der Scope ist Pflicht und benennt das Paket (`config`, `scanner`, `image`, `processing`, `output`, `outbox`, `paperless`, `service`, `batch`, `cli`, `pdf`, `logging`, `app`, `test`). Bei `test(…)` steht an der Stelle des Scopes die **Testschicht** aus `docs/teststrategie.md`, nie das Paket – und dieselbe Schicht zusätzlich als Label. Keine `T<n>`-Nummern im Titel; die Reihenfolge im Meilenstein steht als `Work order: <n>` im Eltern-Issue. Ein Eltern-Issue bekommt nur, wer Sub-Issues hat, und trägt kein Schicht-Label.
+- **`blocked` wieder abnehmen.** Das Label `blocked` zeigt an, dass ein **offenes** Issue auf etwas anderes wartet – der Filter dazu heißt `is:open label:blocked`. Sobald die Abhängigkeit steht, nimmst du es ab; spätestens beim Schließen. Ein geschlossenes Issue trägt nie `blocked`. (Bis Meilenstein 4 fehlte dieser Schritt: 29 geschlossene Issues schleppten das Label mit, weil es beim Anlegen gesetzt und nie entfernt wurde.)
 - **Erst Plan, dann Verhalten:** Soll sich etwas gegenüber `docs/plan.md` ändern, passt du zuerst den Plan an – nach meinem OK – und erst dann den Code.
 
 ## Fortschritt

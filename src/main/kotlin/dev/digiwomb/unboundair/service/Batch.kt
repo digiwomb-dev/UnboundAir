@@ -2,6 +2,7 @@ package dev.digiwomb.unboundair.service
 
 import dev.digiwomb.unboundair.output.PdfBuilder
 import dev.digiwomb.unboundair.output.PdfPage
+import dev.digiwomb.unboundair.output.documentName
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Clock
@@ -148,7 +149,7 @@ class Batch(
         val started = startedAt ?: return null
         val finished = clock.instant()
 
-        val pdf = workDir.resolve(documentName(started))
+        val pdf = workDir.resolve(documentName(started, clock.zone))
         pdfBuilder.build(pages.toList(), pdf)
         val document =
             ScannedDocument(
@@ -168,25 +169,5 @@ class Batch(
 
         sink(document)
         return document
-    }
-
-    /**
-     * The document file name (AU-05): `scan-YYYYMMDD-HHMMSS.pdf`, built from the
-     * start of the first page in the local time zone of the clock.
-     *
-     * Local time, not UTC, is deliberate: the name is for people, and `TZ`
-     * controls it in the container (`docs/plan.md`, "Dateiname und
-     * paperless-Felder").
-     */
-    private fun documentName(started: Instant): String {
-        val local = started.atZone(clock.zone)
-        return "scan-%04d%02d%02d-%02d%02d%02d.pdf".format(
-            local.year,
-            local.monthValue,
-            local.dayOfMonth,
-            local.hour,
-            local.minute,
-            local.second,
-        )
     }
 }

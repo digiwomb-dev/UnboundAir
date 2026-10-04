@@ -25,12 +25,13 @@ Die Doku ist auf Deutsch. Je nachdem, was du vorhast:
 | den aktuellen Stand sehen | [GitHub-Issues](https://github.com/digiwomb-dev/UnboundAir/issues) und [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) – offene Aufgaben, was in Arbeit und was erledigt ist |
 | selbst bauen und testen | [`docs/entwicklung.md`](docs/entwicklung.md) – Dev Container, Build, Testlauf |
 | eine Einstellung nachschlagen | [`docs/konfiguration.md`](docs/konfiguration.md) – jede Einstellung mit Default, Umgebungsvariable und Bedeutung |
+| ein Ausgabe-Modul verstehen oder schreiben | [`docs/ausgabe-module.md`](docs/ausgabe-module.md) – die Modul-Schnittstelle, die Kette über die Outbox, das paperless-Modul und die Anleitung für ein eigenes Modul |
 | wissen, wie getestet wird | [`docs/teststrategie.md`](docs/teststrategie.md) – die acht Testschichten, die Werkzeuge je Schicht und die Gründe dafür |
 | wissen, warum etwas so entschieden wurde | [`docs/entscheidungen.md`](docs/entscheidungen.md) – Begründungen zu den festen Entscheidungen, inklusive der gemessenen Zahlen |
 | wissen, was am Gerät noch unklar ist | [`docs/offene-fragen.md`](docs/offene-fragen.md) – offene Punkte mit Status, Herkunft und dem Umgang damit im Code |
 | am Projekt mitarbeiten | [`AGENTS.md`](AGENTS.md) – Arbeitsweise, Leitplanken, Regeln |
 
-Weitere Dateien entstehen später: `protokoll.md` und `hardware.md` (Gerät und Protokoll), `betrieb.md` (Container-Betrieb) und `ausgabe-module.md` (Modul-Schnittstelle). Sie sind in `plan.md` als Anforderungen DO-01 bis DO-05 beschrieben und gehören zu Meilenstein 5.
+Weitere Dateien entstehen später: `protokoll.md` und `hardware.md` (Gerät und Protokoll) sowie `betrieb.md` (Container-Betrieb). Sie sind in `plan.md` als Anforderungen DO-01 bis DO-04 beschrieben und gehören zu Meilenstein 5.
 
 ## Warum es das gibt
 
