@@ -53,8 +53,9 @@ interface OutboxRunnerListener {
  * directory — recording one after a failed delivery would lose it for good.
  *
  * [run] blocks and owns no thread of its own; the caller starts it
- * (`UnboundAirApplication`, issue #123). Waiting goes through [sleeper], which a
- * test shortens to milliseconds.
+ * (`UnboundAirApplication`, issue #123). Waiting goes through [sleeper].
+ * Tests that need a single pass call [deliverDue] directly instead of
+ * driving the loop.
  *
  * ## No clock
  *
@@ -88,7 +89,7 @@ class OutboxRunner(
     fun run() {
         running.set(true)
         while (running.get()) {
-            turn()
+            deliverDue()
             if (!running.get()) break
             try {
                 sleeper(pollInterval)
@@ -107,15 +108,24 @@ class OutboxRunner(
     }
 
     /**
-     * One turn: deliver every entry the outbox says is due (AU-04).
+     * One pass over the due entries (AU-04): the body of [run]'s loop, extracted
+     * so a test can drive exactly one turn without running the loop.
      *
      * The flag is checked per entry so a [stop] — or the one an interrupted
-     * delivery sets — ends the pass at the next entry.
+     * delivery sets — ends the pass at the next entry. When called directly the
+     * flag is not set, so the pass claims it for its duration (and releases it
+     * afterwards); when called from [run] the flag is already set and the pass
+     * simply honours it.
      */
-    private fun turn() {
-        for (entry in outbox.due()) {
-            deliver(entry)
-            if (!running.get()) break
+    internal fun deliverDue() {
+        val claimed = running.compareAndSet(false, true)
+        try {
+            for (entry in outbox.due()) {
+                deliver(entry)
+                if (!running.get()) break
+            }
+        } finally {
+            if (claimed) running.set(false)
         }
     }
 
