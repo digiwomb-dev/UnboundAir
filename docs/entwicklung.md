@@ -131,6 +131,8 @@ Jedes Issue trägt einen Issue-Typ und genau ein `kind/*`-Label (Schema in `AGEN
 | offene Fehler | `is:open label:kind/bug` |
 | was auf etwas anderes wartet | `is:open label:blocked` |
 
+Das `is:open` in der letzten Zeile ist kein Zufall: `blocked` beschreibt einen Zustand, den nur offene Arbeit haben kann. Steht die Abhängigkeit, wird das Label abgenommen – spätestens beim Schließen des Issues.
+
 Auf der Kommandozeile dasselbe über `gh`:
 
 ```bash
