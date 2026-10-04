@@ -127,6 +127,35 @@ tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     archiveFileName.set("unboundair.jar")
 }
 
+// Standalone FakeScanner for the container check (CT-01, work order 8).
+// Starts the existing test-scope FakeScanner as a TCP server on a fixed
+// port, so `status` (BE-01) gets a real answer where only unboundair.jar
+// exists and no test classes are on the classpath. The class stays in the
+// test source set and never ships in the runtime jar; this task only puts
+// the test runtime classpath on its own classpath.
+//
+// Properties, both optional:
+// - `-PfakeScannerPort=<n>`: the public port to serve on. Default 2323.
+//   Work order 9's workflow uses the default.
+// - `-PfakeScannerPage=<path>`: a file loaded into the tray as one sheet,
+//   so scans deliver a real page. Without it the fake answers `scanready`
+//   with its defaults, which is what the `status` check needs.
+//
+// The task keeps running while it serves; stop it with Ctrl+C. Everything
+// served is logged to stdout, so a failing container check can be read.
+tasks.register<JavaExec>("fakeScanner") {
+    group = "verification"
+    description = "Starts the FakeScanner standalone TCP server on port 2323 by default (override with -PfakeScannerPort=<n>)."
+    classpath = project.the<org.gradle.api.tasks.SourceSetContainer>().getByName("test").runtimeClasspath
+    mainClass.set("dev.digiwomb.unboundair.scanner.FakeScannerMain")
+    val publicPort = project.findProperty("fakeScannerPort")?.toString() ?: "2323"
+    args("--port", publicPort)
+    val page = project.findProperty("fakeScannerPage")?.toString()
+    if (page != null) {
+        args("--page", page)
+    }
+}
+
 // Mutation testing (Spike B, docs/entscheidungen.md). PIT is not wired into
 // `build` or `check`; run it explicitly with `./gradlew pitest`. Versions are
 // pinned: gradle-pitest-plugin 1.19.0 defaults to pitest 1.22.1, which predates
