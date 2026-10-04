@@ -27,6 +27,7 @@ import org.springframework.boot.WebApplicationType
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Clock
@@ -67,6 +68,7 @@ import java.time.Duration
  */
 @SpringBootApplication
 @ConfigurationPropertiesScan
+@EnableConfigurationProperties(UnboundAirProperties::class)
 class UnboundAirApplication(
     private val properties: UnboundAirProperties,
 ) : ApplicationRunner,
