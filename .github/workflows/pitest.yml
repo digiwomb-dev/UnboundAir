@@ -1,0 +1,67 @@
+# TE-04 mutation run on demand: `./gradlew pitest` over all core packages.
+#
+# The full run takes roughly 2.5 h (docs/entwicklung.md), so it is
+# deliberately NOT wired to any push trigger - it starts only by hand
+# from the Actions tab (workflow_dispatch), on the dev branch. This is
+# the only CI piece ahead of milestone 6 (docs/plan.md, "Git-Ablauf").
+#
+# The workflow file must also exist on `main`, the default branch: the
+# Actions UI only offers workflows from the default branch for a manual
+# start, even though the run itself happens on dev.
+name: pitest
+
+on:
+  workflow_dispatch:
+
+# One mutation run at a time: a second manual start replaces a running
+# one instead of burning another ~2.5 h in parallel.
+concurrency:
+  group: pitest
+  cancel-in-progress: true
+
+jobs:
+  mutation-run:
+    # Native arm64, like the image workflow: the project's own hardware is
+    # arm64, and the golden files were recorded against the binaries of
+    # that platform.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 360
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Install the system dependencies of the core
+        # jpegtran (lossless crop and grayscale) and jbig2 (1-bit pages,
+        # SV-08) are real programs invoked by the tests under mutation -
+        # the same two packages the dev container and the runtime image
+        # install (.devcontainer/Dockerfile). The binary package is
+        # `jbig2`, not `jbig2enc` (that is the source package).
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes libjpeg-turbo-progs jbig2
+
+      - name: Set up Java 26 (Temurin)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '26'
+
+      - name: Set up Gradle caching
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run the full mutation analysis
+        # Not `build` or `check`: PIT is its own task on purpose. The 66 %
+        # threshold is the floor pinned in build.gradle.kts - a drop fails
+        # this step instead of passing unnoticed.
+        run: ./gradlew pitest
+
+      - name: Upload the mutation report
+        # The report lives only on the runner; without this step a 2.5 h
+        # run leaves nothing behind but the pass/fail mark.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pitest-report
+          path: build/reports/pitest/
+          retention-days: 7
