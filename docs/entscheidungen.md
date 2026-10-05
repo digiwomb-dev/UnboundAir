@@ -88,6 +88,32 @@ Der Ziel-Host ist ARM-Hardware, und ein Image, das nur per Cross-Build für eine
 
 Das Dockerfile wird dabei so geschrieben, **dass es keine Architektur fest verdrahtet** — `linux/amd64` kommt später dazu, ohne das Dockerfile umzuschreiben. Die Abnahme ist dreiteilig und steht in CT-01: Im Container laufen `jpegtran -version`, `jbig2 -V` (schreibt nach stderr, Exit 0 — eine naive Prüfung von stdout findet nichts) und `status` gegen den Fake-Scanner.
 
+## Git-Ablauf: `dev` als Integrations-Branch, `main` nur per PR (05.10.2026)
+
+**Entscheidung: `main` ist geschützt und nimmt Änderungen ausschließlich per Pull Request an; `dev` ist der Integrations-Branch und bleibt bewusst ungeschützt.**
+
+Bis Meilenstein 4 ging jeder Meilenstein-Branch per PR direkt nach `main`. Das trug, solange ein Meilenstein ein geschlossenes Paket war. Es trägt nicht mehr, sobald kleine Änderungen dazwischenkommen, die zu keinem Meilenstein gehören — der Workflow für den Mutationslauf unten ist genau so ein Fall. Ohne Zwischenstufe landen die entweder direkt auf `main` (dann ist der Schutz eine Absichtserklärung) oder sie warten auf den nächsten Meilenstein (dann blockiert Infrastruktur die Arbeit, die sie stützen soll).
+
+Der Schutz gilt **auch für Administratoren** (`enforce_admins`), und das ist der Punkt: Eine Regel, von der sich der Inhaber des Repositorys ausnehmen kann, ist bei einer Ein-Personen-Arbeit samt Agent keine Regel. Pflicht-Reviews sind dagegen auf **null** gesetzt — bei einem Arbeitsmodus, in dem derselbe Mensch abnimmt, wäre eine erzwungene Selbst-Freigabe ein Klick ohne Erkenntnis. Der PR erzwingt die Zusammenfassung und den Diff an einer Stelle; das ist der Gewinn, nicht das Häkchen.
+
+`dev` bleibt ungeschützt, weil der Agent dort nach jedem abgenommenen Schritt committet. Ein PR je Schritt stünde gegen die kleinen Schritte aus `AGENTS.md`.
+
+## Der Mutationslauf läuft auf Abruf in CI, im Dev-Container-Image (TE-04)
+
+**Entscheidung: Der volle PIT-Lauf ist zusätzlich als GitHub-Actions-Workflow verfügbar (`workflow_dispatch`, nur von Hand) und führt `./gradlew pitest` im Dev-Container-Image aus.**
+
+Der Lauf dauert rund 2,5 Stunden und belegt dabei Gradle-Daemon, Kotlin-Daemon und die PIT-Prozesse gleichzeitig im RAM — auf einem kleinen Host stirbt der Gradle-Daemon dabei („daemon disappeared"). Eine Messung, die den Entwicklungsrechner einen halben Tag lahmlegt, wird seltener gemacht als nötig; TE-04 verlangt sie aber nach jedem Meilenstein, der ein Kern-Paket hinzufügt. Also gehört sie dorthin, wo Wartezeit nichts kostet.
+
+**Kein `push`-Trigger.** Der Workflow startet ausschließlich manuell. 2,5 Stunden bei jedem Commit wären nach einer Woche abgeschaltet, und der Lauf ist bewusst kein Gate: Er ist die Einmessung der Messgrundlage, nicht die Ampel über jedem Push. `concurrency` mit `cancel-in-progress` ersetzt einen laufenden Start durch den neuen, statt parallel weitere 2,5 Stunden zu verbrennen.
+
+**Im Dev-Container-Image, nicht in einer Runner-Nachbildung.** Das ist die eigentliche Entscheidung. Die Zahlen aus `docs/entscheidungen.md` stammen bisher alle aus dem Dev Container; eine CI-Umgebung, die JDK, `jpegtran` und `jbig2` eigenständig installiert, wäre eine zweite Wahrheit über die Entwicklungsumgebung und ihre Zahlen nicht mit den bisherigen vergleichbar. Deshalb baut der Workflow `.devcontainer/Dockerfile` und läuft darin — dieselbe Datei, die lokal gilt. Runner ist `ubuntu-24.04-arm`, native `arm64`-Hardware wie bei der Imageprüfung, weil die Golden-Dateien gegen die Binärprogramme dieser Architektur aufgenommen sind.
+
+**Ohne die `devcontainers/ci`-Action.** Sie würde die folgenden Schritte (Cache, Artefakt-Upload) ebenfalls im Container ausführen; das sind JavaScript-Actions, das Image bräuchte also Node allein für CI. Ein schlichtes `docker run` liefert dieselbe Umgebung, ohne den Dev Container für CI-Zwecke zu verändern.
+
+**Der Bericht wird hochgeladen** (`build/reports/pitest/`, 90 Tage — das Maximum bei GitHub). Er liegt nur auf dem Runner; ohne diesen Schritt bliebe von 2,5 Stunden nichts als grün oder rot, und die Zahlen je Paket, die TE-04 verlangt, wären verloren.
+
+**Verhältnis zu „CI erst mit Meilenstein 6":** Vorgezogen sind damit genau zwei Bausteine — diese Einmessung und die CT-01-Imageprüfung. Beide prüfen etwas, das lokal nicht oder nur teuer prüfbar ist. Tests, Release und Veröffentlichung bleiben Meilenstein 6.
+
 ## Test-Dependency-Set
 
 Grundsatz: Test-Dependencies ausschließlich im Test-Scope, fest gepinnt auf die neueste stabile Version, Kompatibilität mit Java 26 / JUnit Platform 6 / Kotlin 2.4.20 verifiziert (Spikes A und B), nicht angenommen.
