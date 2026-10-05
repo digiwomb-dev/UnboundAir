@@ -4,15 +4,17 @@ import dev.digiwomb.unboundair.output.OutputDocument
 import dev.digiwomb.unboundair.output.OutputModule
 import dev.digiwomb.unboundair.output.documentName
 import org.slf4j.LoggerFactory
-import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.client.ClientHttpResponse
-import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientResponseException
 import tools.jackson.core.JacksonException
 import tools.jackson.databind.json.JsonMapper
+import java.io.ByteArrayOutputStream
+import java.nio.charset.Charset
 import java.time.ZoneId
+import java.util.UUID
 import kotlin.io.path.readBytes
 
 /**
@@ -27,6 +29,13 @@ import kotlin.io.path.readBytes
  * cannot be read off it (AU-05). Configured `correspondent`, `document_type` and
  * `tags` travel as repeated form fields; `title` and `created` are never sent,
  * because paperless derives them from the file name and the plan fixes that (AU-05).
+ *
+ * The multipart body is encoded by hand ([multipartBody]) instead of going through
+ * Spring's `FormHttpMessageConverter`: the converter streams the body with unknown
+ * length, so the HTTP client sends `Transfer-Encoding: chunked` without a
+ * `Content-Length` header, and chains that do not de-chunk request bodies hand Django
+ * an empty body -- paperless answers HTTP 400 `{"document":["No file was submitted."]}`
+ * (issue #219). A pre-built `ByteArray` lets the JDK client send `Content-Length`.
  *
  * A 2xx response carries the paperless-ngx consumption task; its UUID is logged
  * at INFO so an operator can follow the document inside paperless (AU-06). Any
@@ -51,18 +60,16 @@ class PaperlessModule(
     override val name: String = "paperless"
 
     override fun send(document: OutputDocument) {
-        val form = LinkedMultiValueMap<String, Any>()
-        form.add("document", pdfPart(document))
-        if (settings.correspondent != null) form.add("correspondent", settings.correspondent.toString())
-        if (settings.documentType != null) form.add("document_type", settings.documentType.toString())
-        settings.tags.forEach { form.add("tags", it.toString()) }
+        val boundary = "--------------------------" + UUID.randomUUID().toString().replace("-", "")
+        val bytes = multipartBody(document, boundary)
 
         val raw =
             restClient
                 .post()
                 .uri("${settings.baseUrl}/api/documents/post_document/")
                 .header("Authorization", "Token ${settings.token}")
-                .body(form)
+                .contentType(MediaType.parseMediaType("multipart/form-data; boundary=$boundary"))
+                .body(bytes)
                 .retrieve()
                 .onStatus({ it.isError() }) { _, response ->
                     throw rejected(response)
@@ -72,25 +79,31 @@ class PaperlessModule(
     }
 
     /**
-     * The `document` part of the multipart body, carrying the file name AU-05 asks for.
-     *
-     * The name is rebuilt from [OutputDocument.startedAt] with [documentName]: the outbox
-     * stores every document as `document.pdf`, so it cannot be read off the file. It has to
-     * reach paperless, which derives the document title from it -- that is why `title` is
-     * deliberately not sent.
-     *
-     * [getFilename] is overridden rather than passed to the constructor. The constructor's
-     * second argument is a *description* for error messages only; Spring's form converter
-     * reads [org.springframework.core.io.Resource.getFilename], which a plain
-     * `ByteArrayResource` answers with `null` -- measured: the part then goes out as
-     * `Content-Disposition: form-data; name="document"` with no file name at all, and
-     * paperless would file the document under a generated title.
+     * The multipart body for one upload: the `document` part first, then one field
+     * per tag id, then `correspondent` and `document_type` when configured, closed
+     * by the `--boundary--` terminator. Returned as bytes so the caller can send a
+     * known `Content-Length` (issue #219).
      */
-    private fun pdfPart(document: OutputDocument): ByteArrayResource {
+    private fun multipartBody(
+        document: OutputDocument,
+        boundary: String,
+    ): ByteArray {
+        val out = ByteArrayOutputStream()
+
+        fun write(text: String) = out.write(text.toByteArray(HEADER_CHARSET))
+
         val fileName = documentName(document.startedAt, zone)
-        return object : ByteArrayResource(document.pdf.readBytes()) {
-            override fun getFilename(): String = fileName
-        }
+        write(
+            "--$boundary\r\nContent-Disposition: form-data; name=\"document\"; filename=\"$fileName\"\r\n" +
+                "Content-Type: application/pdf\r\n\r\n",
+        )
+        out.write(document.pdf.readBytes())
+        write("\r\n")
+        settings.tags.forEach { write("--$boundary\r\nContent-Disposition: form-data; name=\"tags\"\r\n\r\n$it\r\n") }
+        settings.correspondent?.let { write("--$boundary\r\nContent-Disposition: form-data; name=\"correspondent\"\r\n\r\n$it\r\n") }
+        settings.documentType?.let { write("--$boundary\r\nContent-Disposition: form-data; name=\"document_type\"\r\n\r\n$it\r\n") }
+        write("--$boundary--\r\n")
+        return out.toByteArray()
     }
 
     /**
@@ -149,5 +162,8 @@ class PaperlessModule(
     private companion object {
         /** How much of a rejected response body may travel in the error message. */
         const val MAX_ERROR_EXCERPT = 200
+
+        /** Header text of the multipart body is plain ASCII; ISO-8859-1 keeps it byte-exact. */
+        val HEADER_CHARSET: Charset = Charsets.ISO_8859_1
     }
 }
