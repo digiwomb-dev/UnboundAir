@@ -138,7 +138,7 @@ class ScanLoop(
      */
     fun stop() {
         running.set(false)
-        batch.close()?.let { listener.onBatchClosed(it) }
+        closeBatch()
     }
 
     /**
@@ -155,7 +155,7 @@ class ScanLoop(
                 noteReachable(false)
                 // Offline is the second DL-04 trigger: the device switching
                 // itself off means the document is finished.
-                batch.close()?.let { listener.onBatchClosed(it) }
+                closeBatch()
                 return false
             }
 
@@ -165,8 +165,37 @@ class ScanLoop(
             scanOnePage()
         }
 
-        batch.closeIfDue()?.let { listener.onBatchClosed(it) }
+        closeBatchIfDue()
         return true
+    }
+
+    /**
+     * Closes the open batch now and delivers it, logging a failure.
+     *
+     * A failed close (for example the encoder failing) keeps the batch open
+     * for a retry instead of ending the service: the exception is logged and
+     * the loop carries on.
+     */
+    private fun closeBatch() {
+        try {
+            batch.close()?.let { listener.onBatchClosed(it) }
+        } catch (e: RuntimeException) {
+            log.error("closing the batch failed: {}", e.message, e)
+        }
+    }
+
+    /**
+     * Closes the batch if its window has expired, logging a failure.
+     *
+     * Like [closeBatch] but for the timeout trigger: a failed close keeps
+     * the batch open and the loop keeps polling.
+     */
+    private fun closeBatchIfDue() {
+        try {
+            batch.closeIfDue()?.let { listener.onBatchClosed(it) }
+        } catch (e: RuntimeException) {
+            log.error("closing the batch failed: {}", e.message, e)
+        }
     }
 
     /**
