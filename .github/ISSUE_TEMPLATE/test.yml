@@ -1,5 +1,5 @@
 name: Test task
-description: "A test task with a fixed checklist. AI run: exactly one file; human: a file list."
+description: "A test task with a fixed checklist. Exactly one file, or a file list for one concern."
 title: "test(layer): "
 type: Test
 labels:
@@ -38,7 +38,7 @@ body:
     id: files
     attributes:
       label: File or file list
-      description: "AI run: exactly one file. Human: a list of the affected files."
+      description: "Exactly one file. A list of the affected files only if one concern genuinely spans several."
     validations:
       required: true
   - type: textarea
@@ -64,7 +64,7 @@ body:
           required: false
         - label: Test layer(s) set as label
           required: false
-        - label: exactly one file (AI run) or file list (human); acceptance criterion named
+        - label: exactly one file, or a file list for one concern; acceptance criterion named
           required: false
         - label: Test runs green in the dev container (commit SHA linked)
           required: false

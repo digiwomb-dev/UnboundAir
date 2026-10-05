@@ -8,7 +8,7 @@ Wie `UnboundAir` getestet wird: die Testschichten, die Werkzeuge je Schicht und 
 - **Keine Testcontainers.** Test-Dependencies gibt es ausschließlich im Test-Scope; der Runtime-Classpath bleibt unverändert.
 - **Versionen fest gepinnt** (Grundsatz „neueste stabile", siehe `docs/plan.md`).
 - **Standard-Assertions: AssertJ.** Testnamen in Backticks und mit der umgesetzten Anforderungs-ID (z. B. `SC-01 …`).
-- **Ein File pro AI-Lauf** (zweistufiges GitHub-Tracking, siehe unten).
+- **Eine Datei pro Aufgabe** (zweistufiges GitHub-Tracking, siehe unten).
 
 ## Die Testschichten
 
@@ -29,7 +29,7 @@ Eigenschaftsbasierte Tests mit **kotest-property** (`forAll`/`checkAll`), aufger
 
 - **Warum:** deckt Randfälle ab, die handgeschriebene Beispiele übersehen — wichtig für den Auto-Zuschnitt (SV-01/SV-02), wo beliebige Bildgeometrien eintreffen.
 - **Achtung:** `forAll`/`checkAll` geben einen Rückgabewert zurück; die `@Test`-Methode muss deshalb einen Block-Body haben (kein `= runBlocking { … }`-Ausdruckskörper), sonst verweigert JUnit die Ausführung.
-- **Warum nicht jqwik:** jqwik ab 1.10 verbietet die Nutzung durch KI-Coding-Agents — dieses Projekt arbeitet mit KI-Agenten. Begründung in `docs/entscheidungen.md`.
+- **Warum nicht jqwik:** jqwik führt ab 1.10 eine Nutzungsbeschränkung ein und schreibt absichtlich Fremdtext in die Standardausgabe. Begründung in `docs/entscheidungen.md`.
 
 ### 3. Slice (`slice`)
 
@@ -133,7 +133,7 @@ Ergänzend zu den Schichten, als eigene Datei je Konzern:
 
 ## GitHub-Tracking-Modell
 
-Testarbeit lebt in GitHub (Session 1, Option A), zweistufig: Ein Impl+Test-Paar ist ein Eltern-Issue (Typ `Task`, Label `kind/parent`) mit zwei Sub-Issues – der Umsetzung (Typ `Feature`, `kind/feat`) und dem Test (Typ `Test`, `kind/test`). Ein AI-Lauf bearbeitet genau eine Datei; ein Mensch darf ein Anliegen mit Dateiliste übernehmen. Das vollständige Titel- und Label-Schema steht in `CONTRIBUTING.md` unter „Issues".
+Testarbeit lebt in GitHub, zweistufig: Ein Impl+Test-Paar ist ein Eltern-Issue (Typ `Task`, Label `kind/parent`) mit zwei Sub-Issues – der Umsetzung (Typ `Feature`, `kind/feat`) und dem Test (Typ `Test`, `kind/test`). Eine Aufgabe umfasst genau eine Datei; eine Dateiliste nur, wenn ein Anliegen tatsächlich über mehrere reicht. Der Grund ist die Prüfbarkeit: Eine Aufgabe über eine Datei lässt sich für sich lesen, prüfen und abnehmen. Das vollständige Titel- und Label-Schema steht in `CONTRIBUTING.md` unter „Issues".
 
 Ein Test-Issue entsteht aus `.github/ISSUE_TEMPLATE/test.yml` und trägt damit automatisch Typ, Rolle-Label und die feste Checkliste. Zwei Dinge sind dabei wichtig:
 
@@ -144,7 +144,7 @@ Checkliste für künftige Test-Issues:
 
 - Anforderungs-ID(s) referenziert
 - Schicht-Label(s) gesetzt
-- genau eine Datei (AI-Lauf) bzw. Dateiliste (Mensch) + Abnahmekriterium benannt
+- genau eine Datei bzw. Dateiliste für ein Anliegen + Abnahmekriterium benannt
 - Testlauf im Dev Container grün (Commit-SHA verlinkt)
 - Standard eingehalten (AssertJ, Backtick-Name mit Anforderungs-ID)
 - Mutation-Lauf (nur Kern-Pakete) dokumentiert, wo zutreffend

@@ -290,7 +290,7 @@ Die Reihenfolge der Aufgaben innerhalb eines Meilensteins steht als `Work order`
 
 ### Git-Ablauf (seit 05.10.2026)
 
-- **`main` ist geschützt:** Direkte Commits auf `main` sind ausgeschlossen – Änderungen kommen ausschließlich über Pull Requests an. Das gilt für alle, auch für den Agenten.
+- **`main` ist geschützt:** Direkte Commits auf `main` sind ausgeschlossen – Änderungen kommen ausschließlich über Pull Requests an. Das gilt für alle, auch für den Inhaber des Repositorys (`enforce_admins`).
 - **`dev` ist der Integrations-Branch.** Von ihm zweigen Arbeits-Branches ab und gehen per PR nach `dev` zurück; `dev` wiederum geht per PR nach `main`. `dev` selbst ist bewusst ungeschützt.
 - **Der Mutationslauf läuft auf Abruf in CI:** Ein GitHub-Actions-Workflow (`workflow_dispatch`) führt auf `dev` den vollen PIT-Lauf aus (rund 2,5 h), damit er nicht am Entwicklungsrechner hängen muss. Die Workflow-Datei liegt auch auf `main`, weil die Actions-UI nur Workflows des Default-Branches zum manuellen Start anbietet. Er ist einer von zwei CI-Bausteinen vor Meilenstein 6 – der andere ist die CT-01-Imageprüfung aus Meilenstein 5 (`.github/workflows/image.yml`).
 

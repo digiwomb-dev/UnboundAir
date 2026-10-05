@@ -1,5 +1,5 @@
 name: Implementation task
-description: "One implementation file (AI run), or one concern with a file list (human)."
+description: "One implementation file, or one concern with a file list."
 title: "feat(scope): "
 type: Feature
 labels:
@@ -22,7 +22,7 @@ body:
     id: files
     attributes:
       label: File or file list
-      description: "AI run: exactly one file. Human: a list of the affected files."
+      description: "Exactly one file. A list of the affected files only if one concern genuinely spans several."
     validations:
       required: true
   - type: textarea
