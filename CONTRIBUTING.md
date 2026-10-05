@@ -9,10 +9,14 @@ Zwei Dateien gehören daneben:
 
 ## Sprache
 
-- **Doku** (`README.md`, `docs/`, diese Datei) auf **Deutsch**. Deutsch ist die führende Fassung. Eine englische Übersetzung kommt später; wie, ist noch offen – bis dahin wird nur Deutsch geschrieben.
+- **Doku** (`README.md`, `docs/`, diese Datei) wird auf **Deutsch verfasst** – das ist die Quelle, und was du änderst. **Hauptsprache ist Englisch:** Darauf zeigen die Links, und das sieht ein Besucher zuerst.
 - **Code, Kommentare, Logs, CLI-Texte, Commit-Messages, Issues und Pull Requests** auf **Englisch**.
 
 Das ist kein Stilgeschmack: Die Doku richtet sich an den Betreiber dieses Scanners, der Code an jeden, der ihn liest.
+
+**Stand heute:** Die Doku ist einsprachig deutsch. Die englische Fassung und die gerenderte Doku-Seite kommen mit Meilenstein 6 (DO-12 bis DO-16 in [`docs/plan.md`](docs/plan.md)) – bis dahin schreibst du Deutsch und musst nichts übersetzen.
+
+**Danach gelten drei Regeln.** Du änderst immer die deutsche Datei unter `docs/de/`. Die englische Fassung entsteht durch einen Übersetzungslauf, der **lokal auf Abruf** läuft und dessen Entwurf du liest, bevor du ihn committest – CI übersetzt nie, sie prüft nur. Und: `plan.md`, `entscheidungen.md`, `offene-fragen.md` und `teststrategie.md` bleiben deutsch und werden nicht übersetzt; Links darauf tragen `(German only)`.
 
 ## Commits und Pull Requests
 

@@ -11,7 +11,7 @@ Diese Dateien sind von Anfang an im Repo und werden nur nach Rückfrage geänder
 - `.gitignore` (enthält `_input/`)
 - `AGENTS.md`
 - `CONTRIBUTING.md`
-- `docs/plan.md` (diese Datei)
+- `docs/plan.md` (diese Datei; zieht mit DO-12 nach `docs/internal/plan.md` um)
 
 `_input/` liegt nur lokal vor und wird nie committet. Inhalte daraus gezielt überführen: Wissen → `docs/`, Testbild → Test-Ressourcen, Python-Referenzcode in Kotlin neu schreiben (nicht 1:1 übersetzen).
 
@@ -240,7 +240,23 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
   Wächst das Ziel, ändert sich der Nenner: Die Schwelle ist dann **neu einzumessen** und mit Datum, Commit und Zahlen in `docs/entscheidungen.md` als bewusste neue Grundlage festzuhalten. Das ist kein stilles Senken – das bleibt verboten –, sondern ein dokumentierter Wechsel der Messgrundlage.
   *Abnahme:* Nach jedem Meilenstein, der ein Kern-Paket hinzufügt, steht in `docs/entscheidungen.md` ein voller Lauf mit den Zahlen je Paket, und `mutationThreshold` in `build.gradle.kts` entspricht dem gemessenen Gesamtwert.
 
-### Doku (DO) – `docs/`, Deutsch als führende Fassung
+### Doku (DO) – Englisch als Hauptsprache, Deutsch als Quellsprache
+
+**Zwei Rollen, nicht eine.** Verfasst und geprüft wird auf **Deutsch** – das ist die Quelle. Veröffentlicht und verlinkt wird **Englisch** – das ist die Hauptsprache, die ein Besucher zuerst sieht. Das ist etwas anderes als die frühere Regel „Deutsch ist die führende Fassung": Führend war Deutsch bisher in beiden Rollen zugleich.
+
+Die Doku teilt sich dabei in drei Stufen mit unterschiedlicher Sprachpflicht:
+
+| Stufe | Dateien | Sprache |
+|---|---|---|
+| **Produktdoku** | `operations`, `configuration`, `development`, `output-modules`, `protocol`, `hardware` in `docs/`, dazu `README`, `CONTRIBUTING`, `SECURITY` in der Wurzel | Deutsch **und** Englisch, auf der Doku-Seite |
+| **Arbeitsdokumente, Tür offen** | `teststrategie.md`, `offene-fragen.md` | nur Deutsch, Links darauf tragen `(German only)`; Übersetzung später möglich |
+| **Arbeitsdokumente, nie übersetzt** | `plan.md`, `entscheidungen.md` | nur Deutsch |
+
+Die Trennung ist gemessen, nicht geschätzt (Stand 05.10.2026): Die vier Arbeitsdokumente tragen **152 KB bei 61 Commits**, die neun Produktdateien **78 KB bei 46 Commits**. `plan.md` allein hat 29 Commits – mehr als alle sechs Produktdateien in `docs/` zusammen.
+
+**Zu den Dateinamen unten:** DO-01 bis DO-11 nennen die Dateien unter ihren heutigen, deutschen Namen – so sind sie entstanden, und so heißen sie bis Meilenstein 6. Die Umbenennung samt Zuordnung alt → neu steht in DO-12; ab dort gelten die englischen Namen. Die Anforderungen selbst bleiben im Wortlaut unberührt, es ändert sich nur, wo ihr Ergebnis liegt.
+
+**Warum `plan.md` ausdrücklich nicht übersetzt wird.** Zwei Regeln dieses Projekts würden sonst gegeneinander arbeiten: „Erst Plan, dann Verhalten" verlangt, dass jede Verhaltensänderung mit einer Planänderung beginnt – und der Aktualitäts-Wächter aus DO-15 macht eine nicht nachgezogene Übersetzung rot. Zusammen heißt das: kein Zugriff auf den Plan ohne vorherige Übersetzungsrunde. Bei 29 Plan-Commits wäre der Wächter 29-mal eine Bremse, bevor überhaupt Code entsteht. Dazu kommt: `CONTRIBUTING.md` sagt „bei Widersprüchen gilt der Plan" – bei zwei Fassungen wäre die nächste Frage, *welcher*. Ein Auftrag in zwei Sprachen braucht eine Vorrangklausel; die kostet Aufwand ohne Gegenwert, solange der Auftraggeber Deutsch spricht. `entscheidungen.md` ist ein Logbuch der Vergangenheit: Das wird fortgeschrieben, nicht nachübersetzt.
 
 - **DO-01** `protokoll.md` – aus `_input/iscan-air-wissen.md`, mit Herkunftsmarkierungen.
   *Abnahme:* Jede Aussage trägt ihre Herkunftsmarkierung.
@@ -273,11 +289,45 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
 - **DO-11** `SECURITY.md` im Wurzelverzeichnis – wie eine Sicherheitslücke gemeldet wird, welche Versionen abgedeckt sind und wie mit Token umgegangen wird. Entsteht in **Meilenstein 5**. Grund: Das Repository ist öffentlich, Blanko-Issues sind abgeschaltet und die vorhandenen Formulare verlangen eine Anforderungs-ID – ein Außenstehender hat damit keinen Meldeweg.
   *Abnahme:* Die Datei nennt einen Meldeweg, der tatsächlich funktioniert, benennt die abgedeckten Versionen und hält fest, dass kein Token ins Repository gehört (Verweis auf `konfiguration.md`). Firmware und WLAN-Protokoll des Geräts sind ausdrücklich außerhalb des Geltungsbereichs.
 
+Die folgenden fünf Anforderungen gehören zu **Meilenstein 6** und damit nicht zu v1. Sie setzen die Entscheidung „Englische Doku" um, die bis zum 05.10.2026 unter „Offene Entscheidungen" stand.
+
+- **DO-12** Sprachlayout: Je Sprache ein Ordner mit **gleichen, englischen Dateinamen** – `docs/de/` und `docs/en/`. Die vier Arbeitsdokumente ziehen nach `docs/internal/` um und bleiben deutsch. Die drei Wurzeldateien bleiben in der Wurzel: `README.md`, `CONTRIBUTING.md` und `SECURITY.md` sind englisch, die deutsche Quelle trägt das Suffix `.de.md`.
+
+  | heute | künftig englisch | künftig deutsch |
+  |---|---|---|
+  | `docs/betrieb.md` | `docs/en/operations.md` | `docs/de/operations.md` |
+  | `docs/konfiguration.md` | `docs/en/configuration.md` | `docs/de/configuration.md` |
+  | `docs/entwicklung.md` | `docs/en/development.md` | `docs/de/development.md` |
+  | `docs/ausgabe-module.md` | `docs/en/output-modules.md` | `docs/de/output-modules.md` |
+  | `docs/protokoll.md` | `docs/en/protocol.md` | `docs/de/protocol.md` |
+  | `docs/hardware.md` | `docs/en/hardware.md` | `docs/de/hardware.md` |
+  | `README.md` | `README.md` | `README.de.md` |
+  | `CONTRIBUTING.md` | `CONTRIBUTING.md` | `CONTRIBUTING.de.md` |
+  | `SECURITY.md` | `SECURITY.md` | `SECURITY.de.md` |
+  | `docs/plan.md`, `entscheidungen.md`, `offene-fragen.md`, `teststrategie.md` | — | `docs/internal/…` |
+
+  Drei Festlegungen mit Begründung: **Ordner statt Suffix** in `docs/`, weil eine dritte Sprache dann keinen Umbau kostet. **Englische Dateinamen auch im deutschen Ordner**, weil Starlight Übersetzungen über den Dateinamen paart – zwei Namen für dieselbe Seite würde diese Paarung brechen. **Die Wurzeldateien bleiben in der Wurzel**, weil GitHub `CONTRIBUTING.md` und `SECURITY.md` nur dort auswertet; ein Umzug nach `docs/en/` nähme den Beitragshinweis und den Sicherheits-Meldeweg aus der Oberfläche.
+
+  Der Umzug nach `docs/internal/` betrifft **85 Pfadverweise in 16 Dateien** (gezählt am 05.10.2026), darunter die vier Issue-Vorlagen, beide Workflows und `build.gradle.kts`. Sie werden im selben Schritt nachgezogen; verschoben wird mit `git mv`, damit `git log --follow` die Historie behält.
+  *Abnahme:* Zu jeder Datei unter `docs/en/` gibt es die gleichnamige unter `docs/de/` und umgekehrt; kein relativer Link im Repository zeigt ins Leere; `git log --follow` zeigt für eine verschobene Datei ihre Historie vor dem Umzug.
+- **DO-13** Doku-Seite mit **Astro Starlight**, statisch gebaut und auf GitHub Pages veröffentlicht: Sprachumschalter, Suche je Sprache (Pagefind), Rückfall auf die Hauptsprache bei fehlender Übersetzung samt Hinweis, „diese Seite bearbeiten"-Link auf die Quelldatei. Inhaltsquelle sind **nur** `docs/de/` und `docs/en/`; `docs/internal/` ist bewusst keine, damit Auftrag und Logbuch nicht zur veröffentlichten Doku werden. Die Seitenkonfiguration liegt unter `site/`.
+  *Abnahme:* Die Seite ist unter ihrer Pages-URL erreichbar, in beiden Sprachen navigierbar und durchsuchbar; eine nur deutsch vorhandene Seite fällt sichtbar markiert zurück; `plan.md` ist auf der Seite nicht zu finden.
+- **DO-14** Übersetzung **lokal auf Abruf** mit einem LLM, nicht in CI: Skript, Glossar und Prompt liegen versioniert unter `tools/docs-translate/`, Endpunkt und Modell kommen aus den Umgebungsvariablen `UNBOUNDAIR_DOCS_LLM_URL` und `UNBOUNDAIR_DOCS_LLM_MODEL`. Jede englische Datei trägt in Zeile 1 ihren Herkunftsmarker `<!-- translated from docs/de/<datei>.md @ <commit> -->`. Das Skript ist **nie Teil von `build`** und läuft auf Abruf wie der Mutationslauf. Der Entwurf wird **immer** von Hand geprüft, bevor er committet wird.
+
+  Das Glossar ist der Teil, der über die Qualität entscheidet – ohne Festlegung wird aus „Senke" mal *sink*, mal *drain*, und der Begriff steht allein im Plan an elf Stellen. Der Prompt nagelt zusätzlich fest, was unangetastet bleibt: Code-Blöcke, Pfade, Property-Namen, CLI-Befehle, Anforderungs-IDs, Byte-Werte und Firmware-Versionen (`0x48`, `NB0a.032`, `nopaper\x00\x00\x00H`), Tabellenstruktur und Linkziele.
+  *Abnahme:* Ein Lauf erzeugt aus einer geänderten deutschen Datei einen englischen Entwurf mit Herkunftsmarker, der den Prüfer aus DO-15 besteht; jeder Glossarbegriff ist über alle Dateien hinweg gleich übersetzt; `./gradlew build` ruft das Skript nicht auf.
+- **DO-15** **Strukturprüfer und Aktualitäts-Wächter in CI – ohne LLM.** Der Prüfer wird rot, wenn Code-Blöcke in Zahl oder Inhalt nicht übereinstimmen, eine Anforderungs-ID fehlt, die Zahl der Überschriften oder Tabellenzeilen abweicht, ein Linkziel abweicht oder der Herkunftsmarker auf einen älteren Commit zeigt als die deutsche Datei. Dazu ein Link-Checker über alle Sprachen.
+
+  Die Trennung ist der Kern: CI kann nicht übersetzen – ein Runner in der Cloud erreicht kein lokales Modell –, aber CI kann nachrechnen, ob eine Übersetzung formal stimmt und aktuell ist. Bedeutung beurteilt weiterhin ein Mensch. Damit wird aus „die Übersetzung sollte gepflegt werden" eine prüfbare Regel, wie beim ArchUnit-Wächter.
+  *Abnahme:* Eine geänderte deutsche Datei ohne nachgezogene Übersetzung macht den Lauf rot; ein veränderter Code-Block in der Übersetzung ebenso; ein kaputter relativer Link ebenso. Der Prüfer läuft ohne Netzwerkzugriff auf ein Sprachmodell.
+- **DO-16** Englische Erstfassung der neun Produktdateien, geprüft und freigegeben.
+  *Abnahme:* Wer nur Englisch liest, kommt von `README.md` zu Schnellstart, Konfigurationsreferenz und Betrieb, ohne auf einen deutschen Text zu stoßen; wo ein Verweis auf ein Arbeitsdokument unvermeidlich ist, steht `(German only)` am Link.
+
 **Werkzeug-Konfiguration gehört nicht ins Repository.** Was die lokale Arbeitsumgebung einrichtet – Editor-, Assistenz- oder sonstige Werkzeugeinstellungen – wird nicht mitgeliefert: Es sagt nichts über UnboundAir, und wer das Projekt von Hand baut, trägt es ohne Nutzen mit. `AGENTS.md` bleibt als werkzeugneutrale Konvention zur Arbeitsweise; die Projektregeln selbst stehen nach DO-10 in `CONTRIBUTING.md`.
 
 ## Arbeit wird in GitHub getrackt
 
-Der Fortschritt lebt nicht mehr in dieser Datei, sondern in GitHub: [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues). Jeder Meilenstein aus „Umfang von v1" ist ein Milestone, jede Aufgabe ein Issue – Impl+Test-Paare als Eltern-Issue mit zwei Sub-Issues. Welche Anforderungen ein Meilenstein umsetzt, steht in seiner Milestone-Beschreibung. Labels, Milestones, Issues und die Issue-Vorlagen sind auf Englisch – wie Code, Commits und PR-Titel; nur die Doku ist Deutsch.
+Der Fortschritt lebt nicht mehr in dieser Datei, sondern in GitHub: [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues). Jeder Meilenstein aus „Umfang von v1" ist ein Milestone, jede Aufgabe ein Issue – Impl+Test-Paare als Eltern-Issue mit zwei Sub-Issues. Welche Anforderungen ein Meilenstein umsetzt, steht in seiner Milestone-Beschreibung. Labels, Milestones, Issues und die Issue-Vorlagen sind auf Englisch – wie Code, Commits und PR-Titel. Die Doku wird auf Deutsch verfasst und auf Englisch veröffentlicht (siehe „Doku (DO)").
 
 Damit die Art einer Aufgabe filterbar ist, trägt jedes Issue einen GitHub-Issue-Typ und genau ein `kind/*`-Label; das Titel-Schema steht in `CONTRIBUTING.md` unter „Issues". Die Labels teilen sich in drei Gruppen, die sich nicht überschneiden:
 
@@ -303,7 +353,6 @@ Hier stehen nur Punkte, die **eine Entscheidung** brauchen. Was sich dagegen nur
 - **Drehen und Geraderücken (kommt später):** Drehen um 90/180/270° geht mit `jpegtran -rotate` ohne Qualitätsverlust. Geraderücken um kleine Winkel geht nur mit Neukomprimierung – das widerspricht „Nie neu komprimieren" und muss vorher entschieden werden. Offen ist auch, wie die Leserichtung erkannt wird.
 - **GraalVM Native Image:** später prüfen, vor allem ob ImageIO/AWT und OpenPDF darin laufen.
 - **Mehrere Ausgabe-Module gleichzeitig** (ein Dokument an mehrere Ziele) oder immer genau eins? Die Konfiguration nimmt bereits eine Komma-Liste entgegen (AU-03), damit diese Entscheidung offen bleibt; in v1 ist nur ein Wert sinnvoll.
-- **Englische Doku:** wie die Übersetzung ins Repo kommt und mit der deutschen Fassung synchron bleibt (Struktur, Werkzeug, Ablauf).
 - **Defaults** für `poll-interval`, `batch-timeout` und Leerlauf – nach Messung mit `measure` (Messgrundlagen: OF-01 bis OF-03). Bis dahin gelten die vorläufigen Defaults aus DL-01/DL-04 (3 s bzw. 20 s).
 - **Seitengrößen-Abweichung:** ob der Dienst die Abweichung ausgleicht oder die Pixelmaße unverändert übernimmt – erst nach der Messung zu entscheiden (OF-05).
 - **`normalize`:** was es genau tun soll – Kontrast strecken, Weißpunkt setzen, etwas anderes – und mit welchem Werkzeug. Bis zur Entscheidung wird SV-04 nicht gebaut. Die 1-bit-Ausgabe von SV-08 ändert nichts daran, wie `normalize` zu beurteilen wäre: Es bleibt ein optionaler, verlustbehafteter Zusatzschritt im Graustufen-/Farbpfad – offen ist nur, was es genau tun soll.
@@ -314,6 +363,7 @@ Hier stehen nur Punkte, die **eine Entscheidung** brauchen. Was sich dagegen nur
 Punkte, die zu Projektbeginn geklärt wurden. Die Begründungen gehören nach DO-06 in `docs/entscheidungen.md`.
 
 - **Lizenz:** Apache-2.0. Wie MIT freizügig, aber mit ausdrücklicher Patentklausel – sinnvoll, weil hier ein Hersteller-Protokoll nachgebaut wird. Herkunft wird dokumentiert: s400w ist CC0 (kein Code übernommen, nur Protokollwissen), AirScan als Quelle genannt, kein Hersteller-Code im Repo.
+- **Englische Doku (05.10.2026, DO-12 bis DO-16):** Verfasst wird auf **Deutsch**, Hauptsprache ist **Englisch**. Die Produktdoku liegt zweisprachig unter `docs/de/` und `docs/en/` mit gleichen englischen Dateinamen; die vier Arbeitsdokumente ziehen nach `docs/internal/` um und bleiben deutsch. Gerendert wird mit **Astro Starlight** zu einer statischen Seite auf GitHub Pages, **im selben Repository** (Konfiguration unter `site/`). Übersetzt wird **lokal auf Abruf** mit einem LLM über LM Studio – Erstmodell **Gemma 4 26B**, benannter Rückfallweg **Qwen3.6 27B**; CI **prüft nur** und übersetzt nie. Begründungen in `docs/entscheidungen.md`.
 - **Linter (TE-03):** ktlint als Regelwerk, ausgeführt über das **Spotless**-Gradle-Plugin. Reine Formatierung, kaum Konfiguration, wenig Rauschen – detekt würde mehr Feinjustierung verlangen, ohne hier mehr zu bringen.
 
   Der Umweg über Spotless ist nicht Geschmackssache, sondern nötig: Das ktlint-Gradle-Plugin scheiterte mit `Extensions storage is not registered`. Ursache ist eine Kette aus drei Gliedern – `spring-boot-dependencies` importiert das `kotlin-bom`, dieses verwaltet auch `kotlin-compiler-embeddable`, und `io.spring.dependency-management` wendet das auf **alle** Konfigurationen an, also auch auf die des Linters. Dadurch bekommt ktlint statt seines eigenen Compilers (2.1.0) den des Projekts (2.4.20) untergeschoben und stürzt ab. Spotless löst seine Werkzeuge über `detachedConfiguration` auf, die von `configurations.all {}` nicht erfasst wird – damit greift die Überschreibung dort nicht.
@@ -339,14 +389,14 @@ Der Auftrag ist fertig, wenn alles hier stimmt – vorher nicht:
 4. **Dienst:** `run` gegen Fake-Scanner und Mock-paperless: 3 Seiten → 1 PDF mit 3 Seiten in korrekter Größe, ans paperless-Modul übergeben und hochgeladen. Scanner offline schließt den Batch. Outbox-Retry funktioniert nach Neustart.
 5. **Zuschnitt:** Das Kuvert-Testbild wird verlustfrei auf ca. 1216 × 2494 px zugeschnitten (Luma identisch); das A4-Testbild ohne schwarzen Rand bleibt unverändert (bytegleich).
 6. **Container:** Image baut für `arm64` (amd64 später), `jpegtran` und `jbig2` sind darin verfügbar, `status` läuft im Container gegen den Fake-Scanner – geprüft auf dem GitHub-Actions-`arm64`-Runner (siehe CT-01).
-7. **Doku:** alle Dateien in `docs/` vollständig auf Deutsch, `betrieb.md` beschreibt den Container-Betrieb, README mit Schnellstart (DO-08), `CONTRIBUTING.md` mit den Regeln für Beiträge (DO-10) und `SECURITY.md` mit dem Meldeweg (DO-11).
+7. **Doku:** alle Dateien in `docs/` vollständig auf Deutsch, `betrieb.md` beschreibt den Container-Betrieb, README mit Schnellstart (DO-08), `CONTRIBUTING.md` mit den Regeln für Beiträge (DO-10) und `SECURITY.md` mit dem Meldeweg (DO-11). Die englische Fassung und die Doku-Seite (DO-12 bis DO-16) gehören zu Meilenstein 6 und sind für v1 **nicht** verlangt.
 8. **Repository:** trägt keine eigene Werkzeug-Konfiguration; jeder relative Link in der Doku zeigt auf eine Datei, die es gibt.
 9. **Git:** alles in kleinen Commits nach Conventional Commits.
 10. **Anforderungen:** Für jede ID oben ist das Abnahmekriterium erfüllt – ausgenommen die unter „Bewusst noch nicht erledigt" aufgeführten.
 
-**Bewusst noch nicht erledigt:** Web-UI, Drehen und Geraderücken, **SV-04 (`normalize`)**, weitere Ausgabe-Module, Native Image, CI (ausgenommen die zwei vorgezogenen Bausteine auf GitHub Actions: die CT-01-Imageprüfung und der Mutationslauf auf Abruf), Deployment-Beispiel, englische Doku.
+**Bewusst noch nicht erledigt:** Web-UI, Drehen und Geraderücken, **SV-04 (`normalize`)**, weitere Ausgabe-Module, Native Image, CI (ausgenommen die zwei vorgezogenen Bausteine auf GitHub Actions: die CT-01-Imageprüfung und der Mutationslauf auf Abruf), Deployment-Beispiel, englische Doku und Doku-Seite (DO-12 bis DO-16).
 
-**Umfang von v1:** Die Meilensteine 1 bis 5. Meilenstein 6 (Deployment-Beispiel und CI) gehört ausdrücklich nicht dazu.
+**Umfang von v1:** Die Meilensteine 1 bis 5. Meilenstein 6 gehört ausdrücklich nicht dazu – er umfasst das Deployment-Beispiel, die restliche CI und die mehrsprachige Doku-Seite (DO-12 bis DO-16).
 
 ## Übergabe
 

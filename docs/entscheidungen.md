@@ -448,6 +448,64 @@ Der Grund ist die Leitplanke „nichts am Protokoll erfinden": Ob das Problem ü
 
 Die verworfene Alternative wäre **eine Sperrzeit „zur Sicherheit"** (etwa: Scans im Abstand unter N Sekunden verwerfen). Ihr Preis wäre der schlimmste im Projekt: still verworfene echte Seiten, ohne dass ein Log je erklärte, warum ein Blatt fehlt. Liefert die Messung zu OF-04 je den Befund, kommt der Schutz mit gemessener Schwelle — bis dahin bleibt das sichtbare, korrigierbare Übel (eine Leerseite zu viel) dem unsichtbaren (eine Seite zu wenig) vorzuziehen.
 
+## Mehrsprachige Doku: Deutsch als Quelle, Englisch als Hauptsprache (05.10.2026, DO-12 bis DO-16)
+
+**Entscheidung: Verfasst wird auf Deutsch, Hauptsprache ist Englisch. Die Produktdoku liegt zweisprachig unter `docs/de/` und `docs/en/`, die Arbeitsdokumente ziehen nach `docs/internal/` um und bleiben deutsch.**
+
+Bis zum 05.10.2026 stand „Englische Doku" unter „Offene Entscheidungen". Damit ist sie geschlossen — und sie verschiebt eine Bedeutung: „Führend" meinte bisher zwei Dinge zugleich, nämlich *wird verfasst* und *wird gelesen*. Künftig ist Deutsch nur noch die Quelle, Englisch die veröffentlichte Fassung. Ohne diese Trennung widerspricht sich die Regel selbst, sobald eine zweite Sprache dazukommt.
+
+**Die Dreiteilung ist gemessen, nicht geschätzt.** Am 05.10.2026 ergab `git log --follow`:
+
+| Gruppe | Umfang | Commits |
+|---|---|---|
+| 9 Produktdateien | 78 KB | 46 |
+| 4 Arbeitsdokumente | 152 KB | 61 |
+| davon `plan.md` allein | 46 KB | **29** |
+
+Die Arbeitsdokumente sind also doppelt so groß und ändern sich häufiger als die Produktdoku. Sie mitzuübersetzen verdreifacht die Übersetzungsmenge an genau den Dateien, die am meisten wackeln.
+
+Entscheidend ist aber nicht die Menge, sondern ein **Regelkonflikt**: `AGENTS.md` verlangt „Erst Plan, dann Verhalten" — jede Verhaltensänderung beginnt mit einer Planänderung. DO-15 macht eine nicht nachgezogene Übersetzung rot. Zusammen heißt das: kein Zugriff auf `plan.md` ohne vorherige Übersetzungsrunde, 29-mal in der bisherigen Projektgeschichte, jeweils *bevor* überhaupt Code entsteht. Der Wächter, der die Doku ehrlich halten soll, würde zur Bremse an der empfindlichsten Stelle. Dazu: `CONTRIBUTING.md` sagt „bei Widersprüchen gilt der Plan" — bei zwei Fassungen wäre die Rückfrage, *welcher*. Ein Auftrag in zwei Sprachen braucht eine Vorrangklausel, die nichts einbringt, solange der Auftraggeber Deutsch spricht. `entscheidungen.md` ist ein Logbuch der Vergangenheit: fortschreiben, nicht nachübersetzen.
+
+`teststrategie.md` und `offene-fragen.md` sind der Grenzfall und bleiben bewusst mit offener Tür: Auf beide verweist Produktdoku (`CONTRIBUTING.md` bzw. `protokoll.md` und `hardware.md`), ein englischsprachiger Leser landet dort also im Deutschen. Das wird mit `(German only)` am Link sichtbar gemacht, statt es zu verschweigen. Übersetzt werden können sie später — Starlight trägt fehlende Seiten je Sprache ohne Umbau.
+
+Die verworfene Alternative wäre **alles übersetzen** (ehrlich, keine Sprachlücken). Ihr Preis wären 230 KB statt 78 KB Erstübersetzung und der Regelkonflikt oben bei jeder Planänderung. Oder **nichts übersetzen** und bei Deutsch bleiben — das war der Stand und schließt jeden aus, der kein Deutsch liest, obwohl Code, Issues und Commits längst englisch sind.
+
+## Doku-Seite: Astro Starlight, statisch gebaut, im selben Repository
+
+**Entscheidung: Astro Starlight als Generator, Static Site Generation in CI, Veröffentlichung auf GitHub Pages, Konfiguration unter `site/` im selben Repository.**
+
+**Warum statisch (SSG) und nicht serverseitig (SSR).** Doku ist für jeden Besucher gleich: kein Login, keine Nutzerdaten, nichts, was pro Anfrage zu entscheiden wäre. Statisch heißt deshalb: kein Server, keine Laufzeitkosten, kein Angriffsziel, nichts, was nachts ausfällt. SSR würde einen Server betreiben, der bei jeder Anfrage dasselbe Ergebnis neu ausrechnet.
+
+**Warum nicht mit Kotlin und Spring**, obwohl der Stack hier liegt: Technisch ginge es (flexmark plus Thymeleaf). Der aufschlussreichste Gegenbeweis ist, dass **Spring es selbst nicht so macht** — Spring Boot baut seine Doku seit 3.3 mit Antora, einem Node-Werkzeug, und veröffentlicht statisch auf `docs.spring.io`. Dazu käme Eigenbau von Volltextsuche, Sprachumschalter, Navigation, Syntax-Highlighting, Dark Mode und Mobilansicht — jedes einzeln Kleinarbeit, zusammen Wochen. Und es widerspräche dem Plan: „eine Anwendung, Kern schlank, Native Image offenhalten". Ein Markdown-Renderer im Scanner-Dienst ist genau das nicht. Der Dienst läuft am Scanner-WLAN, die Doku soll im Internet erreichbar sein — zwei Dinge mit zwei Lebensdauern.
+
+**Warum Starlight** unter den Kandidaten (Stand 2026): i18n ist Kern und nicht Anbau — Sprachumschalter, Sidebar je Sprache und, der eigentliche Gewinn, automatischer Rückfall auf die Hauptsprache bei fehlender Übersetzung samt Markierung. Damit muss nie jede Sprache gleichzeitig vollständig sein, was die Dreiteilung oben überhaupt erst tragfähig macht. Suche ist eingebaut (Pagefind, läuft im Browser, je Sprache getrennt) — kein Algolia-Konto, kein weiterer Dienst. Die Standardoptik trägt ohne eine Zeile CSS, und im Normalfall wird kein JavaScript ausgeliefert.
+
+Verworfen: **Docusaurus** (größeres Ökosystem, aber React-Laufzeit und Suche nur über Algolia), **Material for MkDocs** (solide, i18n über Plugin — die nächstbeste Wahl, falls Python dem Projekt näher wäre als Node), **Antora** (stark bei versionierter AsciiDoc-Referenz, schwach bei i18n, nüchterne Optik).
+
+**Der Preis, offen benannt:** Node kommt ins Projekt. Begrenzt auf `site/`, nur in CI und beim Schreiben der Doku — Gradle, Dev Container und das `arm64`-Runtime-Image bleiben unberührt.
+
+**Warum ein Repository und kein eigenes Docs-Repo.** Doku und Code ändern sich gemeinsam; der Plan verlangt es mit „Erst Plan, dann Verhalten". Eine neue Einstellung heißt neue Zeile in `configuration.md` — im selben PR, im selben Diff. Bei zwei Repos sind das zwei PRs, und einer wird vergessen. Dazu bräuchte es eine Brücke (Submodul oder ein Workflow mit Schreibrecht im anderen Repo), die 85 relativen Links im Repository würden über Repo-Grenzen hinweg ins Leere zeigen, und der „diese Seite bearbeiten"-Link funktioniert nur innerhalb eines Repositorys ohne Zusatzaufwand. Ein eigenes Docs-Repo lohnt, wenn mehrere Produkte eine Seite speisen oder Redakteure ohne Code-Zugriff arbeiten — beides trifft hier nicht zu.
+
+**Zur Web-UI, die perspektivisch kommt:** Doku-Seite und Web-UI bleiben getrennt. Die Doku ist öffentlich, statisch und für alle gleich; die Web-UI läuft beim Betreiber, zeigt dessen Scans und hat Zustand. Die UI kann aus einem Hilfe-Symbol auf die Doku-Seite verlinken — das genügt.
+
+## Übersetzung: lokales LLM auf Abruf, CI prüft nur (DO-14, DO-15)
+
+**Entscheidung: Übersetzt wird lokal auf Abruf mit einem LLM über LM Studio — Erstmodell Gemma 4 26B, benannter Rückfallweg Qwen3.6 27B. CI übersetzt nie, sie prüft nur. Skript, Glossar und Prompt liegen versioniert im Repository.**
+
+Zuerst war ein Dienstanbieter vorgesehen (DeepL, in CI, Glossar beim Anbieter). Das entfiel aus einem Grund, der die Entscheidung gleich mitbegründet: **der kostenlose API-Plan wurde eingestellt.** Genau diese Abhängigkeit — ein Dritter ändert seine Bedingungen, und die Doku-Pipeline steht — spricht für die lokale Lösung. Dazu kommen: kein Secret im Repository (passend zur Leitplanke „Keine Secrets im Repository"), kein Monatslimit, keine Daten, die das Haus verlassen.
+
+**Warum auf Abruf und nicht in CI.** Ein GitHub-Actions-Runner läuft in der Cloud und erreicht ein lokales LM Studio nicht — ohne Tunnel, der das Modell ins Internet stellen würde. Die Übersetzung wandert damit zum Entwickler, und das ist kein Verlust: Der Prüfschritt ist dadurch nicht mehr aufschiebbar, weil der Entwurf ohnehin durch die Hände eines Menschen geht.
+
+**Die Arbeitsteilung ist der Kern:** Das LLM übersetzt (lokal, auf Abruf, Ergebnis immer geprüft). CI rechnet nach (Struktur, Aktualität, Links — ohne LLM). CI kann nicht übersetzen, aber sehr wohl feststellen, ob eine Übersetzung formal stimmt und zum aktuellen deutschen Stand gehört. Bedeutung beurteilt ein Mensch. Damit wird aus „die Übersetzung sollte gepflegt werden" eine prüfbare Regel — dasselbe Muster wie beim ArchUnit-Wächter.
+
+**Das Risiko, offen benannt: ein LLM erfindet Dinge, ein Übersetzungsdienst seltener.** Bei `protocol.md` mit Byte-Sequenzen, Füllbytes und Firmware-Versionen ist das genau der Fehler, den die Leitplanke „Nichts am Protokoll erfinden" verhindern soll. Gegenmittel sind drei: der Prompt nagelt fest, was unangetastet bleibt (Code-Blöcke, Pfade, Property-Namen, Anforderungs-IDs, Byte-Werte, Tabellenstruktur, Linkziele); der Strukturprüfer aus DO-15 macht jede Abweichung daran rot; und die Durchsicht durch einen Menschen ist Pflicht, nicht Empfehlung.
+
+**Warum das Glossar ins Repository gehört** und nicht zu einem Anbieter: Es ist der Teil, der über die Qualität entscheidet, und es muss versioniert sein, sonst übersetzt jeder Lauf anders. Ohne Festlegung wird aus „Senke" mal *sink*, mal *drain* — ein Begriff, der allein im Plan an elf Stellen steht. Festgelegt sind unter anderem: Senke → sink, Zuschnitt → crop, Blatt → sheet, Seite → page, Dienst → service, Wächter → guard, Abnahme → acceptance criterion, Zeitfenster → batch timeout window.
+
+**Warum Gemma 4 26B,** ohne vergleichenden Spike: Der Auftraggeber hat das Modell gesetzt. Die Gemma-Reihe ist traditionell stark mehrsprachig, und die Größen passen — die umfangreichste Produktdatei (`ausgabe-module.md`, 13 KB, rund 3.500 Token) geht in einem Durchgang durch. Reicht die Qualität bei `protocol.md` nicht, ist **Qwen3.6 27B** der benannte Rückfallweg; der Wechsel wird dann hier mit Begründung festgehalten, statt still zu passieren.
+
+**Warum das Skript ins Repository darf,** obwohl „Werkzeug-Konfiguration gehört nicht ins Repository" gilt: Prompt und Glossar sind nicht Werkzeugeinrichtung, sondern Projektsubstanz — ohne sie übersetzt jeder Lauf anders, wie bei den Workflow-Dateien, die ebenfalls im Repository liegen. Zwei Bedingungen halten die Regel gewahrt: keine fest verdrahtete Adresse (Endpunkt und Modell kommen aus `UNBOUNDAIR_DOCS_LLM_URL` und `UNBOUNDAIR_DOCS_LLM_MODEL`, wer kein LM Studio hat setzt etwas anderes ein oder übersetzt von Hand), und das Skript ist nie Teil von `build`, sondern läuft auf Abruf wie der Mutationslauf.
+
 ## Spike-Ergebnisse (Zusammenfassung)
 
 - **Spike A (kotest-property auf JUnit Platform 6):** läuft. 1 Test, 0 Failures auf Platform 6.0.3 (Spring Boot 4.1.1, `junit-jupiter` 6.0.3).
