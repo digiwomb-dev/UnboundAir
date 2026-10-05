@@ -268,6 +268,34 @@ class BatchTest {
             .isEqualTo(Duration.ofSeconds(7).plus(TIMEOUT))
     }
 
+    /**
+     * A later bw batch with fewer pages closes after an earlier one.
+     *
+     * The `jbig2` program writes `pages.sym`, `pages.0000`, ... next to its
+     * output base; encoding into the shared work directory leaves those
+     * behind, so a later batch with fewer pages sees stale page files and its
+     * count check fails. Each close encodes in a private subdirectory instead.
+     */
+    @Test
+    fun `SV-08 a later bw batch with fewer pages closes after an earlier one left page files behind`(
+        @TempDir dir: Path,
+    ) {
+        val delivered = mutableListOf<ScannedDocument>()
+        val batch = batchOf(MutableClock(START), dir) { delivered.add(it) }
+        batch.addPage(pbm(seed = 0), DPI)
+        batch.addPage(pbm(seed = 1), DPI)
+        batch.close()
+        batch.addPage(pbm(seed = 2), DPI)
+        val document = batch.close()
+        assertThat(document)
+            .`as`("the second bw batch must close even though the first one left encoder files behind")
+            .isNotNull()
+        assertThat(delivered).hasSize(2)
+        assertThat(delivered[1].pageCount).isEqualTo(1)
+        assertThat(imageFilters(delivered[1].pdf)).containsExactly("JBIG2Decode")
+        assertThat(batch.isOpen).isFalse()
+    }
+
     private fun batchOf(
         clock: Clock,
         dir: Path,

@@ -178,8 +178,13 @@ class Batch(
         val snapshot = pages.toList()
         if (isBitmapBatch(snapshot)) {
             val files = snapshot.map { it.file }
-            val jbig2 = Jbig2Enc.encode(files, workDir)
-            pdfBuilder.build(snapshot, jbig2, pdf)
+            val encodeDir = Files.createTempDirectory(workDir, "jbig2-")
+            try {
+                val jbig2 = Jbig2Enc.encode(files, encodeDir)
+                pdfBuilder.build(snapshot, jbig2, pdf)
+            } finally {
+                deleteRecursively(encodeDir)
+            }
         } else {
             pdfBuilder.build(snapshot, pdf)
         }
@@ -294,6 +299,20 @@ class Batch(
     private enum class PageFormat {
         JPEG,
         PBM,
+    }
+
+    /**
+     * Deletes [dir] and everything under it, ignoring individual failures.
+     *
+     * The encode directory of a bitmap batch is private to one close, so it
+     * is removed afterwards; the page files themselves stay untouched in
+     * [workDir].
+     */
+    private fun deleteRecursively(dir: Path) {
+        if (!Files.exists(dir)) return
+        Files.walk(dir).use { walk ->
+            walk.sorted(Comparator.reverseOrder()).forEach { path -> runCatching { Files.delete(path) } }
+        }
     }
 
     private companion object {
