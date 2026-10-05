@@ -119,6 +119,26 @@ tasks.withType<Test> {
         // for the guard (Wächter) tests. kotest-property brings no engine.
         includeEngines("junit-jupiter", "archunit")
     }
+
+    // RepositoryHygieneTest checks the documentation itself (DO-08), so the
+    // documentation is an input of the test task. Without this, editing a
+    // Markdown file leaves `test` UP-TO-DATE and the guard reports the
+    // previous run - it would pass on a broken link until something in
+    // src/ happens to change.
+    inputs
+        .files(
+            layout.projectDirectory.file("README.md"),
+            layout.projectDirectory.file("CONTRIBUTING.md"),
+            layout.projectDirectory.file("SECURITY.md"),
+            layout.projectDirectory.file("AGENTS.md"),
+        ).withPropertyName("rootDocumentation")
+        .optional()
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+
+    inputs
+        .dir(layout.projectDirectory.dir("docs"))
+        .withPropertyName("documentationDirectory")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 // Predictable artifact name, so scripts and the container image do not
