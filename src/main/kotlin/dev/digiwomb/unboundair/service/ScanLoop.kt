@@ -218,7 +218,7 @@ class ScanLoop(
 
             lastActivity = clock.instant()
             val number = pageCounter.incrementAndGet()
-            logPage(number, scan, processed, processedBytes.size)
+            logPage(batch.pageCount, scan, processed, processedBytes.size)
             listener.onPageScanned(number, scan.bytes.size)
         } catch (e: ScannerException) {
             // DL-05: discard the page, keep the batch, carry on.
@@ -239,6 +239,11 @@ class ScanLoop(
      * transfer duration, size, and the dimensions in mm **after** cropping.
      * They are on one line rather than four, so a page is one entry in the
      * journal and two pages cannot interleave into something unreadable.
+     *
+     * The page [number] is the position within the current document
+     * ([Batch.pageCount]), not the run-wide counter: the first page of every
+     * document is logged as "page 1". The run-wide counter still goes to
+     * [ScanLoopListener.onPageScanned], whose `measure` semantics are unchanged.
      *
      * The size logged is that of the *processed* page, not of the raw scan:
      * that is what ends up in the document, and comparing it with the raw size

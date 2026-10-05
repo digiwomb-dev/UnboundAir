@@ -167,6 +167,58 @@ class PageLogIntegrationTest {
         }
     }
 
+    /**
+     * The logged page number is the position within the current document, not
+     * the run-wide counter: after the first document closes, the first page of
+     * the second document is logged as "page 1" again.
+     */
+    @Test
+    fun `KL-02 the first page of a second document is logged as page 1`(
+        @TempDir tempDir: Path,
+    ) {
+        FakeScanner().use { fake ->
+            fake.loadSheets(listOf(TestImages.bytes(ENVELOPE), TestImages.bytes(ENVELOPE)))
+            fake.start()
+
+            val clock = Clock.fixed(START, ZoneOffset.UTC)
+            val loop =
+                ScanLoop(
+                    client = ScannerClient("127.0.0.1", fake.port),
+                    batch = Batch(clock, Duration.ofMinutes(10), tempDir, {}),
+                    processor = PageProcessor(listOf(CropStep())),
+                    workDir = tempDir,
+                    clock = clock,
+                    pollInterval = POLL_INTERVAL,
+                    offlinePollInterval = POLL_INTERVAL,
+                    sleeper = { Thread.sleep(SLEEP_MILLIS) },
+                )
+
+            val t = thread(start = true) { loop.run() }
+            try {
+                await().atMost(AWAIT_SECONDS, TimeUnit.SECONDS).until { loop.pageCount >= 1 }
+                fake.goOffline()
+                await().atMost(AWAIT_SECONDS, TimeUnit.SECONDS).until {
+                    appender.list.any { it.level == Level.INFO && it.formattedMessage.startsWith("scanner is offline") }
+                }
+                fake.comeOnline()
+                await().atMost(AWAIT_SECONDS, TimeUnit.SECONDS).until { loop.pageCount >= 2 }
+            } finally {
+                loop.stop()
+                t.join(THREAD_JOIN_MILLIS)
+            }
+
+            val firstPages =
+                appender.list
+                    .filter { it.level == Level.INFO }
+                    .map { it.formattedMessage }
+                    .filter { it.startsWith("page 1 ") }
+
+            assertThat(firstPages)
+                .`as`("KL-02: each one-page document logs its page as page 1, so two documents log two page-1 lines")
+                .hasSize(2)
+        }
+    }
+
     private companion object {
         val START: Instant = Instant.parse("2026-09-27T10:00:00Z")
         val POLL_INTERVAL: Duration = Duration.ofMillis(10)
