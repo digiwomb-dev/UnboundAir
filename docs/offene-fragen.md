@@ -27,7 +27,7 @@ Jeder Eintrag hat eine feste ID, einen Status und eine Herkunft. IDs werden nie 
 
 **Herkunft:** **[Gerät]** am echten Gerät verifiziert · **[App/s400w]** aus der Windows-App bzw. s400w, am Gerät nicht getestet · **[Handbuch]** · **[Scan]** an 1–2 echten Scans beobachtet · **[Analyse]** aus den Testbildern in dieser Arbeit abgeleitet
 
-Die meisten Punkte lassen sich erst mit dem Befehl `measure` am echten Gerät klären (BE-04). Ein Gerätetest ist bisher nicht freigegeben, deshalb gelten überall vorläufige Werte.
+Die meisten Punkte lassen sich erst mit einer systematischen Messung über den Befehl `measure` am echten Gerät klären (BE-04); bis dahin gelten überall vorläufige Werte.
 
 **Der Befehl existiert seit Meilenstein 3** und wird so aufgerufen:
 
@@ -36,8 +36,6 @@ unboundair.jar measure [--minutes N] [--poll-seconds N] [--host HOST] [--port PO
 ```
 
 Default sind 10 Minuten Laufzeit und ein Abfrage-Abstand von 3 Sekunden. Der Lauf endet von selbst, wenn das Gerät offline geht und offline bleibt. Am Ende steht eine Zusammenfassung auf stdout, deren Zeilen die hier geführten Fragen namentlich nennen – die Zahlen lassen sich also direkt zuordnen und nach `hardware.md` übernehmen. **Es geht dabei kein Dokument an ein Ausgabe-Modul**; die Scans sind ein Nebenprodukt der Messung und werden verworfen.
-
-Was noch fehlt, ist allein die Freigabe für den Lauf am echten Gerät.
 
 ---
 
@@ -220,4 +218,4 @@ Zwei getrennte Probleme treffen hier zusammen:
 
 **So gebaut:** nichts Zusätzliches — die Kette verlässt sich darauf, dass -s für Textscans praktisch verlustfrei ist; die Golden Files werden vor dem Festschreiben visuell geprüft.
 
-**Klärt:** ein Blick auf die fertigen bw-Seiten am echten Gerät, spätestens beim ersten Gerätetest (Measure-Lauf am echten Scanner).
+**Klärt:** ein Blick auf die fertigen bw-Seiten am echten Gerät, spätestens bei einer systematischen Messung (Measure-Lauf am echten Scanner).

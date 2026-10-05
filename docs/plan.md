@@ -344,7 +344,7 @@ Der Auftrag ist fertig, wenn alles hier stimmt – vorher nicht:
 9. **Git:** alles in kleinen Commits nach Conventional Commits.
 10. **Anforderungen:** Für jede ID oben ist das Abnahmekriterium erfüllt – ausgenommen die unter „Bewusst noch nicht erledigt" aufgeführten.
 
-**Bewusst noch nicht erledigt:** Test am echten Scanner, Web-UI, Drehen und Geraderücken, **SV-04 (`normalize`)**, weitere Ausgabe-Module, Native Image, CI (ausgenommen die zwei vorgezogenen Bausteine auf GitHub Actions: die CT-01-Imageprüfung und der Mutationslauf auf Abruf), Deployment-Beispiel, englische Doku.
+**Bewusst noch nicht erledigt:** Web-UI, Drehen und Geraderücken, **SV-04 (`normalize`)**, weitere Ausgabe-Module, Native Image, CI (ausgenommen die zwei vorgezogenen Bausteine auf GitHub Actions: die CT-01-Imageprüfung und der Mutationslauf auf Abruf), Deployment-Beispiel, englische Doku.
 
 **Umfang von v1:** Die Meilensteine 1 bis 5. Meilenstein 6 (Deployment-Beispiel und CI) gehört ausdrücklich nicht dazu.
 

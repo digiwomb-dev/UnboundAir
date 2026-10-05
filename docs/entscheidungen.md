@@ -68,7 +68,7 @@ Diese Entscheidung ist der Grund hinter der Laufzeit-Modulauswahl (kein `@Condit
 
 **Entscheidung: eine Anwendung, in v1 ohne Web-Oberfläche. Den Kern so schneiden, dass später eine Web-UI andocken kann, ohne den Kern umzubauen.**
 
-Der Dienst hat genau einen Auftrag — einlegen und fertig — und eine Web-UI würde in v1 bedeuten: HTTP-Schicht, Authentifizierung, Oberflächen-Tests und -Pflege für einen Nutzen, den noch niemand eingefordert hat. Die verworfene Alternative wäre **die UI gleich mitzubauen**: Ihr Preis wäre ein verdoppelter Oberflächen- und Testaufwand für ein Produkt, dessen Kern (Scannen, Zuschneiden, PDF, Module) noch nicht einmal am echten Gerät verifiziert ist.
+Der Dienst hat genau einen Auftrag — einlegen und fertig — und eine Web-UI würde in v1 bedeuten: HTTP-Schicht, Authentifizierung, Oberflächen-Tests und -Pflege für einen Nutzen, den noch niemand eingefordert hat. Die verworfene Alternative wäre **die UI gleich mitzubauen**: Ihr Preis wäre ein verdoppelter Oberflächen- und Testaufwand für ein Produkt, dessen Kern (Scannen, Zuschneiden, PDF, Module) im Fokus steht.
 
 „Keine UI" heißt dabei nicht „kein Platz für eine UI": Der Schnitt (Kern-Pakete als reine Logik, `service` als Orchestrierung, Einstellungen als Konstruktor-Werte) ist so gelegt, dass eine UI später andockt, statt den Kern aufzubrechen. Das ist dieselbe Schnitt-Logik wie bei der Batch-Senke: Wer später dazukommt, hängt sich an, statt umzubauen.
 

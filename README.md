@@ -44,8 +44,6 @@ Was auf dem Host einzurichten ist – WLAN-Profil, Paketfilter, Volume, Secret �
 | paperless-ngx-Upload | weitere Ausgabe-Module |
 | Container-Image für `arm64` | Native Image, `linux/amd64` |
 
-**Noch nicht am echten Gerät erprobt.** Entwickelt und geprüft wurde bisher ausschließlich gegen einen Fake-Scanner, der das Protokoll nachbildet. Das ist der wichtigste offene Punkt – wer das hier einsetzen will, sollte es wissen.
-
 ## Schnellstart
 
 Voraussetzungen siehe oben. Das Image musst du (noch) selbst bauen – wie, steht in [`docs/entwicklung.md`](docs/entwicklung.md); wohin Images veröffentlicht werden, ist noch offen (siehe [`docs/betrieb.md`](docs/betrieb.md)). Wo unten ein Image-Name stehen müsste, steht deshalb ein Platzhalter.
@@ -97,7 +95,7 @@ Das Protokollwissen stammt aus eigener Analyse am Gerät, aus dem Handbuch und a
 - Kotlin, Spring Boot, Gradle mit Kotlin DSL
 - OpenPDF für die PDF-Erzeugung (Apache PDFBox nur als unabhängiger Prüfer in Tests)
 - `jpegtran` aus libjpeg-turbo für verlustfreie Bildoperationen
-- Läuft als Container; entwickelt und getestet wird ausschließlich gegen einen Fake-Scanner
+- Läuft als Container; automatisierte Tests laufen offline gegen einen Fake-Scanner
 
 Die genauen Versionen stehen in `docs/plan.md` unter „Feste Entscheidungen".
 

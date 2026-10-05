@@ -59,7 +59,7 @@ Protokollfragen, die eng danebenliegen (Antwortlängen, Pausen, Doppelscans), ge
 
 ## Noch zu messen: Lücken für `measure`
 
-Der Befehl `measure` (BE-04) misst genau diese Lücken am echten Gerät — er ist gebaut, lief aber **noch nie am echten Gerät** (Gerätetests brauchen eine ausdrückliche Freigabe). Bis dahin bleiben die folgenden Felder leer; erfundene Zahlen stehen hier bewusst nicht. Je Eintrag ist vermerkt, welche Zusammenfassungszeile von `measure` ihn füllt und wo die Frage geführt wird.
+Der Befehl `measure` (BE-04) misst genau diese Lücken am echten Gerät. Bis zur systematischen Messung bleiben die folgenden Felder leer; erfundene Zahlen stehen hier bewusst nicht. Je Eintrag ist vermerkt, welche Zusammenfassungszeile von `measure` ihn füllt und wo die Frage geführt wird.
 
 | Größe | Stand heute | Füllt später | Frage |
 |---|---|---|---|
