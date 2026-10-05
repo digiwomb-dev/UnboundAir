@@ -281,12 +281,18 @@ Damit die Art einer Aufgabe filterbar ist, trägt jedes Issue einen GitHub-Issue
 
 Die Reihenfolge der Aufgaben innerhalb eines Meilensteins steht als `Work order` im jeweiligen Eltern-Issue, nicht im Titel. Jedes Eltern-Issue führt seine Sub-Issues zusätzlich als `Sub-issues`-Zeile im Body – in der Reihenfolge, in der sie abgearbeitet werden, also Umsetzung vor dem Test, der sie prüft. Die Liste wiederholt bewusst, was GitHub schon als Sub-Issue-Beziehung kennt: Die Beziehung sagt nur, *was* dazugehört, die Zeile auch *wann*. Nummeriert wird je Meilenstein fortlaufend; Lücken entstehen nicht, auch Aufgaben ohne Sub-Issues bekommen ihre Position.
 
+### Git-Ablauf (seit 05.10.2026)
+
+- **`main` ist geschützt:** Direkte Commits auf `main` sind ausgeschlossen – Änderungen kommen ausschließlich über Pull Requests an. Das gilt für alle, auch für den Agenten.
+- **`dev` ist der Integrations-Branch.** Von ihm zweigen Arbeits-Branches ab und gehen per PR nach `dev` zurück; `dev` wiederum geht per PR nach `main`. `dev` selbst ist bewusst ungeschützt.
+- **Der Mutationslauf läuft auf Abruf in CI:** Ein GitHub-Actions-Workflow (`workflow_dispatch`) führt auf `dev` den vollen PIT-Lauf aus (rund 2,5 h), damit er nicht am Entwicklungsrechner hängen muss. Die Workflow-Datei liegt auch auf `main`, weil die Actions-UI nur Workflows des Default-Branches zum manuellen Start anbietet. Das ist der einzige CI-Baustein vor Meilenstein 6.
+
 ## Offene Entscheidungen – nicht vorwegnehmen, fragen
 
 Hier stehen nur Punkte, die **eine Entscheidung** brauchen. Was sich dagegen nur **am Gerät klären** lässt, steht in `docs/offene-fragen.md` – dort ist die Abgrenzung erklärt. Zweistufige Punkte (erst messen, dann entscheiden) stehen in beiden Listen und verweisen aufeinander.
 
 - **Deployment:** Ziel-Host und konkretes Deployment-Beispiel. Dass als Container betrieben wird, steht fest.
-- **CI:** Tests und Image-Build. Welches CI-System, ist egal – wird erst mit Meilenstein 6 festgelegt.
+- **CI:** Tests, Image-Build und -Veröffentlichung – weiterhin erst mit Meilenstein 6, System offen. Vorgezogen ist seit 05.10.2026 nur ein Baustein: der Mutationslauf auf Abruf per GitHub Actions (siehe „Git-Ablauf").
 - **Web-UI:** Umfang und Technik – kommt perspektivisch, nicht in v1.
 - **Drehen und Geraderücken (kommt später):** Drehen um 90/180/270° geht mit `jpegtran -rotate` ohne Qualitätsverlust. Geraderücken um kleine Winkel geht nur mit Neukomprimierung – das widerspricht „Nie neu komprimieren" und muss vorher entschieden werden. Offen ist auch, wie die Leserichtung erkannt wird.
 - **GraalVM Native Image:** später prüfen, vor allem ob ImageIO/AWT und OpenPDF darin laufen.
