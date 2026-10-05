@@ -99,6 +99,25 @@ Vier Dinge, die man vorher wissen sollte:
 
 Es gibt eine **Schwelle**: Fällt die Mutationsabdeckung unter den in `build.gradle.kts` gepinnten Wert, schlägt der Task fehl. Der Wert ist der zuletzt gemessene Stand und wirkt als Boden – er wird angehoben, wenn der Score steigt, und nicht stillschweigend gesenkt. Die aktuellen Zahlen je Paket stehen in `entscheidungen.md`.
 
+### Lieber auf Abruf in CI laufen lassen
+
+Wegen der 2,5 Stunden und des Speicherbedarfs muss der volle Lauf nicht am Entwicklungsrechner hängen: Der Workflow `.github/workflows/pitest.yml` führt ihn auf GitHub Actions aus. Er startet **nur von Hand** (`workflow_dispatch`), an keinem `push` – ein Lauf, der bei jedem Commit 2,5 Stunden kostet, wäre schnell abgeschaltet.
+
+```bash
+gh workflow run pitest --ref dev
+```
+
+Oder im Reiter „Actions" den Workflow `pitest` wählen und als Branch `dev` angeben. Dass die Workflow-Datei auch auf `main` liegt, ist kein Versehen: Die Actions-Oberfläche bietet zum manuellen Start nur Workflows des Default-Branches an. Laufen soll er trotzdem auf `dev` – dem Integrations-Branch (siehe `plan.md`, „Git-Ablauf").
+
+Vier Punkte dazu:
+
+- **Es ist derselbe Dev Container.** Der Workflow baut das Image aus `.devcontainer/Dockerfile` und führt `./gradlew pitest` darin aus. Damit messen CI und lokaler Lauf in derselben Umgebung – gleiche JDK-, `jpegtran`- und `jbig2`-Versionen. Eine runner-seitige Nachbildung wäre eine zweite Wahrheit über die Entwicklungsumgebung.
+- **Native `arm64`**, wie bei der Imageprüfung: `ubuntu-24.04-arm`. Die Golden-Dateien sind gegen die Binärprogramme dieser Architektur aufgenommen.
+- **Der Bericht ist das Ergebnis.** Er liegt nur auf dem Runner, deshalb lädt der Workflow `build/reports/pitest/` als Artefakt `pitest-report` hoch – aufbewahrt 90 Tage, das ist das Maximum bei GitHub. Ohne diesen Schritt bliebe von 2,5 Stunden nur grün oder rot übrig.
+- **Ein Lauf zur Zeit.** Ein zweiter Start ersetzt einen laufenden (`concurrency` mit `cancel-in-progress`), statt parallel weitere 2,5 Stunden zu verbrennen.
+
+Die Neueinmessung der Schwelle (TE-04) gehört damit in CI, nicht auf den Entwicklungsrechner. Die gemessenen Zahlen wandern von dort nach `entscheidungen.md` – mit Datum und Commit, wie bisher.
+
 ## Laufzeit-Image bauen
 
 Das Laufzeit-Image steht in `Dockerfile` im Repository-Stamm. Gebaut wird es aus dem Repository heraus – vorher das Jar erzeugen, weil das Dockerfile `build/libs/unboundair.jar` hineinkopiert (kein Gradle im Image-Build):
