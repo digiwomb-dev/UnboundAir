@@ -33,7 +33,7 @@ Die Begründung dazu steht in [`docs/entscheidungen.md`](docs/entscheidungen.md)
 
 Arbeit wird über GitHub-Issues organisiert: je Aufgabe ein Issue. Neue Issues entstehen immer über eine Vorlage aus `.github/ISSUE_TEMPLATE/` – die setzt Issue-Typ und Rolle-Label selbst. Blanko-Issues sind abgeschaltet.
 
-**Du willst nur etwas melden?** Nimm das Formular für Fehlerberichte. Es verlangt keine Anforderungs-ID; die Zuordnung übernehmen wir.
+**Du willst nur etwas melden?** Nimm „User report". Dieses Formular verlangt keine Anforderungs-ID – die Zuordnung übernehmen wir. „Defect" ist das Gegenstück für geplante Arbeit an einer bekannten Anforderung.
 
 ### Konvention
 

@@ -1,0 +1,61 @@
+name: User report
+description: Something went wrong while using UnboundAir. No requirement ID needed.
+title: "fix(scope): "
+type: Bug
+labels:
+  - kind/bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Fill in what you know — none of this has to be complete.
+        Mapping the report to a requirement is our job, not yours.
+
+        **Found a security problem?** Do not use this form. See
+        [SECURITY.md](https://github.com/digiwomb-dev/UnboundAir/blob/main/SECURITY.md).
+  - type: textarea
+    id: observed
+    attributes:
+      label: What happened
+      description: What you saw, including any error message.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to reproduce it
+      description: The steps you took, as far as you can tell. "Happens about every third scan" is useful too.
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "Image tag or commit SHA, e.g. ghcr.io/digiwomb-dev/unboundair:… or 1f827f0"
+    validations:
+      required: false
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: How do you run it
+      options:
+        - Container (Docker)
+        - Container (Podman)
+        - JAR directly
+        - Other / not sure
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: "Remove your paperless token and any other secret first — this issue is public."
+      render: text
+    validations:
+      required: false
