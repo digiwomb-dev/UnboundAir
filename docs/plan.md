@@ -11,7 +11,6 @@ Diese Dateien sind von Anfang an im Repo und werden nur nach Rückfrage geänder
 - `.gitignore` (enthält `_input/`)
 - `AGENTS.md`
 - `docs/plan.md` (diese Datei)
-- `.opencode/agent/reviewer.md`
 
 `_input/` liegt nur lokal vor und wird nie committet. Inhalte daraus gezielt überführen: Wissen → `docs/`, Testbild → Test-Ressourcen, Python-Referenzcode in Kotlin neu schreiben (nicht 1:1 übersetzen).
 
@@ -268,6 +267,13 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
   *Abnahme:* Erklärt, was `UnboundAir` ist, nennt den Aufbaustand und verweist auf jede Datei in `docs/` mit einem Satz, wofür sie da ist. Ab Meilenstein 5 zusätzlich: Schnellstart.
 - **DO-09** `konfiguration.md` – die vollständige Referenz aller Einstellungen: Property-Name, Umgebungsvariable, Default, Bedeutung. Entsteht in **Meilenstein 3** zusammen mit den Properties selbst, weil KL-01 „jede Einstellung mit ihrem Default in der Doku" verlangt und `betrieb.md` (DO-03) erst in Meilenstein 5 kommt. `betrieb.md` verweist später hierher, statt die Tabelle zu doppeln.
   *Abnahme:* Jede Einstellung, die der Code kennt, steht mit Default und Umgebungsvariable in der Tabelle – und umgekehrt beschreibt die Tabelle keine Einstellung, die es nicht gibt.
+- **DO-10** `CONTRIBUTING.md` im Wurzelverzeichnis – die Regeln für Beiträge: Sprachregel, Conventional Commits, Git-Ablauf (`dev` → `main`, nur über Pull Requests), die Issue-Konvention samt Tabelle und die Leitplanken in Kurzfassung. Entsteht in **Meilenstein 5**. Die Regeln stehen bisher in `AGENTS.md`, die zwei Dinge mischt: Projektregeln, die für jeden gelten, und die Mechanik einer Arbeitssitzung. Wer von Hand beiträgt, braucht nur das Erste.
+  Abgrenzung zu `entwicklung.md`: `CONTRIBUTING.md` beantwortet „nach welchen Regeln darf ich beitragen", `entwicklung.md` beantwortet „wie bringe ich es zum Laufen". Was dort zum Handwerk steht, wird hier nicht wiederholt, sondern verlinkt.
+  *Abnahme:* Wer nur diese Datei liest, kann ein richtig benanntes Issue anlegen, in einem Branch arbeiten und einen Pull Request stellen, der die Konventionen erfüllt – ohne `AGENTS.md` zu lesen.
+- **DO-11** `SECURITY.md` im Wurzelverzeichnis – wie eine Sicherheitslücke gemeldet wird, welche Versionen abgedeckt sind und wie mit Token umgegangen wird. Entsteht in **Meilenstein 5**. Grund: Das Repository ist öffentlich, Blanko-Issues sind abgeschaltet und die vorhandenen Formulare verlangen eine Anforderungs-ID – ein Außenstehender hat damit keinen Meldeweg.
+  *Abnahme:* Die Datei nennt einen Meldeweg, der tatsächlich funktioniert, benennt die abgedeckten Versionen und hält fest, dass kein Token ins Repository gehört (Verweis auf `konfiguration.md`). Firmware und WLAN-Protokoll des Geräts sind ausdrücklich außerhalb des Geltungsbereichs.
+
+**Werkzeug-Konfiguration gehört nicht ins Repository.** Was die lokale Arbeitsumgebung einrichtet – Editor-, Assistenz- oder sonstige Werkzeugeinstellungen – wird nicht mitgeliefert: Es sagt nichts über UnboundAir, und wer das Projekt von Hand baut, trägt es ohne Nutzen mit. `AGENTS.md` bleibt als werkzeugneutrale Konvention zur Arbeitsweise; die Projektregeln selbst stehen nach DO-10 in `CONTRIBUTING.md`.
 
 ## Arbeit wird in GitHub getrackt
 
@@ -333,9 +339,10 @@ Der Auftrag ist fertig, wenn alles hier stimmt – vorher nicht:
 4. **Dienst:** `run` gegen Fake-Scanner und Mock-paperless: 3 Seiten → 1 PDF mit 3 Seiten in korrekter Größe, ans paperless-Modul übergeben und hochgeladen. Scanner offline schließt den Batch. Outbox-Retry funktioniert nach Neustart.
 5. **Zuschnitt:** Das Kuvert-Testbild wird verlustfrei auf ca. 1216 × 2494 px zugeschnitten (Luma identisch); das A4-Testbild ohne schwarzen Rand bleibt unverändert (bytegleich).
 6. **Container:** Image baut für `arm64` (amd64 später), `jpegtran` und `jbig2` sind darin verfügbar, `status` läuft im Container gegen den Fake-Scanner – geprüft auf dem GitHub-Actions-`arm64`-Runner (siehe CT-01).
-7. **Doku:** alle Dateien in `docs/` vollständig auf Deutsch, `betrieb.md` beschreibt den Container-Betrieb, README mit Schnellstart (DO-08).
-8. **Git:** alles in kleinen Commits nach Conventional Commits.
-9. **Anforderungen:** Für jede ID oben ist das Abnahmekriterium erfüllt – ausgenommen die unter „Bewusst noch nicht erledigt" aufgeführten.
+7. **Doku:** alle Dateien in `docs/` vollständig auf Deutsch, `betrieb.md` beschreibt den Container-Betrieb, README mit Schnellstart (DO-08), `CONTRIBUTING.md` mit den Regeln für Beiträge (DO-10) und `SECURITY.md` mit dem Meldeweg (DO-11).
+8. **Repository:** trägt keine eigene Werkzeug-Konfiguration; jeder relative Link in der Doku zeigt auf eine Datei, die es gibt.
+9. **Git:** alles in kleinen Commits nach Conventional Commits.
+10. **Anforderungen:** Für jede ID oben ist das Abnahmekriterium erfüllt – ausgenommen die unter „Bewusst noch nicht erledigt" aufgeführten.
 
 **Bewusst noch nicht erledigt:** Test am echten Scanner, Web-UI, Drehen und Geraderücken, **SV-04 (`normalize`)**, weitere Ausgabe-Module, Native Image, CI (ausgenommen die zwei vorgezogenen Bausteine auf GitHub Actions: die CT-01-Imageprüfung und der Mutationslauf auf Abruf), Deployment-Beispiel, englische Doku.
 
