@@ -59,9 +59,11 @@ jobs:
       - name: Upload the mutation report
         # The report lives only on the runner; without this step a 2.5 h
         # run leaves nothing behind but the pass/fail mark.
+        # 90 days is the maximum GitHub keeps an artifact - nothing above
+        # it exists, so a "raise it further" request is moot.
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pitest-report
           path: build/reports/pitest/
-          retention-days: 7
+          retention-days: 90
