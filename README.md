@@ -4,7 +4,7 @@ Macht aus einem Mustek iScan Air (S400W) einen „Einlegen und fertig"-Scanner: 
 
 Kein Knopfdruck, keine Hersteller-Software, keine Windows-Anwendung. Kotlin und Spring Boot, Betrieb als Container.
 
-> **Im Aufbau – v1 ist noch nicht fertig.** Welche Meilensteine erledigt sind und woran gerade gearbeitet wird, zeigen die [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues); dort steht der Stand aus erster Hand, statt hier zu veralten.
+> **Im Aufbau – v1 ist noch nicht fertig.** Ein Überblick steht unten unter [„Stand"](#stand); woran gerade gearbeitet wird, zeigen die [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues) – dort steht es aus erster Hand, statt hier zu veralten.
 
 ## Was es können soll
 
@@ -15,9 +15,40 @@ Kein Knopfdruck, keine Hersteller-Software, keine Windows-Anwendung. Kotlin und 
 
 Zwei Dinge sind dabei nicht verhandelbar: **Es wird nie neu komprimiert** – Zuschnitt und Graustufen laufen ausschließlich über `jpegtran`, die JPEGs wandern unverändert ins PDF. Und **am Protokoll wird nichts erfunden**: Was über das Gerät nicht bekannt ist, wird konfigurierbar gebaut und in `docs/offene-fragen.md` geführt, statt geraten zu werden.
 
+## Was es kann
+
+- **Scannen ohne Knopfdruck:** Der Dienst fragt das Gerät regelmäßig, erkennt ein eingelegtes Blatt und scannt von selbst.
+- **Verlustfreier Zuschnitt:** Der schwarze Rand des Geräts fällt per `jpegtran` weg – ohne das JPEG neu zu komprimieren.
+- **Graustufen, Farbe oder 1-bit-Schwarz-Weiß** (`gray`, `color`, `bw`). Die ersten beiden sind verlustfrei; `bw` ist es ausdrücklich nicht und braucht `jbig2`.
+- **Mehrseitige PDFs:** Seiten, die innerhalb eines Zeitfensters eingelegt werden, landen in einem Dokument. Zeitfenster abgelaufen oder Scanner aus: Das PDF wird gebaut.
+- **Outbox mit Wiederholung:** Fertige Dokumente liegen auf der Platte, bis ein Modul sie angenommen hat – ein Neustart oder ein nicht erreichbares Ziel verliert nichts.
+- **paperless-ngx als Ausgabe-Modul,** über eine Schnittstelle, an die weitere Module andocken können.
+- **Betrieb als Container,** derzeit für `linux/arm64`.
+
+## Voraussetzungen
+
+- Ein **Mustek iScan Air S400W** – auf andere Geräte ist nichts davon übertragbar.
+- Ein **Rechner, der das WLAN des Scanners hält** (Host), mit einer **Container-Runtime** (Docker oder Podman). Derzeit nur `linux/arm64`.
+- Eine **paperless-ngx-Instanz mit API-Token** – das einzige Ausgabe-Modul in v1. Ohne Token startet der Dienst nicht.
+- Für `color-mode = bw` zusätzlich `jbig2`; im Container ist es enthalten.
+
+Was auf dem Host einzurichten ist – WLAN-Profil, Paketfilter, Volume, Secret –, steht in [`docs/betrieb.md`](docs/betrieb.md).
+
+## Stand
+
+| Läuft | Noch nicht gebaut |
+|---|---|
+| Scannen, verlustfreier Zuschnitt, Graustufen/Farbe/1-bit | Web-UI |
+| Mehrseitige PDFs, Zeitfenster, Batch-Abschluss | Drehen und Geraderücken |
+| Outbox mit Wiederholung über Neustarts | `normalize` (SV-04, bewusst offen) |
+| paperless-ngx-Upload | weitere Ausgabe-Module |
+| Container-Image für `arm64` | Native Image, `linux/amd64` |
+
+**Noch nicht am echten Gerät erprobt.** Entwickelt und geprüft wurde bisher ausschließlich gegen einen Fake-Scanner, der das Protokoll nachbildet. Das ist der wichtigste offene Punkt – wer das hier einsetzen will, sollte es wissen.
+
 ## Schnellstart
 
-Voraussetzungen: ein Rechner, der im WLAN des Scanners hängt, und eine Container-Runtime. Das Image musst du (noch) selbst bauen – wie, steht in [`docs/entwicklung.md`](docs/entwicklung.md); wohin Images veröffentlicht werden, ist noch offen (siehe [`docs/betrieb.md`](docs/betrieb.md)). Wo unten ein Image-Name stehen müsste, steht deshalb ein Platzhalter.
+Voraussetzungen siehe oben. Das Image musst du (noch) selbst bauen – wie, steht in [`docs/entwicklung.md`](docs/entwicklung.md); wohin Images veröffentlicht werden, ist noch offen (siehe [`docs/betrieb.md`](docs/betrieb.md)). Wo unten ein Image-Name stehen müsste, steht deshalb ein Platzhalter.
 
 Container starten (Beispiel, sinngemäß auch bei anderen Runtimes): Outbox auf ein dauerhaftes Volume legen, paperless-Adresse und Token-Datei mitgeben, Scanner-Adresse nur falls sie von `192.168.18.33` abweicht:
 
@@ -52,7 +83,8 @@ Die Doku ist auf Deutsch. Je nachdem, was du vorhast:
 | wissen, was der Scanner über die Leitung schickt | [`docs/protokoll.md`](docs/protokoll.md) – das TCP-Protokoll auf Port 23: Nachrichten, Abläufe, was gemessen und was noch offen ist |
 | wissen, was die Hardware kann und was nicht | [`docs/hardware.md`](docs/hardware.md) – Gerät, WLAN-Verhalten, gemessene Scan-Eigenschaften |
 | den Dienst als Container betreiben | [`docs/betrieb.md`](docs/betrieb.md) – Host-Voraussetzungen, Netzwerk, Volume, Secrets, Beenden, Logs |
-| am Projekt mitarbeiten | [`AGENTS.md`](AGENTS.md) – Arbeitsweise, Leitplanken, Regeln |
+| am Projekt mitarbeiten | [`CONTRIBUTING.md`](CONTRIBUTING.md) – Sprache, Commits, Git-Ablauf, Issue-Konvention, Leitplanken |
+| eine Sicherheitslücke melden | [`SECURITY.md`](SECURITY.md) – der private Meldeweg, Token-Umgang, Geltungsbereich |
 
 ## Warum es das gibt
 
