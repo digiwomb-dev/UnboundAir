@@ -87,6 +87,7 @@ class ScanLoop(
     private val offlinePollInterval: Duration,
     private val idleAfter: Duration? = null,
     private val idleInterval: Duration = offlinePollInterval,
+    private val dpi: Int = DEFAULT_DPI,
     private val listener: ScanLoopListener = object : ScanLoopListener {},
     private val sleeper: (Duration) -> Unit = { Thread.sleep(it.toMillis()) },
 ) {
@@ -208,7 +209,7 @@ class ScanLoop(
     private fun scanOnePage() {
         val pageDir = Files.createTempDirectory(workDir, "page-")
         try {
-            val scan = client.scan(DEFAULT_DPI)
+            val scan = client.scan(dpi)
             val raw = pageDir.resolve("raw.jpg")
             Files.write(raw, scan.bytes)
 

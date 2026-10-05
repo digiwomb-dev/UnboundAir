@@ -108,6 +108,9 @@ class ConfigBindingSliceTest {
                 assertThat(properties.bwThreshold)
                     .`as`("unboundair.bw-threshold default (SV-08)")
                     .isEqualTo(128)
+                assertThat(properties.dpi)
+                    .`as`("unboundair.dpi default (SC-07, SC-08)")
+                    .isEqualTo(300)
 
                 // Reflection on purpose, approved by the client: the architecture
                 // guard applies to test classes too (config is a leaf and may not
@@ -243,6 +246,27 @@ class ConfigBindingSliceTest {
                     assertThat(context.getBean(UnboundAirProperties::class.java).bwThreshold)
                         .`as`("UNBOUNDAIR_BWTHRESHOLD must override the 128 default (SV-08)")
                         .isEqualTo(90)
+                }
+        }
+
+        @Test
+        fun `KL-01 the dpi binds from its property name (SC-07, SC-08)`() {
+            runner
+                .withPropertyValues("unboundair.dpi=600")
+                .run { context ->
+                    assertThat(context.getBean(UnboundAirProperties::class.java).dpi)
+                        .`as`("unboundair.dpi=600 must bind (SC-07, SC-08)")
+                        .isEqualTo(600)
+                }
+        }
+
+        @Test
+        fun `KL-01 the dpi binds from its documented environment variable (SC-07, SC-08)`() {
+            runnerWithEnvironment(mapOf("UNBOUNDAIR_DPI" to "600"))
+                .run { context ->
+                    assertThat(context.getBean(UnboundAirProperties::class.java).dpi)
+                        .`as`("UNBOUNDAIR_DPI must override the 300 default (SC-07, SC-08)")
+                        .isEqualTo(600)
                 }
         }
     }

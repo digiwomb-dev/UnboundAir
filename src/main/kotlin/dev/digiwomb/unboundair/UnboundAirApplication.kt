@@ -112,9 +112,16 @@ class UnboundAirApplication(
 
             "scan" -> {
                 val settings =
-                    PageSettings(colorMode = cli.colorMode, keepRaw = cli.keepRaw, bwThreshold = cli.bwThreshold)
+                    PageSettings(
+                        colorMode = cli.colorMode ?: parseColorMode(properties.colorMode),
+                        keepRaw = cli.keepRaw ?: properties.keepRaw,
+                        bwThreshold = cli.bwThreshold ?: properties.bwThreshold,
+                    )
                 val result =
-                    ScanCommand(client, settings, ::warn).run(cli.dpi, cli.out?.let { Path.of(it) })
+                    ScanCommand(client, settings, ::warn).run(
+                        cli.dpi ?: properties.dpi,
+                        cli.out?.let { Path.of(it) },
+                    )
                 val message =
                     if (result.rawPath != null) {
                         "Saved: ${result.path} (${result.size} bytes), raw: ${result.rawPath}"
@@ -164,8 +171,9 @@ class UnboundAirApplication(
                 val pipeline = outputPipeline(properties, clock, clock.zone, ::warn)
                 val settings =
                     PageSettings(
-                        colorMode = parseColorMode(properties.colorMode),
-                        bwThreshold = properties.bwThreshold,
+                        colorMode = cli.colorMode ?: parseColorMode(properties.colorMode),
+                        keepRaw = cli.keepRaw ?: properties.keepRaw,
+                        bwThreshold = cli.bwThreshold ?: properties.bwThreshold,
                     )
                 val processor =
                     PageProcessor(listOf(CropStep(settings), GrayscaleStep(settings), MonochromeStep(settings)))
@@ -185,6 +193,7 @@ class UnboundAirApplication(
                         pollInterval = properties.pollInterval,
                         offlinePollInterval = properties.offlinePollInterval,
                         idleAfter = properties.idleMinutes?.let { Duration.ofMinutes(it.toLong()) },
+                        dpi = cli.dpi ?: properties.dpi,
                     )
                 RunCommand(loop, pipeline.runner, ::warn).run()
             }
@@ -223,11 +232,11 @@ class UnboundAirApplication(
         // device constants here would make the properties unreachable.
         var host: String? = null
         var port: Int? = null
-        var dpi = 300
+        var dpi: Int? = null
         var out: String? = null
-        var colorMode = ColorMode.GRAY
-        var keepRaw = false
-        var bwThreshold = PageSettings().bwThreshold
+        var colorMode: ColorMode? = null
+        var keepRaw: Boolean? = null
+        var bwThreshold: Int? = null
         var minutes = DEFAULT_MEASURE_MINUTES
         var pollSeconds = DEFAULT_POLL_SECONDS
 
@@ -337,11 +346,11 @@ class UnboundAirApplication(
         val command: String?,
         val host: String?,
         val port: Int?,
-        val dpi: Int,
+        val dpi: Int?,
         val out: String?,
-        val colorMode: ColorMode,
-        val keepRaw: Boolean,
-        val bwThreshold: Int,
+        val colorMode: ColorMode?,
+        val keepRaw: Boolean?,
+        val bwThreshold: Int?,
         val minutes: Int,
         val pollSeconds: Int,
         val positional: List<String>,
