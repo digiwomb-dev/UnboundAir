@@ -128,7 +128,7 @@ Ergänzend zu den Schichten, als eigene Datei je Konzern:
 
 - **`@WebMvcTest` / `@DataJpaTest`:** Es gibt keine Web-Oberfläche (v1) und keine Datenbank. Beide Slices hätten nichts zu testen.
 - **Spring Cloud Contract:** Wir sind Consumer der paperless-API, kein Producer, der Verträge veröffentlicht. Der Vertrag wird deshalb mit WireMock + JSON-Schema auf Consumer-Seite gesichert.
-- **Testcontainers:** DC-03 verlangt offline grüne Tests; Testcontainers würde eine Container-Laufzeit im Test und echte Dienste (paperless, später ggf. DB) voraussetzen. Dazu „Abhängigkeiten minimal" und die GraalVM-Native-Image-Option.
+- **Testcontainers:** DC-03 verlangt offline grüne Tests; Testcontainers würde eine Container-Laufzeit im Test und echte Dienste (paperless, später ggf. DB) voraussetzen. Dazu kommt die GraalVM-Native-Image-Option.
 - **jqwik:** Anti-AI-Klausel (siehe Property-Schicht und `docs/entscheidungen.md`).
 
 ## GitHub-Tracking-Modell

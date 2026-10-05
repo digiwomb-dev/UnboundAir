@@ -25,7 +25,7 @@ plugins {
 }
 
 group = "dev.digiwomb.unboundair"
-version = "0.0.4"
+version = "0.0.5"
 
 kotlin {
     jvmToolchain(26)
@@ -60,8 +60,8 @@ dependencies {
     // (unlike its other optional deps), so it would land on the runtime classpath
     // transitively. Its Brotli content-stream compression is opt-in and default-off
     // (Document.useBrotliCompression = false, spike #141), it carries native
-    // libraries, and "Abhängigkeiten minimal" plus the GraalVM option the plan
-    // keeps open argue against it. Spike #141 built a PDF fine without it.
+    // libraries, and the GraalVM option the plan keeps open argues against it.
+    // Spike #141 built a PDF fine without it.
     implementation("com.github.librepdf:openpdf:3.0.5") {
         exclude(group = "com.aayushatharva.brotli4j")
     }
@@ -78,7 +78,7 @@ dependencies {
     testImplementation("org.apache.pdfbox:pdfbox:3.0.8")
 
     // Test tooling, pinned to the newest stable release and test-scope only so
-    // the runtime classpath stays untouched (DC-03, "Abhängigkeiten minimal").
+    // the runtime classpath stays untouched (DC-03).
     // See docs/plan.md (test-dependency table) and docs/entscheidungen.md for
     // the selection rationale.
     //

@@ -46,21 +46,13 @@ ktlint prüft reine Formatierung, braucht kaum Konfiguration und rauscht wenig. 
 
 **Erschwerend hinkt der Linter der Sprache hinterher.** ktlint ist mit Kotlin 2.4 grundsätzlich nicht kompatibel (ktlint-Issue 3289, gemeldet von einem JetBrains-Compiler-Entwickler; der Fix steckt bisher nur in ktlint 2.0.0-ALPHA). Der Linter parst deshalb bewusst mit einem älteren Compiler (2.2.21) als dem, mit dem übersetzt wird (2.4.20) — für Formatierungsregeln genügt das. Was das kostet, steht in OF-11: Syntax, die erst nach Kotlin 2.2 hinzukam, versteht der Linter nicht; äußert sich das je, dann als Parse-Fehler in einer einzelnen Datei, nicht als falsches Urteil über den Code.
 
-## Abhängigkeiten minimal
-
-**Entscheidung: Spring Boot, OpenPDF, Spring-eigener HTTP-Client; Bildanalyse mit Java-Bordmitteln (ImageIO); `jpegtran` und `jbig2` als externe Programme.**
-
-Jede Abhängigkeit ist eine Stelle, die gepflegt, aktualisiert, auf Kompatibilität geprüft und im Container mitgetragen werden muss. Deshalb gilt: Was die Plattform kann, wird nicht als Bibliothek eingezogen. ImageIO liest und analysiert Bilder mit Bordmitteln; `jpegtran` schneidet und entgraut verlustfrei auf Byte-Ebene (etwas, das keine JVM-Bibliothek ohne Neukomprimierung könnte); `jbig2` kodiert den 1-bit-Pfad als externes Programm, statt einen nativen Encoder in den Build zu holen.
-
-Die verworfene Alternative wäre **ImageMagick** (oder eine vergleichbare Allzweck-Bildbibliothek) für Verarbeitung und Normalisierung. Ihr Preis: eine große zusätzliche Systemabhängigkeit mit eigener Update- und Kompatibilitätslast — und genau deshalb bleibt SV-04 (`normalize`) zurückgestellt, bis Zweck und Werkzeug entschieden sind: Solange offen ist, was `normalize` tun soll, wird kein Werkzeug dafür eingezogen. Minimal heißt hier nicht asketisch, sondern begründet: Jede neue Abhängigkeit braucht einen Zweck, den Bordmittel nicht erfüllen.
-
 ## Der Kern bleibt frei von Spring — mit einer benannten Ausnahme
 
 **Entscheidung: In keinem Kern-Paket darf `org.springframework..` auftauchen — mit genau einer benannten Ausnahme: `output.paperless` darf den Spring-eigenen HTTP-Client verwenden (`RestClient` samt `spring-web`-Typen für Multipart und Header).**
 
 Der Grund ist Testbarkeit und Lebensdauer: Der Kern (Scanner, Verarbeitung, Batch, Ausgabe-Logik) ist ohne Spring-Kontext konstruierbar und damit als reine Unit-Tests prüfbar; er überlebt Framework-Updates, weil er das Framework nicht kennt. Einstellungen kommen als Konstruktor-Werte aus der Kompositionswurzel (Muster `PageSettings`), nicht als injizierte Properties — dasselbe Muster, das die Schichten-Tabelle für `config` festschreibt.
 
-**Warum die Ausnahme existiert.** Das Hochladen ist der einzige Punkt in v1, an dem ein Kern-Paket nach außen spricht. Einen zweiten HTTP-Client (etwa `java.net.http` neben Spring oder eine eigene Bibliothek) dafür einzuziehen stünde gegen „Abhängigkeiten minimal" — der Spring-Client ist ohnehin da, weil Spring Boot ihn mitbringt. Die Ausnahme kauft also genau einen Client statt zwei.
+**Warum die Ausnahme existiert.** Das Hochladen ist der einzige Punkt in v1, an dem ein Kern-Paket nach außen spricht. Der Spring-Client ist ohnehin da, weil Spring Boot ihn mitbringt — die Ausnahme nutzt genau diesen Client, statt einen zweiten einzuziehen. Die Ausnahme kauft also genau einen Client statt zwei.
 
 **Was selbst dort verboten bleibt:** keine Spring-Stereotypen (`@Component` und Verwandte), kein injiziertes `UnboundAirProperties`. `output.paperless` bekommt seine Werte wie überall im Kern als Konstruktor-Werte aus der Kompositionswurzel. Die verworfene Alternative wäre **Spring überall im Kern** (bequem: injizieren statt durchreichen) — ihr Preis wäre ein Kern, der nur noch im Spring-Kontext testbar ist und bei jedem Framework-Sprung mitwandern muss. Oder umgekehrt **gar kein Spring-Typ im Kern** (reiner als rein) — ihr Preis wäre ein zweiter HTTP-Client nur für einen einzigen Upload-Pfad.
 
@@ -137,14 +129,14 @@ Grundsatz: Test-Dependencies ausschließlich im Test-Scope, fest gepinnt auf die
 
 **Awaitility und AssertJ bleiben verwaltet.** Beide bringt `spring-boot-starter-test` in gepinnten, von Spring Boot gepflegten Versionen mit (Awaitility 4.3.0, AssertJ 3.27.7). Eine eigene Pin-Stelle würde nur Duplikation erzeugen, ohne etwas zu gewinnen.
 
-**JSON-Schema-Validator erst mit der Contract-Schicht.** Der Validator (networknt 3.0.7) wird gebraucht, sobald die erste Contract-Testdatei Antworten gegen ein Schema prüft. Bis dahin bliebe die Dependency ungenutzt — das widerspräche „Abhängigkeiten minimal".
+**JSON-Schema-Validator erst mit der Contract-Schicht.** Der Validator (networknt 3.0.7) wird gebraucht, sobald die erste Contract-Testdatei Antworten gegen ein Schema prüft. Bis dahin bleibt die Dependency ungenutzt und kommt erst mit Meilenstein 4 dazu.
 
 ## Verzicht auf Testcontainers
 
 Testcontainers ist keine Option. Drei Gründe, die zusammenspielen:
 
 1. **DC-03:** `./gradlew test` muss im Dev Container komplett offline grün laufen, ohne echte Geräte oder Dienste. Testcontainers würde eine Container-Laufzeit im Test voraussetzen und echte Dienste (paperless-ngx, ggf. später eine Datenbank) hochziehen.
-2. **Abhängigkeiten minimal:** Der Dienst hat in v1 bewusst keine Datenbank und kein Web; es gibt schlicht keinen Dienst, der einen Container rechtfertigt. paperless wird mit WireMock, der Scanner mit dem Fake-Scanner ersetzt — beides deckt die Verträge präziser ab als eine echte Instanz.
+2. **Keine externen Dienste in v1:** Der Dienst hat in v1 bewusst keine Datenbank und kein Web; es gibt schlicht keinen Dienst, der einen Container rechtfertigt. paperless wird mit WireMock, der Scanner mit dem Fake-Scanner ersetzt — beides deckt die Verträge präziser ab als eine echte Instanz.
 3. **GraalVM Native Image:** Nichts einbauen, was die spätere Native-Image-Option verbaut.
 
 Entscheidung des Auftraggebers (siehe `docs/plan.md`, DC-03).
@@ -299,7 +291,7 @@ Die verworfenen Alternativen wären **`ScannedDocument` direkt als Dokument-Typ*
 
 Bis Meilenstein 2 gab es kein Logging-Framework – Ausgaben liefen über `println`/`System.err.println` in der Kompositionswurzel, Meldungen aus dem Kern über `warn: (String) -> Unit`-Lambdas. Für KL-02 (Zeile je Seite mit vier Messwerten) und DL-02 („nur beim Zustandswechsel loggen") reicht das nicht: Es fehlen Level, Zeitstempel und ein sauberer Zugriff im Test.
 
-**Entscheidung: SLF4J als Fassade, Logback als Implementierung.** Beide bringt `spring-boot-starter` bereits mit – die Entscheidung kostet **keine** neue Abhängigkeit und verletzt „Abhängigkeiten minimal" nicht. Logback schreibt per Default auf stdout, was KL-02 ohnehin verlangt (journald-freundlich). Im Test hängt sich ein `ListAppender` an den Logger, statt stdout abzufangen.
+**Entscheidung: SLF4J als Fassade, Logback als Implementierung.** Beide bringt `spring-boot-starter` bereits mit. Logback schreibt per Default auf stdout, was KL-02 ohnehin verlangt (journald-freundlich). Im Test hängt sich ein `ListAppender` an den Logger, statt stdout abzufangen.
 
 **Was ausdrücklich bleibt:** Kommandos, Verarbeitungsschritte und der Scanner-Client loggen **nicht** selbst. Sie melden weiter über ihre `warn`-Senke nach oben; nur `service` und die Kompositionswurzel schreiben Log-Zeilen. Das ist kein Schönheitsprinzip: Der Kern bleibt dadurch ohne Logger-Attrappe testbar, und ein Aufrufer entscheidet, ob eine Meldung ein Log-Eintrag, eine CLI-Zeile oder später eine Web-UI-Benachrichtigung wird.
 
@@ -358,7 +350,7 @@ Die verworfenen Alternativen wären **Header maßgeblich** (der Scan „weiß, w
 
 Das ist die zentrale Leitplanke des Projekts: Jede Neukomprimierung würde aus einem Qualität-50-JPEG ein schlechteres machen — irreversibel, pro Seite, ohne dass ein Betrachter je sagen könnte, woher die Artefakte kommen. `jpegtran` arbeitet dagegen auf DCT-Koeffizienten: Schneiden und Entgrauen ohne einen einzigen Dekodier-Kodier-Zyklus. Dass das Roh-Einbetten wirklich roh ist, ist gemessen, nicht behauptet (Spike #141: `/DCTDecode`, Rohstrom bytegleich; der Code-Kommentar in `PdfBuilder` warnt vor jedem Weg über `java.awt.Image`/`BufferedImage`, der neu kodierte).
 
-**Warum die Ausnahmen keine Aufweichung sind.** `normalize` ist der einzige Pfad mit Neukomprimierung — ausdrücklich optional, Default aus, in der Doku als verlustbehaftet markiert — und solange Zweck und Werkzeug offen sind, wird er gar nicht gebaut (OF-09 ist in den Plan verschoben; ImageMagick als Werkzeug stünde gegen „Abhängigkeiten minimal"). `bw` verlässt den `jpegtran`-Pfad zwangsläufig: Eine 1-bit-Umwandlung kann keine DCT-Koeffizienten-Transformation sein, also läuft sie über Schwellwert (Default 128) nach PBM und von dort als JBIG2 mit gemeinsamem Wörterbuch ins PDF (Abschnitt zu `jbig2` unten). Benannt und begrenzt heißt: Die Regel nennt ihre Ausnahmen beim Namen, statt zu schweigen, wo sie endet — eine dritte Ausnahme gibt es nicht, ohne dass sie hier stehen müsste.
+**Warum die Ausnahmen keine Aufweichung sind.** `normalize` ist der einzige Pfad mit Neukomprimierung — ausdrücklich optional, Default aus, in der Doku als verlustbehaftet markiert — und solange Zweck und Werkzeug offen sind, wird er gar nicht gebaut (OF-09 ist in den Plan verschoben). `bw` verlässt den `jpegtran`-Pfad zwangsläufig: Eine 1-bit-Umwandlung kann keine DCT-Koeffizienten-Transformation sein, also läuft sie über Schwellwert (Default 128) nach PBM und von dort als JBIG2 mit gemeinsamem Wörterbuch ins PDF (Abschnitt zu `jbig2` unten). Benannt und begrenzt heißt: Die Regel nennt ihre Ausnahmen beim Namen, statt zu schweigen, wo sie endet — eine dritte Ausnahme gibt es nicht, ohne dass sie hier stehen müsste.
 
 Die verworfene Alternative wäre **Verarbeitung mit einer Allzweck-Bibliothek** (bequem: schneiden, skalieren, normalisieren aus einer Hand). Ihr Preis wäre eine stille Neukomprimierung jeder Seite — genau der Qualitätsverlust, den diese Entscheidung verbietet — plus eine große zusätzliche Systemabhängigkeit.
 
@@ -394,7 +386,7 @@ Die verworfene Alternative wäre **Verarbeitung mit einer Allzweck-Bibliothek** 
 
 **Rohes JPEG-Einbetten bestätigt.** PDFBox-Rücklesen: Filter `/DCTDecode`, die Byte aus `COSStream.createRawInputStream()` sind bytegleich mit den Quell-JPEGs (373.983 und 1.068.347 Byte). Keine Neukodierung. Alles, was über `java.awt.Image`/`BufferedImage` liefe, ist zu vermeiden (dekodiert + kodiert neu) — der Code-Kommentar in `PdfBuilder` trägt das; hier steht die gemessene Tatsache.
 
-**brotli4j: AUSGESCHLOSSEN.** Gemessen: Die POM von OpenPDF listet `com.aayushatharva.brotli4j:brotli4j:1.23.0` OHNE `<optional>true</optional>` (anders als fop direkt darüber), landet also transitiv auf dem Laufzeit-Classpath (bestätigt via `dependencies --configuration runtimeClasspath`); sie bringt native Bibliotheken mit. ABER `Document.useBrotliCompression` steht auf `false` — Brotli-Kompression der Content-Streams ist ein Opt-in, das wir nie nutzen, und das Spike-PDF baute sich mit fehlendem brotli4j auf dem Classpath problemlos. Entscheidung: Ausschluss in `build.gradle.kts` (`exclude(group = "com.aayushatharva.brotli4j")`) — „Abhängigkeiten minimal" ist eine feste Entscheidung, und native Bibliotheken berühren die GraalVM-Option, die der Plan offen hält. Der Ausschluss wird in #145 angewendet; hier ist er mit Begründung entschieden.
+**brotli4j: AUSGESCHLOSSEN.** Gemessen: Die POM von OpenPDF listet `com.aayushatharva.brotli4j:brotli4j:1.23.0` OHNE `<optional>true</optional>` (anders als fop direkt darüber), landet also transitiv auf dem Laufzeit-Classpath (bestätigt via `dependencies --configuration runtimeClasspath`); sie bringt native Bibliotheken mit. ABER `Document.useBrotliCompression` steht auf `false` — Brotli-Kompression der Content-Streams ist ein Opt-in, das wir nie nutzen, und das Spike-PDF baute sich mit fehlendem brotli4j auf dem Classpath problemlos. Entscheidung: Ausschluss in `build.gradle.kts` (`exclude(group = "com.aayushatharva.brotli4j")`) — native Bibliotheken berühren die GraalVM-Option, die der Plan offen hält. Der Ausschluss wird in #145 angewendet; hier ist er mit Begründung entschieden.
 
 **Java 26 / Kotlin 2.4.20.** Der Spike lief auf JDK 26.0.2 (Temurin, der Dev Container) ohne Warnungen. Die Kombination mit Kotlin 2.4.20 ist durch den echten Bau in den Work Orders 5A/5B (#145/#146) belegt — das steht hier schlicht so, statt zu behaupten, es sei in diesem Spike bewiesen.
 
@@ -406,7 +398,7 @@ Die verworfene Alternative wäre **Verarbeitung mit einer Allzweck-Bibliothek** 
 
 **Aufgegeben wurde dafür Vertrautes.** PDFBox ist die weiter verbreitete Bibliothek, und seine `JPEGFactory` war eine verstandene Naht: bekannt, wo das rohe JPEG hineingeht und wo Neukodierung droht. Auf der neuen Engine musste der JPEG-Pfad neu verifiziert werden — das ist geschehen (Spike #141, Abschnitt oben: `/DCTDecode`, Rohstrom bytegleich). Der Wechsel kauft die JBIG2-Fähigkeit mit dem Preis einer erneut geprüften JPEG-Einbettung.
 
-**PDFBox bleibt im Test-Scope — als unabhängiger Prüfer, nicht als zweite Engine.** Ein Prüfer, der derselbe Code ist wie der Erzeuger, beweist nichts: OpenPDF, das sein eigenes PDF gegenliest, bestätigt nur sich selbst. PDFBox liest, was OpenPDF geschrieben hat, als unabhängige zweite Implementierung — und `COSStream.createRawInputStream()` ist der einzige Weg zu beweisen, dass ein JPEG ohne Neukodierung im PDF liegt. Das ist eine bewusste, dokumentierte Ausnahme von „Abhängigkeiten minimal": eine TEST-Abhängigkeit (`testImplementation("org.apache.pdfbox:pdfbox:3.0.8")`), der Laufzeit-Classpath bleibt unberührt. Die Dependency-Zeile in `build.gradle.kts` trägt dieselbe Begründung.
+**PDFBox bleibt im Test-Scope — als unabhängiger Prüfer, nicht als zweite Engine.** Ein Prüfer, der derselbe Code ist wie der Erzeuger, beweist nichts: OpenPDF, das sein eigenes PDF gegenliest, bestätigt nur sich selbst. PDFBox liest, was OpenPDF geschrieben hat, als unabhängige zweite Implementierung — und `COSStream.createRawInputStream()` ist der einzige Weg zu beweisen, dass ein JPEG ohne Neukodierung im PDF liegt. PDFBox wird als reine TEST-Abhängigkeit geführt (`testImplementation("org.apache.pdfbox:pdfbox:3.0.8")`), der Laufzeit-Classpath bleibt unberührt. Die Dependency-Zeile in `build.gradle.kts` trägt dieselbe Begründung.
 
 **Determinismus: entschieden, nicht neu vermessen.** Der Mechanismus steht im Spike-Abschnitt oben (#141): die FILEID-Naht in `writer.getInfo()`, die Negativkontrolle (ohne Festschreibung genau 56 Byte nur in `/ID`) und der bytegleiche Doppellauf. **Entscheidung: Die Golden-Master-Schicht behält ihren schärfsten Voll-Byte-Vergleich; ein Normalisierungs-Fallback ist nicht nötig.** Auch die brotli4j-Entscheidung (Ausschluss) ist dort bereits mit Begründung entschieden und wird hier nur referenziert, nicht wiederholt.
 
