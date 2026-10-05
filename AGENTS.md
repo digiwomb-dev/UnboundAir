@@ -2,11 +2,14 @@
 
 Dienst, der einen Mustek iScan Air (S400W) in einen „Einlegen und fertig"-Scanner verwandelt: automatisch scannen, verlustfrei zuschneiden, mehrseitige PDFs bauen und an konfigurierbare Ausgabe-Module übergeben (erstes Modul: paperless-ngx). Kotlin + Spring Boot, Betrieb als Container.
 
+**Die Regeln dieses Projekts stehen in `CONTRIBUTING.md`** – Sprache, Commits, Git-Ablauf, Issue-Konvention und Leitplanken. Sie gelten unverändert; diese Datei wiederholt sie nicht, sondern ergänzt sie um die Mechanik einer Arbeitssitzung.
+
 ## Zu Beginn jeder Session
 
 1. Diese Datei lesen.
-2. `docs/plan.md` lesen: Auftrag, feste Entscheidungen, Anforderungen.
-3. Offene Arbeit in GitHub nachschlagen: [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues). Beim ersten offenen Issue im aktuellen Meilenstein weitermachen. Gibt es weder Plan noch Issues: nachfragen.
+2. `CONTRIBUTING.md` lesen: die Regeln.
+3. `docs/plan.md` lesen: Auftrag, feste Entscheidungen, Anforderungen.
+4. Offene Arbeit in GitHub nachschlagen: [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues). Beim ersten offenen Issue im aktuellen Meilenstein weitermachen. Gibt es weder Plan noch Issues: nachfragen.
 
 Fachliche Grundlage ist `docs/protokoll.md` – solange es die noch nicht gibt, `_input/iscan-air-wissen.md`.
 
@@ -19,44 +22,17 @@ Fachliche Grundlage ist `docs/protokoll.md` – solange es die noch nicht gibt, 
   2. `Nächster Schritt:` – genau EIN Schritt.
 - Danach nichts mehr tun und auf mein „Go" warten.
 
-## Arbeitsregeln
-
-- **Sprache:** Doku (README, `docs/`) primär auf Deutsch; Deutsch ist die führende Fassung. Eine englische Übersetzung kommt später ins Repo – wie, ist noch offen, bis dahin nur Deutsch schreiben. Code, Kommentare, Logs, CLI-Texte und Commit-Messages auf Englisch.
-- **Commits und PRs:** Conventional Commits, kleine Commits pro Schritt. PR-Titel ebenfalls nach Conventional Commits und auf Englisch, weil der PR-Titel beim Squash-Merge oft zur Commit-Message wird. PR-Beschreibung auf Englisch.
-- **`_input/` nie committen.** Inhalte gezielt überführen: Wissen → `docs/`, Testbild → Test-Ressourcen, Python-Referenzcode in Kotlin neu schreiben (nicht 1:1 übersetzen).
-- **Kein Hersteller-Code**, keine Mustek-Binärdateien oder Installer im Repo.
-- **Kein Zugriff auf den echten Scanner** ohne meine ausdrückliche Freigabe. Entwickelt und getestet wird gegen den Fake-Scanner.
-- **Tests laufen im Dev Container,** nicht direkt auf meinem Rechner.
-- **Keine Secrets im Repo.** Token nur per Umgebungsvariable oder Datei.
-- **Feste Entscheidungen** aus `docs/plan.md` gelten. Willst du davon abweichen: erst fragen.
-
-## Leitplanken – nie verletzen
-
-Kurzfassung. Maßgeblich sind die ausführlichen Formulierungen in `docs/plan.md` unter „Feste Entscheidungen" – bei Abweichungen gilt der Plan.
-
-- **Nie neu komprimieren:** Zuschnitt und Graustufen nur per `jpegtran`, JPEGs unverändert ins PDF (OpenPDF, roh als `/DCTDecode`). Zwei benannte Ausnahmen: optionales `normalize` (Default aus) und `bw` (SV-08: 1-bit ist keine DCT-Transformation).
-- **Scanner-Antworten per Präfix vergleichen** – das Gerät hängt Füllbytes an.
-- **Ausgabe-Module per Laufzeit-Auswahl,** kein `@ConditionalOnProperty` o. Ä. (hält GraalVM Native Image offen).
-- **Nichts am Protokoll erfinden.** Was offen ist, konfigurierbar bauen und in `docs/offene-fragen.md` führen.
-- Kein SANE, kein AirScan, kein eSCL. Keine Web-UI in v1.
-
 ## Planung vor dem Bauen
 
 - **Issues vor jedem Meilenstein:** Bevor du einen Meilenstein baust, legst du die Arbeit als GitHub-Issues im zugehörigen Milestone an: je Aufgabe genau eine Datei, ein prüfbares Abnahmekriterium und die umgesetzten Anforderungs-IDs. Impl+Test-Paare werden als Eltern-Issue mit zwei Sub-Issues angelegt. Gebaut wird erst nach meinem „Go" zu den Issues. Abgehakt (Issue geschlossen) wird erst, wenn eine Aufgabe gebaut **und** abgenommen ist – geschrieben allein genügt nicht.
-- **Issue-Konvention:** Jedes Issue ist auf Englisch und trägt seinen GitHub-Issue-Typ plus genau ein `kind/*`-Label – daran ist filterbar, um welche Art Arbeit es sich handelt. Die Vorlagen unter `.github/ISSUE_TEMPLATE/` setzen beides selbst; Blanko-Issues sind abgeschaltet.
-
-  | Rolle | Typ | Label | Titel |
-  |---|---|---|---|
-  | Eltern-Aufgabe | `Task` | `kind/parent` | `task(<scope>): <text> (<IDs>)` |
-  | Umsetzung | `Feature` | `kind/feat` | `feat(<scope>): <text>` |
-  | Test | `Test` | `kind/test` | `test(<schicht>): <IDs> <text>` |
-  | Fehler | `Bug` | `kind/bug` | `fix(<scope>): <text>` |
-  | Doku | `Task` | `kind/docs` | `docs(<scope>): <text>` |
-  | Infrastruktur | `Task` | `kind/chore` | `chore(<scope>): <text>`, `spike(<scope>): <text>` |
-
-  Dazu: Der Scope ist Pflicht und benennt das Paket (`config`, `scanner`, `image`, `processing`, `output`, `outbox`, `paperless`, `service`, `batch`, `cli`, `pdf`, `logging`, `app`, `test`). Bei `test(…)` steht an der Stelle des Scopes die **Testschicht** aus `docs/teststrategie.md`, nie das Paket – und dieselbe Schicht zusätzlich als Label. Keine `T<n>`-Nummern im Titel; die Reihenfolge im Meilenstein steht als `Work order: <n>` im Eltern-Issue. Ein Eltern-Issue bekommt nur, wer Sub-Issues hat, und trägt kein Schicht-Label.
-- **`blocked` wieder abnehmen.** Das Label `blocked` zeigt an, dass ein **offenes** Issue auf etwas anderes wartet – der Filter dazu heißt `is:open label:blocked`. Sobald die Abhängigkeit steht, nimmst du es ab; spätestens beim Schließen. Ein geschlossenes Issue trägt nie `blocked`. (Bis Meilenstein 4 fehlte dieser Schritt: 29 geschlossene Issues schleppten das Label mit, weil es beim Anlegen gesetzt und nie entfernt wurde.)
+- Das Titel- und Label-Schema für Issues steht in `CONTRIBUTING.md`.
 - **Erst Plan, dann Verhalten:** Soll sich etwas gegenüber `docs/plan.md` ändern, passt du zuerst den Plan an – nach meinem OK – und erst dann den Code.
+
+## Arbeitsregeln für die Sitzung
+
+- **Tests laufen im Dev Container,** nicht direkt auf meinem Rechner. Kannst du sie dort nicht starten: sag es mir – lass sie nicht stillschweigend woanders laufen.
+- **Kein Zugriff auf den echten Scanner** ohne meine ausdrückliche Freigabe.
+- **Feste Entscheidungen** aus `docs/plan.md` gelten. Willst du davon abweichen: erst fragen.
 
 ## Fortschritt
 
@@ -68,4 +44,4 @@ Kurzfassung. Maßgeblich sind die ausführlichen Formulierungen in `docs/plan.md
 - Subagent `reviewer`: darf nur lesen und Tests ausführen, ändert nichts.
 - Aufruf: am Ende jedes Meilensteins automatisch, sonst wenn ich `@reviewer` schreibe.
 - Seinen Befund zeigst du mir unverändert. Behoben wird erst nach meinem „Go", ein Befund pro Schritt.
-- Welches Modell er nutzt, lege ich in seiner Agent-Datei fest – nicht ändern.
+- Welches Modell er nutzt, lege ich fest – nicht ändern.

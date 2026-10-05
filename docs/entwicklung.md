@@ -167,47 +167,7 @@ sha256sum gradle/wrapper/gradle-wrapper.jar
 
 ## Zusammenarbeit am Repository
 
-Arbeit wird über GitHub-Issues organisiert: je Aufgabe ein Issue, Commits referenzieren das Issue (`(#n)`/`Closes #n`). Commits folgen den Conventional Commits und bleiben klein.
-
-### Issues finden
-
-Jedes Issue trägt einen Issue-Typ und genau ein `kind/*`-Label (Schema in `AGENTS.md` unter „Issue-Konvention"). Damit lässt sich gezielt filtern, statt die ganze Liste zu lesen:
-
-| Was du suchst | Filter |
-|---|---|
-| alle Eltern-Aufgaben | `label:kind/parent` |
-| offene Umsetzungsarbeit | `is:open label:kind/feat` |
-| offene Tests im aktuellen Meilenstein | `is:open label:kind/test milestone:4` |
-| Tests einer Schicht | `label:kind/test label:integration` |
-| offene Fehler | `is:open label:kind/bug` |
-| was auf etwas anderes wartet | `is:open label:blocked` |
-
-Das `is:open` in der letzten Zeile ist kein Zufall: `blocked` beschreibt einen Zustand, den nur offene Arbeit haben kann. Steht die Abhängigkeit, wird das Label abgenommen – spätestens beim Schließen des Issues.
-
-Auf der Kommandozeile dasselbe über `gh`:
-
-```bash
-gh issue list --label kind/parent --milestone 4
-gh issue list --label kind/test --label integration --state open
-```
-
-### Woran du siehst, was wann dran ist
-
-Ein Filter zeigt, *welche* Arbeit es gibt – nicht, in welcher Folge. Die steht im Eltern-Issue: `Work order` ist seine Position im Meilenstein, die `Sub-issues`-Zeile listet die Sub-Issues in der Reihenfolge, in der sie abgearbeitet werden. Die Eltern-Aufgaben eines Meilensteins der Reihe nach:
-
-```bash
-gh issue list --label kind/parent --milestone 4 --state all --json number,title,body \
-  --jq 'map(. + {order: (.body | capture("\\*\\*Work order:\\*\\* (?<w>[0-9]+)").w | tonumber)})
-        | sort_by(.order) | .[] | "\(.order)  #\(.number)  \(.title)"'
-```
-
-Und für eine einzelne Aufgabe die Sub-Issues in Arbeitsreihenfolge:
-
-```bash
-gh issue view 109 --json body --jq '.body | capture("\\*\\*Sub-issues:\\*\\* (?<s>.*)").s'
-```
-
-Neue Issues entstehen immer über eine Vorlage aus `.github/ISSUE_TEMPLATE/`, weil sie Typ und Rolle-Label selbst setzen; Blanko-Issues sind abgeschaltet.
+Wie Issues benannt und gefiltert werden, wie Commits und Pull Requests aussehen und welche Leitplanken gelten, steht in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ## Warum der Umweg über den Dev Container
 
@@ -224,7 +184,7 @@ Der Container enthält dieselben Systemabhängigkeiten wie das spätere Laufzeit
 
 Wer hier neu dazukommt, liest in dieser Reihenfolge:
 
-1. `AGENTS.md` – wie gearbeitet wird, Leitplanken, Regeln
+1. [`CONTRIBUTING.md`](../CONTRIBUTING.md) – die Regeln: Sprache, Commits, Git-Ablauf, Issue-Konvention, Leitplanken
 2. `docs/plan.md` – Auftrag, feste Entscheidungen, Anforderungen mit IDs
 3. die GitHub-Milestones und -Issues – offene Aufgaben, was in Arbeit und was erledigt ist
 4. diese Datei – Bauen und Testen

@@ -1,6 +1,6 @@
 # Plan: `UnboundAir`
 
-Dieser Plan ist der Auftrag für das Projekt: Ziel, feste Entscheidungen und Anforderungen. Der Fortschritt (Meilensteine, Aufgaben) lebt in GitHub – siehe „Arbeit wird in GitHub getrackt". Wie gearbeitet wird, steht in `AGENTS.md`. Fachliche Grundlage ist `docs/protokoll.md` – solange es die noch nicht gibt, `_input/iscan-air-wissen.md`.
+Dieser Plan ist der Auftrag für das Projekt: Ziel, feste Entscheidungen und Anforderungen. Der Fortschritt (Meilensteine, Aufgaben) lebt in GitHub – siehe „Arbeit wird in GitHub getrackt". Nach welchen Regeln gearbeitet wird, steht in `CONTRIBUTING.md`. Fachliche Grundlage ist `docs/protokoll.md` – solange es die noch nicht gibt, `_input/iscan-air-wissen.md`.
 
 Der Dienst verwandelt einen Mustek iScan Air (S400W) in einen „Einlegen und fertig"-Scanner. Die fertigen Dokumente gehen an konfigurierbare Ausgabe-Module; das erste Modul ist paperless-ngx.
 
@@ -10,6 +10,7 @@ Diese Dateien sind von Anfang an im Repo und werden nur nach Rückfrage geänder
 
 - `.gitignore` (enthält `_input/`)
 - `AGENTS.md`
+- `CONTRIBUTING.md`
 - `docs/plan.md` (diese Datei)
 
 `_input/` liegt nur lokal vor und wird nie committet. Inhalte daraus gezielt überführen: Wissen → `docs/`, Testbild → Test-Ressourcen, Python-Referenzcode in Kotlin neu schreiben (nicht 1:1 übersetzen).
@@ -279,7 +280,7 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
 
 Der Fortschritt lebt nicht mehr in dieser Datei, sondern in GitHub: [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues). Jeder Meilenstein aus „Umfang von v1" ist ein Milestone, jede Aufgabe ein Issue – Impl+Test-Paare als Eltern-Issue mit zwei Sub-Issues. Welche Anforderungen ein Meilenstein umsetzt, steht in seiner Milestone-Beschreibung. Labels, Milestones, Issues und die Issue-Vorlagen sind auf Englisch – wie Code, Commits und PR-Titel; nur die Doku ist Deutsch.
 
-Damit die Art einer Aufgabe filterbar ist, trägt jedes Issue einen GitHub-Issue-Typ und genau ein `kind/*`-Label; das Titel-Schema steht in `AGENTS.md` unter „Issue-Konvention". Die Labels teilen sich in drei Gruppen, die sich nicht überschneiden:
+Damit die Art einer Aufgabe filterbar ist, trägt jedes Issue einen GitHub-Issue-Typ und genau ein `kind/*`-Label; das Titel-Schema steht in `CONTRIBUTING.md` unter „Issues". Die Labels teilen sich in drei Gruppen, die sich nicht überschneiden:
 
 - **Rolle** (genau eine je Issue): `kind/parent`, `kind/feat`, `kind/test`, `kind/bug`, `kind/docs`, `kind/chore`
 - **Testschicht** (nur auf Test-Issues, mehrere möglich): `unit`, `property`, `slice`, `integration`, `contract`, `e2e`, `golden-master`, `mutation`, `guard`
