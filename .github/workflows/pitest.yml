@@ -1,13 +1,20 @@
-# TE-04 mutation run on demand: `./gradlew pitest` over all core packages.
+# TE-04 mutation run on demand: `./gradlew pitest` over all core packages,
+# executed inside the project's dev container (docs/plan.md, "Git-Ablauf").
+#
+# The dev container is the environment the measurements are made in
+# (.devcontainer/Dockerfile - JDK 26, jpegtran, jbig2), so the run happens
+# inside that image instead of a runner-side re-creation of it.
+# devcontainer.json is deliberately not used here: the official
+# devcontainers/ci action would run the following upload/cache steps inside
+# the container too, and those are JavaScript actions - the image would
+# need Node for CI's sake alone. The plain `docker run` gets the same
+# environment without touching the dev container.
 #
 # The full run takes roughly 2.5 h (docs/entwicklung.md), so it is
-# deliberately NOT wired to any push trigger - it starts only by hand
-# from the Actions tab (workflow_dispatch), on the dev branch. This is
-# the only CI piece ahead of milestone 6 (docs/plan.md, "Git-Ablauf").
-#
-# The workflow file must also exist on `main`, the default branch: the
-# Actions UI only offers workflows from the default branch for a manual
-# start, even though the run itself happens on dev.
+# deliberately NOT wired to any push trigger - it starts only by hand from
+# the Actions tab (workflow_dispatch), on the dev branch. The workflow file
+# must also exist on `main`, the default branch: the Actions UI only offers
+# workflows from the default branch for a manual start.
 name: pitest
 
 on:
@@ -31,30 +38,47 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v5
 
-      - name: Install the system dependencies of the core
-        # jpegtran (lossless crop and grayscale) and jbig2 (1-bit pages,
-        # SV-08) are real programs invoked by the tests under mutation -
-        # the same two packages the dev container and the runtime image
-        # install (.devcontainer/Dockerfile). The binary package is
-        # `jbig2`, not `jbig2enc` (that is the source package).
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends --yes libjpeg-turbo-progs jbig2
+      - name: Build the dev container image
+        # The same image local development uses: JDK 26, jpegtran and
+        # jbig2 all come from .devcontainer/Dockerfile, the single source
+        # for the development environment.
+        run: docker build -t unboundair-devcontainer .devcontainer/
 
-      - name: Set up Java 26 (Temurin)
-        uses: actions/setup-java@v5
+      - name: Check the dev container answers like DC-01 wants
+        # Mirrors the devcontainer.json postAttachCommand: all three tools
+        # have to answer inside the container. `jbig2 -V` prints to stderr
+        # and exits 0; the chain relies on the exit code.
+        run: docker run --rm unboundair-devcontainer sh -c 'java -version && jpegtran -version && jbig2 -V'
+
+      - name: Cache the Gradle home across runs
+        # The Gradle home lives in the workspace (mounted into the
+        # container), so the cache lands on the runner's disk and survives
+        # both the container and the run - each run starts from the
+        # previous one's cache instead of re-downloading everything.
+        uses: actions/cache@v4
         with:
-          distribution: temurin
-          java-version: '26'
+          path: .gradle
+          key: gradle-home-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-home-${{ runner.os }}-
 
-      - name: Set up Gradle caching
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Run the full mutation analysis
+      - name: Run the full mutation analysis in the dev container
         # Not `build` or `check`: PIT is its own task on purpose. The 66 %
         # threshold is the floor pinned in build.gradle.kts - a drop fails
         # this step instead of passing unnoticed.
-        run: ./gradlew pitest
+        # The workspace is bind-mounted the way the dev containers CLI
+        # does it (/workspaces/<folder name>); UID 1001 is the runner
+        # user, who owns the files in that mount. HOME and the Gradle
+        # home point into the mount because /home/ubuntu belongs to the
+        # image's ubuntu user (UID 1000), not to UID 1001.
+        run: |
+          docker run --rm \
+            --user 1001 \
+            -v "${{ github.workspace }}:/workspaces/UnboundAir" \
+            -w /workspaces/UnboundAir \
+            -e HOME=/workspaces/UnboundAir/.gradle \
+            -e GRADLE_USER_HOME=/workspaces/UnboundAir/.gradle \
+            unboundair-devcontainer \
+            ./gradlew pitest
 
       - name: Upload the mutation report
         # The report lives only on the runner; without this step a 2.5 h
