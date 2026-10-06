@@ -1,0 +1,101 @@
+# Documentation site: static build in CI, published to GitHub Pages (DO-13).
+#
+# Constraints from the data protection review live here as much as in the
+# site itself; each carries its condition number from #229.
+#
+# Node is confined to site/: Gradle, the dev container and the runtime image
+# never touch it, and ./gradlew build must not need it.
+
+# No permissions by default; every job takes exactly what it needs.
+# The pull-request build ends up with contents:read and nothing else.
+permissions: {}
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      # Condition 1: Astro's build telemetry posts to telemetry.astro.build
+      # from the runner; isCI only silences the notice, not the sending.
+      ASTRO_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Install site dependencies
+        # Condition 9: ci with frozen scripts refused — no postinstall runs
+        # on the runner. esbuild still works: npm carries its platform
+        # binary as an optional dependency, which needs no script.
+        working-directory: site
+        run: npm ci --ignore-scripts
+      - name: Inject imprint from secrets (seam for #234, DS-02)
+        # docs/de/legal-notice.md arrives with #234; until then there is
+        # nothing to substitute and this step succeeds trivially.
+        # Fork pull requests get no secrets, so the substitution and the
+        # assertion below are both skipped there — with comment, not
+        # silently: their builds never deploy (see the deploy job), so a
+        # placeholder cannot leak onto the published site.
+        if: github.event.pull_request.head.repo.fork != 'true'
+        env:
+          IMPRINT_NAME: ${{ secrets.IMPRINT_NAME }}
+          IMPRINT_ADDRESS: ${{ secrets.IMPRINT_ADDRESS }}
+        run: |
+          if [ ! -f docs/de/legal-notice.md ]; then exit 0; fi
+          # A published placeholder is worse than a missing page.
+          test -n "$IMPRINT_NAME" || { echo "IMPRINT_NAME is empty" >&2; exit 1; }
+          test -n "$IMPRINT_ADDRESS" || { echo "IMPRINT_ADDRESS is empty" >&2; exit 1; }
+          sed -i "s|{{IMPRINT_NAME}}|${IMPRINT_NAME}|g; s|{{IMPRINT_ADDRESS}}|${IMPRINT_ADDRESS}|g" docs/de/legal-notice.md
+      - name: Build the site
+        working-directory: site
+        run: npm run build
+      - name: Assert no imprint placeholders remain
+        # Skipped on fork pull requests together with the substitution above;
+        # see the comment there.
+        if: github.event.pull_request.head.repo.fork != 'true'
+        run: |
+          if grep -rn "{{IMPRINT_" site/dist/; then
+            echo "imprint placeholders reached the output" >&2
+            exit 1
+          fi
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: site/dist
+
+  # The DS-01 gate (#233) will sit between build and deploy: the deploy job
+  # will depend on it, not merely run beside it. Until #233 lands, flipping
+  # the Pages source to "GitHub Actions" in the repository settings waits —
+  # building without deploying is fine, publishing without the gate is not.
+  deploy:
+    # No deploy from a pull request: only the default branch carries values
+    # worth publishing, and fork builds must never publish.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

@@ -1,3 +1,7 @@
+---
+title: Hardware
+---
+
 # Hardware: Mustek iScan Air (S400W)
 
 Das Gerät selbst: was der Scanner körperlich kann, welche Werte daran gemessen wurden und welche Eigenheiten er zeigt. Das Gegenstück ist `docs/de/protocol.md`: Dort steht, **wie** mit dem Gerät gesprochen wird (Befehle, Ablauf, Antwortformate); hier steht, **womit** gesprochen wird. Wo beides sich berührt, wird verwiesen statt wiederholt.

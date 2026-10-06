@@ -1,6 +1,10 @@
+---
+title: Ausgabe-Module
+---
+
 # Ausgabe-Module
 
-Wie ein fertiges Dokument vom Dienst zu den Ausgabe-Modulen kommt (AU-02, AU-03, AU-04). Diese Datei beschreibt die allgemeine Schnittstelle und die Kette; was die einzelnen Einstellungen bedeuten, steht in `konfiguration.md`. v1 bringt genau ein Modul mit, paperless-ngx — dessen Besonderheiten beschreibt der Abschnitt „Das Modul paperless-ngx" weiter unten.
+Wie ein fertiges Dokument vom Dienst zu den Ausgabe-Modulen kommt (AU-02, AU-03, AU-04). Diese Datei beschreibt die allgemeine Schnittstelle und die Kette; was die einzelnen Einstellungen bedeuten, steht in `configuration.md`. v1 bringt genau ein Modul mit, paperless-ngx — dessen Besonderheiten beschreibt der Abschnitt „Das Modul paperless-ngx" weiter unten.
 
 Die Kette ist bewusst schmal: Ein fertiges Dokument wird erst gespeichert und dann übergeben, und der Eintrag wird erst gelöscht, wenn ein Modul die Zustellung bestätigt hat. Dazwischen liegt kein weiterer Zustand — deshalb verliert ein Neustart nichts.
 
@@ -58,11 +62,11 @@ Die Outbox liegt in `output/outbox/Outbox.kt`, der antreibende Läufer in `servi
 
 Der Kern ist die Reihenfolge: Erst speichern, dann übergeben; erst nach bestätigter Zustellung löschen. Bis dahin ist die Outbox die einzige Kopie. Weil `recover` beim Bau der Outbox dieselben Verzeichnisse wieder einliest — samt fortgeschriebener Versuche und Termine — findet ein Neustart seine ausstehende Arbeit wieder: Nichts, was einmal angenommen war, geht durch einen Absturz verloren. Die Outbox selbst ist passiv angelegt — kein Faden, kein Zeitgeber, keine Kenntnis der Module; sie speichert, benennt Fälliges und hält ihr gemeldete Ergebnisse fest. Die Uhr dreht der Läufer in der Dienstschicht.
 
-Die Wartezeiten stehen als Konstruktor-Parameter an der Outbox, nicht als Einstellungen — sie stimmen einen Algorithmus je Instanz ab, den niemand im Betrieb umstellen muss, weshalb `konfiguration.md` dafür bewusst keinen Schalter kennt. Die Werte (`Outbox`-Defaults, festgehalten in `backoffDelay`): 30 Sekunden nach dem ersten Fehlversuch, Verdopplung bei jedem weiteren, gedeckelt bei einer Stunde, Versuche unbegrenzt. Mit den Defaults lautet die Folge also 30 s, 1 min, 2 min, … gedeckelt bei 1 h.
+Die Wartezeiten stehen als Konstruktor-Parameter an der Outbox, nicht als Einstellungen — sie stimmen einen Algorithmus je Instanz ab, den niemand im Betrieb umstellen muss, weshalb `configuration.md` dafür bewusst keinen Schalter kennt. Die Werte (`Outbox`-Defaults, festgehalten in `backoffDelay`): 30 Sekunden nach dem ersten Fehlversuch, Verdopplung bei jedem weiteren, gedeckelt bei einer Stunde, Versuche unbegrenzt. Mit den Defaults lautet die Folge also 30 s, 1 min, 2 min, … gedeckelt bei 1 h.
 
 ## Das Modul paperless-ngx
 
-Das Modul liegt in `output/paperless/PaperlessModule.kt` und lädt das fertige PDF in eine paperless-ngx-Instanz hoch (AU-05, AU-06). Was die einzelnen Einstellungen bedeuten, steht in `konfiguration.md` unter „Ausgabe"; hier steht, was das Modul mit ihnen tut.
+Das Modul liegt in `output/paperless/PaperlessModule.kt` und lädt das fertige PDF in eine paperless-ngx-Instanz hoch (AU-05, AU-06). Was die einzelnen Einstellungen bedeuten, steht in `configuration.md` unter „Ausgabe"; hier steht, was das Modul mit ihnen tut.
 
 Der Modulname ist `paperless` — genau diese Zeichenkette gehört in `unboundair.output.modules` (Umgebungsvariable `UNBOUNDAIR_OUTPUT_MODULES`), sonst bekommt das Modul keine Dokumente. Die Auswahl vergleicht Namen exakt, und ein unbekannter Name verweigert den Start.
 
@@ -74,7 +78,7 @@ Der Multipart-Teil trägt den Dateinamen `scan-JJJJMMTT-HHMMSS.pdf`, neu gebaut 
 
 Die optionalen Felder werden nur mitgeschickt, wenn sie konfiguriert sind: `correspondent` aus `unboundair.output.paperless.correspondent` und `document_type` aus `unboundair.output.paperless.document-type` reisen nur mit, wenn ein Wert gesetzt ist; `tags` aus `unboundair.output.paperless.tags` reisen als wiederholte Formularfelder, eines pro Schlagwort-Nummer. Ohne Absender oder Dokumenttyp leitet paperless die Angabe selbst her; ohne Schlagwörter schickt das Modul schlicht keine mit.
 
-Der Token (AU-05) kommt aus `unboundair.output.paperless.token` oder aus der Datei unter `unboundair.output.paperless.token-file` — Umgebungsvariable oder Datei. Ist eine Token-Datei gesetzt, gewinnt sie, auch wenn zusätzlich ein Token gesetzt ist; ist keines von beidem gesetzt, startet der Dienst gar nicht erst. Die Einzelheiten stehen in `konfiguration.md` unter „Token-Auflösung" und werden hier bewusst nicht wiederholt. Der Token landet nur im Request-Kopf; Logs und Fehlermeldungen nennen Endpunkt und Status, niemals den Token — `PaperlessSettings` maskiert ihn sogar in seiner eigenen Textdarstellung.
+Der Token (AU-05) kommt aus `unboundair.output.paperless.token` oder aus der Datei unter `unboundair.output.paperless.token-file` — Umgebungsvariable oder Datei. Ist eine Token-Datei gesetzt, gewinnt sie, auch wenn zusätzlich ein Token gesetzt ist; ist keines von beidem gesetzt, startet der Dienst gar nicht erst. Die Einzelheiten stehen in `configuration.md` unter „Token-Auflösung" und werden hier bewusst nicht wiederholt. Der Token landet nur im Request-Kopf; Logs und Fehlermeldungen nennen Endpunkt und Status, niemals den Token — `PaperlessSettings` maskiert ihn sogar in seiner eigenen Textdarstellung.
 
 Bei Erfolg und Fehlschlag gilt der Vertrag der Schnittstelle (AU-06): Eine 2xx-Antwort liefert die UUID des paperless-Verarbeitungsauftrags, die auf INFO protokolliert wird (`paperless-ngx accepted the document; consumption task ...`), damit man das Dokument in paperless wiederfindet. Jeder andere Status und jeder Transportfehler führen zu einer Ausnahme — die Outbox behält das Dokument und versucht es später erneut.
 
@@ -86,7 +90,7 @@ UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL=https://paperless.example.org
 UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE=/run/secrets/paperless-token
 ```
 
-Dabei gilt die Schreibregel aus `konfiguration.md`: Jeder Punkt wird ein Unterstrich, jeder Bindestrich entfällt ersatzlos — also `UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL`, nicht `..._BASE_URL`.
+Dabei gilt die Schreibregel aus `configuration.md`: Jeder Punkt wird ein Unterstrich, jeder Bindestrich entfällt ersatzlos — also `UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL`, nicht `..._BASE_URL`.
 
 ## Ein neues Modul schreiben
 

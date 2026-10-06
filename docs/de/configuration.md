@@ -1,3 +1,7 @@
+---
+title: Konfiguration
+---
+
 # Konfiguration
 
 Alle Einstellungen von `UnboundAir` mit Default und Umgebungsvariable (DO-09, Anforderung KL-01). Diese Datei ist die Referenz: Was der Code kennt, steht hier – und was hier steht, gibt es auch im Code.

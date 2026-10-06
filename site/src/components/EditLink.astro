@@ -1,0 +1,62 @@
+---
+/*
+ * Custom "edit this page" link. Starlight's default builds the URL as
+ * `editLink.baseUrl + entry.filePath`, where filePath is the path below
+ * the site directory (`src/content/docs/de/operations.md`) — that file
+ * does not exist in the repository, because the collection is fed through
+ * locale symlinks (see Spike E in docs/internal/entscheidungen.md). This
+ * component strips the collection prefix, so the link lands on the real
+ * source file (`docs/de/operations.md`). Per-page `editUrl` frontmatter
+ * (false to hide, string to override) keeps working.
+ *
+ * The pencil icon is Starlight's own, inlined because its Icon component
+ * is not importable from user components.
+ */
+const { entry } = Astro.locals.starlightRoute;
+const editUrlFrontmatter: unknown = entry.data.editUrl;
+
+const collectionPrefix = 'src/content/docs/';
+let href: URL | undefined;
+if (editUrlFrontmatter === false) {
+  href = undefined;
+} else if (typeof editUrlFrontmatter === 'string') {
+  href = new URL(editUrlFrontmatter);
+} else {
+  const filePath = entry.filePath.startsWith(collectionPrefix)
+    ? entry.filePath.slice(collectionPrefix.length)
+    : entry.filePath;
+  // Points at dev, where documentation changes land.
+  href = new URL('https://github.com/digiwomb-dev/UnboundAir/edit/dev/docs/' + filePath);
+}
+---
+
+{
+  href && (
+    <a href={href} class="sl-flex print:hidden">
+      <svg
+        aria-hidden="true"
+        width="1.2em"
+        height="1.2em"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <path d="M22 7.24a1 1 0 0 0-.29-.71l-4.24-4.24a1 1 0 0 0-1.1-.22 1 1 0 0 0-.32.22l-2.83 2.83L2.29 16.05a1 1 0 0 0-.29.71V21a1 1 0 0 0 1 1h4.24a1 1 0 0 0 .76-.29l10.87-10.93L21.71 8c.1-.1.17-.2.22-.33a1 1 0 0 0 0-.24v-.14l.07-.05ZM6.83 20H4v-2.83l9.93-9.93 2.83 2.83L6.83 20ZM18.17 8.66l-2.83-2.83 1.42-1.41 2.82 2.82-1.41 1.42Z" />
+      </svg>
+      {Astro.locals.t('page.editLink')}
+    </a>
+  )
+}
+
+<style>
+  @layer starlight.core {
+    a {
+      gap: 0.5rem;
+      align-items: center;
+      text-decoration: none;
+      color: var(--sl-color-gray-3);
+    }
+    a:hover {
+      color: var(--sl-color-white);
+    }
+  }
+</style>

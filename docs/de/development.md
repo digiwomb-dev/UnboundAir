@@ -1,3 +1,7 @@
+---
+title: Entwicklung
+---
+
 # Entwicklung
 
 Wie man `UnboundAir` baut und testet. Gearbeitet wird ausschließlich im Dev Container – auf dem Rechner selbst muss außer einer Container-Runtime und dem Dev-Container-Tooling nichts installiert sein, insbesondere kein JDK und kein Gradle.
@@ -164,6 +168,20 @@ Beim Anheben der Gradle-Version ist diese Prüfsumme mitzuführen und erneut abz
 ```bash
 sha256sum gradle/wrapper/gradle-wrapper.jar
 ```
+
+## Dokumentationsseite
+
+Die Doku steht auch als gerenderte Seite bereit (deutsch, Englisch folgt mit DO-16): https://digiwomb-dev.github.io/UnboundAir/
+
+Lokal bauen (Node bleibt auf `site/` beschränkt — Gradle, Dev Container und Laufzeit-Image berührt das nicht):
+
+```bash
+cd site
+npm ci --ignore-scripts
+npm run build   # Ergebnis in site/dist/
+```
+
+Wie die Seite entsteht und was dabei aus Datenschutzgründen gilt, steht in `docs/internal/entscheidungen.md` (Abschnitte zur Doku-Seite und zur Übersetzung).
 
 ## Zusammenarbeit am Repository
 

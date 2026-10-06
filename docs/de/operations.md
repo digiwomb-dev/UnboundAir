@@ -1,3 +1,7 @@
+---
+title: Betrieb
+---
+
 # Betrieb
 
 Der Dienst läuft als Container (DO-03). Diese Datei beschreibt, was dafür auf dem Host und am Container gelten muss — unabhängig von einer bestimmten Container-Runtime. Befehle unten sind Beispiele, jeweils als solche markiert.

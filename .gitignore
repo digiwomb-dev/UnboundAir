@@ -16,3 +16,8 @@ build/
 
 # OS
 .DS_Store
+
+# Node (documentation site under site/ only)
+node_modules/
+site/dist/
+site/.astro/
