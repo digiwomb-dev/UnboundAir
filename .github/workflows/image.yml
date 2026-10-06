@@ -73,7 +73,7 @@ jobs:
             sleep 1
           done
           # Host networking: the container reaches the scanner over the
-          # host's network (docs/plan.md DO-03), so the FakeScanner on
+          # host's network (docs/internal/plan.md DO-03), so the FakeScanner on
           # 127.0.0.1:2323 is directly reachable from inside the container.
           docker run --rm --network host unboundair:ci status --host 127.0.0.1 --port 2323
           kill "$(cat fake-scanner.pid)"

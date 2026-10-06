@@ -1,5 +1,5 @@
 // All versions are pinned deliberately. The project follows the newest
-// stable release rather than the newest LTS; see docs/plan.md, "Feste
+// stable release rather than the newest LTS; see docs/internal/plan.md, "Feste
 // Entscheidungen", for the version table and the reasoning.
 
 plugins {
@@ -16,11 +16,11 @@ plugins {
     // it to every configuration, which replaces ktlint's own compiler with
     // the project's 2.4.20 and makes it crash. Spotless resolves its tools
     // through a detached configuration, which that mechanism does not touch.
-    // See docs/plan.md, "Entschieden", and OF-11.
+    // See docs/internal/plan.md, "Entschieden", and OF-11.
     id("com.diffplug.spotless") version "8.10.2"
 
     // Mutation testing (own task, never part of `build`/`check`). Verified on
-    // JUnit Platform 6 with pitest 1.25.5 - see docs/entscheidungen.md (Spike B).
+    // JUnit Platform 6 with pitest 1.25.5 - see docs/internal/entscheidungen.md (Spike B).
     id("info.solidsoft.pitest") version "1.19.0"
 }
 
@@ -79,7 +79,7 @@ dependencies {
 
     // Test tooling, pinned to the newest stable release and test-scope only so
     // the runtime classpath stays untouched (DC-03).
-    // See docs/plan.md (test-dependency table) and docs/entscheidungen.md for
+    // See docs/internal/plan.md (test-dependency table) and docs/internal/entscheidungen.md for
     // the selection rationale.
     //
     // Property-based tests. jqwik (>= 1.10) forbids use by AI coding agents,
@@ -176,7 +176,7 @@ tasks.register<JavaExec>("fakeScanner") {
     }
 }
 
-// Mutation testing (Spike B, docs/entscheidungen.md). PIT is not wired into
+// Mutation testing (Spike B, docs/internal/entscheidungen.md). PIT is not wired into
 // `build` or `check`; run it explicitly with `./gradlew pitest`. Versions are
 // pinned: gradle-pitest-plugin 1.19.0 defaults to pitest 1.22.1, which predates
 // the JUnit Platform 6 fix, so pitest 1.25.5 is set explicitly together with the
@@ -224,7 +224,7 @@ pitest {
             // for the full basis of 695. And e2e kills fewer: 6 of 8 against 7 of 8.
             // The mutations in `output` and `service` are covered by the unit, slice
             // and integration tests anyway; e2e adds runtime, not reach.
-            // Numbers and method are written up in docs/teststrategie.md.
+            // Numbers and method are written up in docs/internal/teststrategie.md.
         ),
     )
     outputFormats.set(setOf("HTML"))
@@ -243,9 +243,9 @@ pitest {
     // `service` took on two undertested classes. Leaving the threshold at 71
     // would have made `pitest` permanently red, and a tool that is always red
     // stops warning. The drop is written up with both causes and its
-    // countermeasure in docs/entscheidungen.md; raising it again is milestone-5
+    // countermeasure in docs/internal/entscheidungen.md; raising it again is milestone-5
     // issue #138.
     // Raise this number when the score improves; never lower it silently.
-    // Per-package numbers and the weak spots are in docs/entscheidungen.md.
+    // Per-package numbers and the weak spots are in docs/internal/entscheidungen.md.
     mutationThreshold.set(66)
 }

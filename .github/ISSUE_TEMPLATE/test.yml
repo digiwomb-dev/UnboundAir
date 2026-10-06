@@ -14,7 +14,7 @@ body:
     id: requirements
     attributes:
       label: Requirement ID(s)
-      description: "e.g. SV-01, SC-03 – the implemented IDs from docs/plan.md"
+      description: "e.g. SV-01, SC-03 – the implemented IDs from docs/internal/plan.md"
     validations:
       required: true
   - type: dropdown

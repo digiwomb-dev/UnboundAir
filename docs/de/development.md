@@ -88,7 +88,7 @@ Zusätzlich zu den gewöhnlichen Tests gibt es einen Mutationslauf: Er veränder
 
 Vier Dinge, die man vorher wissen sollte:
 
-- **Nicht Teil von `build`.** Der Task hängt bewusst nicht an `check` oder `build` – er läuft nur, wenn man ihn ausdrücklich aufruft. Ziel sind die Kern-Pakete `scanner`, `image`, `processing`, `output` (mit `output.outbox` und `output.paperless`) und `service` – die Liste in `build.gradle.kts` und `docs/teststrategie.md` ist maßgeblich.
+- **Nicht Teil von `build`.** Der Task hängt bewusst nicht an `check` oder `build` – er läuft nur, wenn man ihn ausdrücklich aufruft. Ziel sind die Kern-Pakete `scanner`, `image`, `processing`, `output` (mit `output.outbox` und `output.paperless`) und `service` – die Liste in `build.gradle.kts` und `docs/internal/teststrategie.md` ist maßgeblich.
 - **Er dauert.** Rund **2,5 Stunden** beim vollen Lauf über alle sieben Pakete, weil die zeitgesteuerten Scanner-Tests für jede Mutation erneut laufen. Ein Lauf über ein einzelnes Paket (z. B. nur `processing`) dauert dagegen nur Sekunden. Der Bericht landet in `build/reports/pitest/index.html`.
 - **Der erste Lauf braucht Netz.** Die `org.pitest`-Artefakte liegen nicht im normalen Abhängigkeits-Cache, weil sie nur dieser Task verwendet. `--offline` schlägt deshalb beim ersten Mal fehl. Das berührt DC-03 nicht: Die Anforderung gilt `./gradlew test`, und der bleibt offline.
 - **Er braucht Speicher.** Gradle-Daemon, Kotlin-Daemon und die PIT-Prozesse liegen gleichzeitig im RAM. Auf einem kleinen Container-Host kann der Gradle-Daemon dabei abstürzen („daemon disappeared"). Bricht ein Lauf ab, bleibt der PIT-Hauptprozess verwaist zurück und startet weiter Unterprozesse – er blockiert dann den nächsten Lauf. Vorher aufräumen:
@@ -131,7 +131,7 @@ docker build -t <name> .
 
 Die Abnahme des Images (CT-01) läuft nicht lokal, sondern auf dem GitHub-Actions-Runner `ubuntu-24.04-arm` im Workflow `.github/workflows/image.yml`. Der Grund ist schlicht: Eine `x86_64`-Maschine ohne QEMU kann ein `linux/arm64`-Image weder bauen noch betreten, also findet die Prüfung dort statt, wo native `arm64`-Hardware vorhanden ist. Der Workflow baut das Image für `linux/arm64` und führt darin die drei Prüfungen aus (`jpegtran` vorhanden, `jbig2` vorhanden, `status` erreicht den Scanner).
 
-Der Betrieb des fertigen Images – wohin es gehört, wie es läuft – steht in `docs/betrieb.md`, nicht hier.
+Der Betrieb des fertigen Images – wohin es gehört, wie es läuft – steht in `docs/de/operations.md`, nicht hier.
 
 ## Fake-Scanner als Prozess
 
@@ -167,7 +167,7 @@ sha256sum gradle/wrapper/gradle-wrapper.jar
 
 ## Zusammenarbeit am Repository
 
-Wie Issues benannt und gefiltert werden, wie Commits und Pull Requests aussehen und welche Leitplanken gelten, steht in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
+Wie Issues benannt und gefiltert werden, wie Commits und Pull Requests aussehen und welche Leitplanken gelten, steht in [`CONTRIBUTING.md`](../../CONTRIBUTING.de.md).
 
 ## Warum der Umweg über den Dev Container
 
@@ -184,11 +184,11 @@ Der Container enthält dieselben Systemabhängigkeiten wie das spätere Laufzeit
 
 Wer hier neu dazukommt, liest in dieser Reihenfolge:
 
-1. [`CONTRIBUTING.md`](../CONTRIBUTING.md) – die Regeln: Sprache, Commits, Git-Ablauf, Issue-Konvention, Leitplanken
-2. `docs/plan.md` – Auftrag, feste Entscheidungen, Anforderungen mit IDs
+1. [`CONTRIBUTING.md`](../../CONTRIBUTING.de.md) – die Regeln: Sprache, Commits, Git-Ablauf, Issue-Konvention, Leitplanken
+2. `docs/internal/plan.md` – Auftrag, feste Entscheidungen, Anforderungen mit IDs
 3. die GitHub-Milestones und -Issues – offene Aufgaben, was in Arbeit und was erledigt ist
 4. diese Datei – Bauen und Testen
-5. `docs/offene-fragen.md` – was am Gerät noch unklar ist
+5. `docs/internal/offene-fragen.md` – was am Gerät noch unklar ist
 
 Weitergearbeitet wird beim ersten offenen Issue im aktuellen Milestone. Ein Test-Issue ohne grünen Lauf im Dev Container ist zuerst abzunehmen – nicht weiterbauen und das Testen aufschieben.
 

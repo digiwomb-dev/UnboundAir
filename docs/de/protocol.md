@@ -2,7 +2,7 @@
 
 Fachliche Grundlage für den Scanner-Client (SC-01 bis SC-08). Diese Datei beschreibt, **wie mit dem Gerät gesprochen wird**: Verbindung, Befehle, Antworten, Scan-Ablauf und Zeitverhalten. **[Gerät]**
 
-Das Gerät selbst — WLAN, Einzug, Messwerte, Eigenheiten — gehört nach `hardware.md` (DO-02). **[Gerät]** Was noch ungeklärt ist, gehört nach `docs/offene-fragen.md` und wird hier nur verwiesen, nicht wiederholt. **[Gerät]**
+Das Gerät selbst — WLAN, Einzug, Messwerte, Eigenheiten — gehört nach `hardware.md` (DO-02). **[Gerät]** Was noch ungeklärt ist, gehört nach `docs/internal/offene-fragen.md` und wird hier nur verwiesen, nicht wiederholt. **[Gerät]**
 
 ## Herkunft der Aussagen
 
@@ -49,7 +49,7 @@ Status- und Bestätigungsantworten sind 11 Byte lang: ein Wort, aufgefüllt mit 
 
 Antworten werden deshalb immer per Präfix verglichen; feste Länge oder bestimmtes Padding werden nicht vorausgesetzt. **[Gerät]** So vergleichen auch die Windows-App und s400w. **[App/s400w]**
 
-Die `version`-Antwort folgt diesem 11-Byte-Schema nicht: Die Referenz sendet `NB0a.032\x00`, also 9 Byte ohne abschließendes `H`. **[Gerät]** Ob das echte Gerät es genauso sendet oder ob die Referenz an dieser Stelle ungenau ist, ist ungeklärt — siehe OF-07 in `docs/offene-fragen.md`. **[offen]** Der Präfix-Vergleich setzt deshalb keine feste Länge und kein bestimmtes Padding voraus (SC-03). **[App/s400w]**
+Die `version`-Antwort folgt diesem 11-Byte-Schema nicht: Die Referenz sendet `NB0a.032\x00`, also 9 Byte ohne abschließendes `H`. **[Gerät]** Ob das echte Gerät es genauso sendet oder ob die Referenz an dieser Stelle ungenau ist, ist ungeklärt — siehe OF-07 in `docs/internal/offene-fragen.md`. **[offen]** Der Präfix-Vergleich setzt deshalb keine feste Länge und kein bestimmtes Padding voraus (SC-03). **[App/s400w]**
 
 Die `jpegsize`-Antwort ist 12 Byte lang (`jpegsize`-Präfix plus uint32 little endian) und wird bei Bedarf über mehrere Lesevorgänge gelesen, bis alle 12 Byte vorliegen. **[Gerät]**
 
@@ -69,7 +69,7 @@ Der Ablauf entspricht dem s400w-Befehl `scan` ohne Vorschau; so nutzt ihn auch A
 
 s400w wartet 200 ms vor und nach jedem Senden. **[App/s400w]** Die Timeouts sind: normal 10 s, Bilddaten 30 s pro Lesevorgang, `jpegsize` 60 s. **[App/s400w]**
 
-Der Referenzcode weicht an zwei Stellen von der 200-ms-Regel ab und wartet 500 ms: nach dem Senden von `jpegdata` und nach dem Senden von `status` in der reinen Statusabfrage. **[App/s400w]** Ob diese längere Pause nötig ist oder nur Vorsicht, ist ungeklärt — siehe OF-08 in `docs/offene-fragen.md`. **[offen]** Die längere Wartezeit vor dem Lesen der Massendaten wird ohne Messung nicht gekürzt. **[App/s400w]**
+Der Referenzcode weicht an zwei Stellen von der 200-ms-Regel ab und wartet 500 ms: nach dem Senden von `jpegdata` und nach dem Senden von `status` in der reinen Statusabfrage. **[App/s400w]** Ob diese längere Pause nötig ist oder nur Vorsicht, ist ungeklärt — siehe OF-08 in `docs/internal/offene-fragen.md`. **[offen]** Die längere Wartezeit vor dem Lesen der Massendaten wird ohne Messung nicht gekürzt. **[App/s400w]**
 
 ## Firmware-Check vor DPI-Umschaltung
 
@@ -79,7 +79,7 @@ Bei älterer Firmware bleibt der Scanner bei 300 dpi; der Aufrufer wird gewarnt 
 
 ## Polling
 
-Die Mustek-App fragt den Status nicht periodisch per TCP ab, sondern nur bei Aktionen. **[App/s400w]** AirScan fragt ca. alle 8 s ab. **[App/s400w]** Wie sich häufigeres Polling am Gerät auswirkt, ist unbekannt. **[offen]** Offene Punkte dazu — ob Polling das Auto-Off verhindert (OF-01), ob 3-s-Takt `devbusy` auslöst (OF-02) — stehen in `docs/offene-fragen.md` und werden mit `measure` geklärt. **[offen]**
+Die Mustek-App fragt den Status nicht periodisch per TCP ab, sondern nur bei Aktionen. **[App/s400w]** AirScan fragt ca. alle 8 s ab. **[App/s400w]** Wie sich häufigeres Polling am Gerät auswirkt, ist unbekannt. **[offen]** Offene Punkte dazu — ob Polling das Auto-Off verhindert (OF-01), ob 3-s-Takt `devbusy` auslöst (OF-02) — stehen in `docs/internal/offene-fragen.md` und werden mit `measure` geklärt. **[offen]**
 
 ## Abgrenzung
 

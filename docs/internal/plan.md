@@ -1,6 +1,6 @@
 # Plan: `UnboundAir`
 
-Dieser Plan ist der Auftrag für das Projekt: Ziel, feste Entscheidungen und Anforderungen. Der Fortschritt (Meilensteine, Aufgaben) lebt in GitHub – siehe „Arbeit wird in GitHub getrackt". Nach welchen Regeln gearbeitet wird, steht in `CONTRIBUTING.md`. Fachliche Grundlage ist `docs/protokoll.md` – solange es die noch nicht gibt, `_input/iscan-air-wissen.md`.
+Dieser Plan ist der Auftrag für das Projekt: Ziel, feste Entscheidungen und Anforderungen. Der Fortschritt (Meilensteine, Aufgaben) lebt in GitHub – siehe „Arbeit wird in GitHub getrackt". Nach welchen Regeln gearbeitet wird, steht in `CONTRIBUTING.md`. Fachliche Grundlage ist `docs/de/protocol.md` – solange es die noch nicht gibt, `_input/iscan-air-wissen.md`.
 
 Der Dienst verwandelt einen Mustek iScan Air (S400W) in einen „Einlegen und fertig"-Scanner. Die fertigen Dokumente gehen an konfigurierbare Ausgabe-Module; das erste Modul ist paperless-ngx.
 
@@ -11,7 +11,7 @@ Diese Dateien sind von Anfang an im Repo und werden nur nach Rückfrage geänder
 - `.gitignore` (enthält `_input/`)
 - `AGENTS.md`
 - `CONTRIBUTING.md`
-- `docs/plan.md` (diese Datei; zieht mit DO-12 nach `docs/internal/plan.md` um)
+- `docs/internal/plan.md` (diese Datei; zieht mit DO-12 nach `docs/internal/plan.md` um)
 
 `_input/` liegt nur lokal vor und wird nie committet. Inhalte daraus gezielt überführen: Wissen → `docs/`, Testbild → Test-Ressourcen, Python-Referenzcode in Kotlin neu schreiben (nicht 1:1 übersetzen).
 
@@ -42,7 +42,7 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
 
   Die Obergrenze setzt jeweils der älteste Baustein der Kette: Gradle begrenzt Java, Spring Boot begrenzt Kotlin. Beim Anheben einer Version diese Tabelle mitpflegen.
 
-  **Test-Abhängigkeiten** (alle `testImplementation`; Auswahl begründet in `docs/entscheidungen.md`, Konzept in `docs/teststrategie.md`):
+  **Test-Abhängigkeiten** (alle `testImplementation`; Auswahl begründet in `docs/internal/entscheidungen.md`, Konzept in `docs/internal/teststrategie.md`):
 
   | Baustein | Version | Anmerkung |
   |---|---|---|
@@ -58,7 +58,7 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
 
   **Warum nicht Java 27:** Gradle 9.7.1 gibt in seiner Kompatibilitätsmatrix ausdrücklich an, JVM 27 und neuer nicht auszuführen. Sobald Gradle nachzieht, ist Java 27 der nächste Schritt – der Grundsatz bleibt „neueste stabile Version".
 
-  **Kotlin wird bewusst hochgezogen:** Spring Boot 4.1.1 verwaltet Kotlin 2.3.21, und dessen Compiler kennt als höchstes Bytecode-Ziel `JVM_25` – mit Java 26 lässt sich damit nicht bauen. Kotlin 2.4.20 kennt `JVM_26`. Deshalb wird die von Spring Boot vorgegebene Kotlin-Version im Build überschrieben. Das ist die einzige Stelle, an der bewusst von Spring Boots verwalteten Versionen abgewichen wird; sie gehört mit Begründung nach `docs/entscheidungen.md` (DO-06). Falls daraus Probleme entstehen, ist der Rückfallweg Java 25 statt 26.
+  **Kotlin wird bewusst hochgezogen:** Spring Boot 4.1.1 verwaltet Kotlin 2.3.21, und dessen Compiler kennt als höchstes Bytecode-Ziel `JVM_25` – mit Java 26 lässt sich damit nicht bauen. Kotlin 2.4.20 kennt `JVM_26`. Deshalb wird die von Spring Boot vorgegebene Kotlin-Version im Build überschrieben. Das ist die einzige Stelle, an der bewusst von Spring Boots verwalteten Versionen abgewichen wird; sie gehört mit Begründung nach `docs/internal/entscheidungen.md` (DO-06). Falls daraus Probleme entstehen, ist der Rückfallweg Java 25 statt 26.
 - **Eine Anwendung,** in v1 ohne Web-Oberfläche. Den Kern (Scanner, Verarbeitung, Batch, Ausgabe) so schneiden, dass später eine Web-UI andocken kann, ohne den Kern umzubauen.
 - **Paketschichten mit fester Richtung.** Der Schnitt ist eine Entscheidung, keine Gewohnheit, und wird vom ArchUnit-Wächter erzwungen (`guard/ArchitectureRulesTest.kt`):
 
@@ -77,7 +77,7 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
   **Die Outbox und die Module liegen in `output`, nicht daneben.** `output.outbox` (AU-04) und `output.paperless` (AU-05) sind Unterpakete der Schicht `output` und erben damit deren Regeln. Das ist kein Ordnungsgeschmack: Der Wächter prüft nur Pakete, die in dieser Tabelle stehen – ein Top-Level-Paket `outbox` wäre schlicht ungeprüft und damit ein stilles Loch in der Regel.
 
   **Der Kern bleibt frei von Spring.** In keinem der Kern-Pakete darf `org.springframework..` auftauchen – mit genau **einer benannten Ausnahme: `output.paperless` darf den Spring-eigenen HTTP-Client verwenden** (`RestClient` samt `spring-web`-Typen für Multipart und Header). Das Hochladen ist der einzige Punkt in v1, an dem ein Kern-Paket nach außen spricht, und der Spring-Client ist ohnehin vorhanden. Alles andere bleibt verboten, auch in `output.paperless`: keine Spring-Stereotypen (`@Component` und Verwandte), kein injiziertes `UnboundAirProperties`. Die Einstellungen kommen als Konstruktor-Werte aus der Kompositionswurzel, wie überall im Kern.
-- **Logging über SLF4J,** Ausgabe per Logback auf stdout. Beides bringt `spring-boot-starter` bereits mit – keine neue Abhängigkeit. Kommandos und Verarbeitungsschritte loggen weiterhin **nicht** selbst, sondern melden über ihre `warn: (String) -> Unit`-Senke nach oben; nur die äußeren Schichten (`service`, Kompositionswurzel) schreiben Log-Zeilen. Begründung in `docs/entscheidungen.md`.
+- **Logging über SLF4J,** Ausgabe per Logback auf stdout. Beides bringt `spring-boot-starter` bereits mit – keine neue Abhängigkeit. Kommandos und Verarbeitungsschritte loggen weiterhin **nicht** selbst, sondern melden über ihre `warn: (String) -> Unit`-Senke nach oben; nur die äußeren Schichten (`service`, Kompositionswurzel) schreiben Log-Zeilen. Begründung in `docs/internal/entscheidungen.md`.
 - **Batch-Übergabe als Senke.** Ein geschlossener Batch wird an eine Senke vom Typ `(ScannedDocument) -> Unit` übergeben – dasselbe Lambda-Muster wie `warn`. Bis die Outbox existiert (AU-04), schreibt die Senke das PDF in ein Verzeichnis; danach wird die Outbox eingehängt, **ohne den Batch zu ändern**. Damit braucht es keine Wegwerf-Abstraktion und AU-02 („andocken ohne Änderung am Kern") ist an einer echten Stelle belegt.
 - Kein SANE, kein AirScan, kein eSCL.
 - **Nie neu komprimieren:** Der Scanner liefert JPEG mit Qualität ~50. Zuschnitt und Graustufen verlustfrei per `jpegtran` (`-crop`, `-grayscale`). PDF mit OpenPDF, JPEGs per `Image.getInstance` unverändert als `/DCTDecode` eingebettet, Seitengröße aus Pixeln und DPI. Zwei benannte Ausnahmen: optionales `normalize` (Default aus) und `bw` (SV-08) – eine 1-bit-Umwandlung kann keine DCT-Koeffizienten-Transformation sein und verlässt den `jpegtran`-Pfad zwangsläufig. Benannt und begrenzt, keine Aufweichung.
@@ -93,7 +93,7 @@ Betrieben wird der Dienst als Container. Perspektivisch kommt eine Web-UI dazu �
 
 Jede Anforderung hat eine feste ID und ein Abnahmekriterium. IDs werden nie umnummeriert; neue Anforderungen bekommen die nächste freie Nummer ihres Bereichs. Issues verweisen auf die IDs, die sie umsetzen.
 
-**Zu den Verweisen auf `_input/`:** Einige Anforderungen nennen als Vorlage Dateien unter `_input/` – den Wissensstand, den Python-Referenzcode, die Testbilder. Dieses Verzeichnis liegt nur lokal vor und wird nie committet. Wer das Repository klont, hat es nicht. Diese Anforderungen sind deshalb für Außenstehende erst dann vollständig nachprüfbar, wenn das Wissen nach `docs/protokoll.md` (DO-01) überführt und die Testbilder als Test-Ressourcen abgelegt sind (TE-02).
+**Zu den Verweisen auf `_input/`:** Einige Anforderungen nennen als Vorlage Dateien unter `_input/` – den Wissensstand, den Python-Referenzcode, die Testbilder. Dieses Verzeichnis liegt nur lokal vor und wird nie committet. Wer das Repository klont, hat es nicht. Diese Anforderungen sind deshalb für Außenstehende erst dann vollständig nachprüfbar, wenn das Wissen nach `docs/de/protocol.md` (DO-01) überführt und die Testbilder als Test-Ressourcen abgelegt sind (TE-02).
 
 ### Scanner-Client (SC)
 
@@ -212,13 +212,13 @@ Unterbefehle der Anwendung (Umsetzung entscheidest du, z. B. Startskript `unboun
 - **DC-01** `.devcontainer/` mit allem, was Build und Tests brauchen: JDK passend zur Laufzeit, Gradle über den Wrapper, `jpegtran` (libjpeg-turbo) und `jbig2` (Quellpaket `jbig2enc`) – dieselben Systemabhängigkeiten wie im Runtime-Image.
   *Abnahme:* Im Dev Container liefern `java -version`, `jpegtran -version` und `jbig2 -V` Ausgaben, passend zum Runtime-Image.
 - **DC-02** Auf dem Host muss außer Container-Runtime und Dev-Container-Tooling nichts installiert sein.
-  *Abnahme:* `docs/entwicklung.md` nennt keine weiteren Voraussetzungen für den Host.
+  *Abnahme:* `docs/de/development.md` nennt keine weiteren Voraussetzungen für den Host.
 - **DC-03** `./gradlew test` läuft im Dev Container komplett durch, ohne Netzwerkzugriff auf echte Geräte oder Dienste.
   *Abnahme:* Testlauf im Dev Container ist grün.
 
 Hinweis: Wie die Tests im Dev Container gestartet werden, hängt von der Umgebung ab, in der du arbeitest, und gehört nicht ins Repo. Kannst du sie nicht selbst im Dev Container starten: sag es mir – lass sie nicht stillschweigend woanders laufen.
 
-**Aktuelle Lage:** Der Dev Container läuft lokal – es gibt keinen Umweg mehr über einen anderen Rechner. `devcontainer up` startet ihn, der Arbeitsordner ist direkt eingehängt (Änderungen sind sofort beidseitig sichtbar), und `./gradlew build` läuft darin. Das funktioniert auch aus einem Git-Worktree heraus. Der Ablauf steht in `docs/entwicklung.md`.
+**Aktuelle Lage:** Der Dev Container läuft lokal – es gibt keinen Umweg mehr über einen anderen Rechner. `devcontainer up` startet ihn, der Arbeitsordner ist direkt eingehängt (Änderungen sind sofort beidseitig sichtbar), und `./gradlew build` läuft darin. Das funktioniert auch aus einem Git-Worktree heraus. Der Ablauf steht in `docs/de/development.md`.
 
 Eine Aufgabe gilt erst als abgenommen, wenn ihr Testergebnis im zugehörigen Issue dokumentiert ist (Test-Checkliste abgehakt, Lauf im Dev Container grün mit Commit-SHA). Aufgaben, die geschrieben, aber noch nicht ausgeführt wurden, gelten als „nicht verifiziert" und werden nicht abgehakt.
 
@@ -237,8 +237,8 @@ Die meisten Tests ergeben sich aus den Abnahmekriterien oben. Zusätzlich:
   *Abnahme:* Der Linter läuft im Build mit (`spotlessCheck` hängt an `check`) und meldet nichts.
 - **TE-04** Der Mutationslauf zielt auf die Kern-Pakete. „Kern" heißt: die Pakete, in denen die riskante Logik liegt – ab Meilenstein 3 also zusätzlich `output` (PDF-Erzeugung) und `service` (Loop und Batch), ab Meilenstein 4 die neuen Unterpakete `output.outbox` (Persistenz, Backoff, Wiederholung) und `output.paperless` (Aufbau des Upload-Requests). `config` bleibt außen vor, weil eine reine Datenklasse mit Defaults nichts Mutierbares enthält, und `cli` ebenso, weil dort nur Argumente auf Kommandos abgebildet werden.
   Der Meilenstein „black and white and openpdf" fügt Klassen in Pakete hinzu, die bereits in der Messgrundlage liegen (`image`, `processing`, `output`) und kein neues Kern-Paket – der Neu-Einmessungs-Auslöser feuert hier also nicht; die Neueinmessung ist #138 in Meilenstein 5. Die Schwelle bleibt 66 (gemessen 04.10.2026, 458/695) und wird von diesem Meilenstein nicht angefasst.
-  Wächst das Ziel, ändert sich der Nenner: Die Schwelle ist dann **neu einzumessen** und mit Datum, Commit und Zahlen in `docs/entscheidungen.md` als bewusste neue Grundlage festzuhalten. Das ist kein stilles Senken – das bleibt verboten –, sondern ein dokumentierter Wechsel der Messgrundlage.
-  *Abnahme:* Nach jedem Meilenstein, der ein Kern-Paket hinzufügt, steht in `docs/entscheidungen.md` ein voller Lauf mit den Zahlen je Paket, und `mutationThreshold` in `build.gradle.kts` entspricht dem gemessenen Gesamtwert.
+  Wächst das Ziel, ändert sich der Nenner: Die Schwelle ist dann **neu einzumessen** und mit Datum, Commit und Zahlen in `docs/internal/entscheidungen.md` als bewusste neue Grundlage festzuhalten. Das ist kein stilles Senken – das bleibt verboten –, sondern ein dokumentierter Wechsel der Messgrundlage.
+  *Abnahme:* Nach jedem Meilenstein, der ein Kern-Paket hinzufügt, steht in `docs/internal/entscheidungen.md` ein voller Lauf mit den Zahlen je Paket, und `mutationThreshold` in `build.gradle.kts` entspricht dem gemessenen Gesamtwert.
 
 ### Doku (DO) – Englisch als Hauptsprache, Deutsch als Quellsprache
 
@@ -277,7 +277,7 @@ Die Trennung ist gemessen, nicht geschätzt (Stand 05.10.2026): Die vier Arbeits
   *Abnahme:* Die Anleitung reicht, um das Test-Modul aus AU-02 nachzubauen.
 - **DO-06** `entscheidungen.md` – die festen Entscheidungen mit Begründung.
   *Abnahme:* Jede feste Entscheidung aus diesem Plan steht mit Begründung drin.
-- **DO-07** `offene-fragen.md` – aus dem Wissensstand, wird mit Messwerten fortgeschrieben. Die Datei entsteht **bereits in Meilenstein 1** und wird danach laufend fortgeschrieben, weil die Leitplanke „Nichts am Protokoll erfinden – Offenes gehört in `docs/offene-fragen.md`" ab der ersten Codezeile gilt.
+- **DO-07** `offene-fragen.md` – aus dem Wissensstand, wird mit Messwerten fortgeschrieben. Die Datei entsteht **bereits in Meilenstein 1** und wird danach laufend fortgeschrieben, weil die Leitplanke „Nichts am Protokoll erfinden – Offenes gehört in `docs/internal/offene-fragen.md`" ab der ersten Codezeile gilt.
   *Abnahme:* Alle offenen Punkte aus dem Wissensstand sind mit Status aufgeführt.
 - **DO-08** `README.md` im Wurzelverzeichnis – Einstieg und Wegweiser. Entsteht **bereits in Meilenstein 1**, damit von Anfang an erkennbar ist, welche Datei wofür da ist; in Meilenstein 5 kommt der Schnellstart dazu.
   *Abnahme:* Erklärt, was `UnboundAir` ist, nennt den Aufbaustand und verweist auf jede Datei in `docs/` mit einem Satz, wofür sie da ist. Ab Meilenstein 5 zusätzlich: Schnellstart.
@@ -304,7 +304,7 @@ Die folgenden fünf Anforderungen gehören zu **Meilenstein 6** und damit nicht 
   | `README.md` | `README.md` | `README.de.md` |
   | `CONTRIBUTING.md` | `CONTRIBUTING.md` | `CONTRIBUTING.de.md` |
   | `SECURITY.md` | `SECURITY.md` | `SECURITY.de.md` |
-  | `docs/plan.md`, `entscheidungen.md`, `offene-fragen.md`, `teststrategie.md` | — | `docs/internal/…` |
+  | `docs/internal/plan.md`, `entscheidungen.md`, `offene-fragen.md`, `teststrategie.md` | — | `docs/internal/…` |
 
   Drei Festlegungen mit Begründung: **Ordner statt Suffix** in `docs/`, weil eine dritte Sprache dann keinen Umbau kostet. **Englische Dateinamen auch im deutschen Ordner**, weil Starlight Übersetzungen über den Dateinamen paart – zwei Namen für dieselbe Seite würde diese Paarung brechen. **Die Wurzeldateien bleiben in der Wurzel**, weil GitHub `CONTRIBUTING.md` und `SECURITY.md` nur dort auswertet; ein Umzug nach `docs/en/` nähme den Beitragshinweis und den Sicherheits-Meldeweg aus der Oberfläche.
 
@@ -345,7 +345,7 @@ Die Reihenfolge der Aufgaben innerhalb eines Meilensteins steht als `Work order`
 
 ## Offene Entscheidungen – nicht vorwegnehmen, fragen
 
-Hier stehen nur Punkte, die **eine Entscheidung** brauchen. Was sich dagegen nur **am Gerät klären** lässt, steht in `docs/offene-fragen.md` – dort ist die Abgrenzung erklärt. Zweistufige Punkte (erst messen, dann entscheiden) stehen in beiden Listen und verweisen aufeinander.
+Hier stehen nur Punkte, die **eine Entscheidung** brauchen. Was sich dagegen nur **am Gerät klären** lässt, steht in `docs/internal/offene-fragen.md` – dort ist die Abgrenzung erklärt. Zweistufige Punkte (erst messen, dann entscheiden) stehen in beiden Listen und verweisen aufeinander.
 
 - **Deployment:** Ziel-Host und konkretes Deployment-Beispiel. Dass als Container betrieben wird, steht fest.
 - **CI:** Tests, Image-Veröffentlichung, Release und Caching-Strategie – weiterhin erst mit Meilenstein 6, System offen. Vorgezogen sind genau **zwei** Bausteine, beide auf GitHub Actions: die CT-01-Imageprüfung (Build für `linux/arm64` plus die drei Prüfungen im Container, Meilenstein 5) und der Mutationslauf auf Abruf (seit 05.10.2026, siehe „Git-Ablauf").
@@ -360,10 +360,10 @@ Hier stehen nur Punkte, die **eine Entscheidung** brauchen. Was sich dagegen nur
 
 ## Entschieden – nicht mehr offen
 
-Punkte, die zu Projektbeginn geklärt wurden. Die Begründungen gehören nach DO-06 in `docs/entscheidungen.md`.
+Punkte, die zu Projektbeginn geklärt wurden. Die Begründungen gehören nach DO-06 in `docs/internal/entscheidungen.md`.
 
 - **Lizenz:** Apache-2.0. Wie MIT freizügig, aber mit ausdrücklicher Patentklausel – sinnvoll, weil hier ein Hersteller-Protokoll nachgebaut wird. Herkunft wird dokumentiert: s400w ist CC0 (kein Code übernommen, nur Protokollwissen), AirScan als Quelle genannt, kein Hersteller-Code im Repo.
-- **Englische Doku (05.10.2026, DO-12 bis DO-16):** Verfasst wird auf **Deutsch**, Hauptsprache ist **Englisch**. Die Produktdoku liegt zweisprachig unter `docs/de/` und `docs/en/` mit gleichen englischen Dateinamen; die vier Arbeitsdokumente ziehen nach `docs/internal/` um und bleiben deutsch. Gerendert wird mit **Astro Starlight** zu einer statischen Seite auf GitHub Pages, **im selben Repository** (Konfiguration unter `site/`). Übersetzt wird **lokal auf Abruf** mit einem LLM über LM Studio – Erstmodell **Gemma 4 26B**, benannter Rückfallweg **Qwen3.6 27B**; CI **prüft nur** und übersetzt nie. Begründungen in `docs/entscheidungen.md`.
+- **Englische Doku (05.10.2026, DO-12 bis DO-16):** Verfasst wird auf **Deutsch**, Hauptsprache ist **Englisch**. Die Produktdoku liegt zweisprachig unter `docs/de/` und `docs/en/` mit gleichen englischen Dateinamen; die vier Arbeitsdokumente ziehen nach `docs/internal/` um und bleiben deutsch. Gerendert wird mit **Astro Starlight** zu einer statischen Seite auf GitHub Pages, **im selben Repository** (Konfiguration unter `site/`). Übersetzt wird **lokal auf Abruf** mit einem LLM über LM Studio – Erstmodell **Gemma 4 26B**, benannter Rückfallweg **Qwen3.6 27B**; CI **prüft nur** und übersetzt nie. Begründungen in `docs/internal/entscheidungen.md`.
 - **Linter (TE-03):** ktlint als Regelwerk, ausgeführt über das **Spotless**-Gradle-Plugin. Reine Formatierung, kaum Konfiguration, wenig Rauschen – detekt würde mehr Feinjustierung verlangen, ohne hier mehr zu bringen.
 
   Der Umweg über Spotless ist nicht Geschmackssache, sondern nötig: Das ktlint-Gradle-Plugin scheiterte mit `Extensions storage is not registered`. Ursache ist eine Kette aus drei Gliedern – `spring-boot-dependencies` importiert das `kotlin-bom`, dieses verwaltet auch `kotlin-compiler-embeddable`, und `io.spring.dependency-management` wendet das auf **alle** Konfigurationen an, also auch auf die des Linters. Dadurch bekommt ktlint statt seines eigenen Compilers (2.1.0) den des Projekts (2.4.20) untergeschoben und stürzt ab. Spotless löst seine Werkzeuge über `detachedConfiguration` auf, die von `configurations.all {}` nicht erfasst wird – damit greift die Überschreibung dort nicht.

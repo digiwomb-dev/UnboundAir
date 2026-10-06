@@ -1,5 +1,5 @@
 # TE-04 mutation run on demand: `./gradlew pitest` over all core packages,
-# executed inside the project's dev container (docs/plan.md, "Git-Ablauf").
+# executed inside the project's dev container (docs/internal/plan.md, "Git-Ablauf").
 #
 # The dev container is the environment the measurements are made in
 # (.devcontainer/Dockerfile - JDK 26, jpegtran, jbig2), so the run happens
@@ -10,7 +10,7 @@
 # need Node for CI's sake alone. The plain `docker run` gets the same
 # environment without touching the dev container.
 #
-# The full run takes roughly 2.5 h (docs/entwicklung.md), so it is
+# The full run takes roughly 2.5 h (docs/de/development.md), so it is
 # deliberately NOT wired to any push trigger - it starts only by hand from
 # the Actions tab (workflow_dispatch), on the dev branch. The workflow file
 # must also exist on `main`, the default branch: the Actions UI only offers

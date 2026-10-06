@@ -14,7 +14,7 @@ body:
     id: requirements
     attributes:
       label: Requirement ID(s)
-      description: "The affected IDs from docs/plan.md, e.g. TE-01, DL-02"
+      description: "The affected IDs from docs/internal/plan.md, e.g. TE-01, DL-02"
     validations:
       required: true
   - type: textarea

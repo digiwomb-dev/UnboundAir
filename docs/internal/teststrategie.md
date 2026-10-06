@@ -1,12 +1,12 @@
 # Teststrategie
 
-Wie `UnboundAir` getestet wird: die Testschichten, die Werkzeuge je Schicht und die Gründe dafür. Die Strategie ist die fachliche Grundlage für alle Test-Issues; die einzelnen Entscheidungen dahinter stehen mit Begründung in `docs/entscheidungen.md`, die fest gepinnten Versionen in `docs/plan.md`.
+Wie `UnboundAir` getestet wird: die Testschichten, die Werkzeuge je Schicht und die Gründe dafür. Die Strategie ist die fachliche Grundlage für alle Test-Issues; die einzelnen Entscheidungen dahinter stehen mit Begründung in `docs/internal/entscheidungen.md`, die fest gepinnten Versionen in `docs/internal/plan.md`.
 
 ## Grundsätze
 
 - **Offline (DC-03):** `./gradlew test` läuft im Dev Container komplett ohne Zugriff auf echte Geräte oder fremde Dienste. Der Scanner wird durch einen Fake-Scanner (TCP-Server im Test) ersetzt, paperless-ngx durch einen Mock. Eine Netzwerkverbindung braucht nur, wer zum ersten Mal baut (Gradle-Wrapper, Abhängigkeiten) — danach läuft der Testlauf mit warmem Cache offline.
 - **Keine Testcontainers.** Test-Dependencies gibt es ausschließlich im Test-Scope; der Runtime-Classpath bleibt unverändert.
-- **Versionen fest gepinnt** (Grundsatz „neueste stabile", siehe `docs/plan.md`).
+- **Versionen fest gepinnt** (Grundsatz „neueste stabile", siehe `docs/internal/plan.md`).
 - **Standard-Assertions: AssertJ.** Testnamen in Backticks und mit der umgesetzten Anforderungs-ID (z. B. `SC-01 …`).
 - **Eine Datei pro Aufgabe** (zweistufiges GitHub-Tracking, siehe unten).
 
@@ -29,7 +29,7 @@ Eigenschaftsbasierte Tests mit **kotest-property** (`forAll`/`checkAll`), aufger
 
 - **Warum:** deckt Randfälle ab, die handgeschriebene Beispiele übersehen — wichtig für den Auto-Zuschnitt (SV-01/SV-02), wo beliebige Bildgeometrien eintreffen.
 - **Achtung:** `forAll`/`checkAll` geben einen Rückgabewert zurück; die `@Test`-Methode muss deshalb einen Block-Body haben (kein `= runBlocking { … }`-Ausdruckskörper), sonst verweigert JUnit die Ausführung.
-- **Warum nicht jqwik:** jqwik führt ab 1.10 eine Nutzungsbeschränkung ein und schreibt absichtlich Fremdtext in die Standardausgabe. Begründung in `docs/entscheidungen.md`.
+- **Warum nicht jqwik:** jqwik führt ab 1.10 eine Nutzungsbeschränkung ein und schreibt absichtlich Fremdtext in die Standardausgabe. Begründung in `docs/internal/entscheidungen.md`.
 
 ### 3. Slice (`slice`)
 
@@ -89,7 +89,7 @@ Schnittstellenverträge nach außen:
 
 Der ganze Dienst offline: `run` gegen Fake-Scanner **und** WireMock-paperless. Drei Seiten → ein dreiseitiges PDF, an das Modul übergeben und hochgeladen; Scanner offline schließt den Batch; Outbox-Retry nach Neustart. Kein echtes Gerät, kein echtes paperless. Seit Meilenstein 5 startet der E2E-Test dabei den ausgelieferten `run`-Einstiegspunkt selbst (Adresse und paperless-URL allein über Spring-Properties, kein `--host`-Flag) — was der Anwender startet, startet der Test.
 
-- **Warum:** bestätigt, dass die Bausteine im Zusammenspiel das Ergebnis aus `docs/plan.md` („Ergebnis", Punkt 4) liefern.
+- **Warum:** bestätigt, dass die Bausteine im Zusammenspiel das Ergebnis aus `docs/internal/plan.md` („Ergebnis", Punkt 4) liefern.
 
 ### 7. Golden Master (`golden-master`)
 
@@ -97,7 +97,7 @@ Byte-genaue Referenzartefakte unter `golden/` mit einem **sha256-Manifest**. Erg
 
 - **Warum:** schützt vor stillen Regressionen, wo „ungefähr richtig" nicht reicht (verlustfreier Zuschnitt, JPEG-Einbettung roh als `/DCTDecode`).
 - **Producer/Verifier-Trennung:** Das PDF wird von **OpenPDF** geschrieben und von **PDFBox** zurückgelesen — und dass das zwei verschiedene Bibliotheken sind, ist der Punkt. Ein Golden-Master-Test, dessen Leser sein eigener Schreiber ist, bestätigt nur, dass der Schreiber mit sich selbst konsistent ist; das wollte niemand wissen. Die unabhängige Gegenprüfung mit einer zweiten Bibliothek ist das schärfste Beispiel für unabhängige Verifikation in diesem Projekt.
-- **PDF-Determinismus:** PDF-Metadaten (CreationDate) stammen aus der **injizierbaren Clock** (Scan-Zeitpunkt = Beginn der ersten Seite). Tests pinnen die Clock → bytegleiche PDFs; die Produktion behält echte Zeitstempel. Begründung in `docs/entscheidungen.md`. **Die Clock allein genügt nicht:** OpenPDFs Trailer-Schreiber übernimmt die Angabe `/ID` aus dem `/FileID`-Eintrag des Info-Wörterbuchs, wenn vorhanden, und erzeugt sonst 16 Zufallsbytes (Spike #141); `PdfBuilder` pinnt `/ID` über ebendiese Nahtstelle, dazu `/CreationDate`/`/ModDate` aus der injizierten Clock und einen festen `/Producer`. Die Lehre verallgemeinert: Eine Engine findet einen Weg, die aktuelle Zeit in ein PDF zu schreiben — herauszufinden, wo, gehört zur Arbeit.
+- **PDF-Determinismus:** PDF-Metadaten (CreationDate) stammen aus der **injizierbaren Clock** (Scan-Zeitpunkt = Beginn der ersten Seite). Tests pinnen die Clock → bytegleiche PDFs; die Produktion behält echte Zeitstempel. Begründung in `docs/internal/entscheidungen.md`. **Die Clock allein genügt nicht:** OpenPDFs Trailer-Schreiber übernimmt die Angabe `/ID` aus dem `/FileID`-Eintrag des Info-Wörterbuchs, wenn vorhanden, und erzeugt sonst 16 Zufallsbytes (Spike #141); `PdfBuilder` pinnt `/ID` über ebendiese Nahtstelle, dazu `/CreationDate`/`/ModDate` aus der injizierten Clock und einen festen `/Producer`. Die Lehre verallgemeinert: Eine Engine findet einen Weg, die aktuelle Zeit in ein PDF zu schreiben — herauszufinden, wo, gehört zur Arbeit.
 - **„Nicht neu komprimiert" muss man byteweise prüfen.** Ein Test, der nur die JPEG-Marker `SOI`/`EOI` kontrolliert, sieht gut aus und beweist nichts: Diese Marker überstehen eine Neukodierung unverändert. In Meilenstein 3 blieb genau so ein Test grün, während jedes Pixel durch einen zweiten verlustbehafteten Durchgang gelaufen war. Verglichen wird deshalb der **rohe, noch komprimierte Datenstrom** (`COSStream.createRawInputStream`) gegen die Eingabedatei — `toByteArray()` und `createInputStream()` dekodieren und taugen dafür nicht.
 - **In Meilenstein 4 bewusst nicht eingesetzt.** Die Ausgabe-Module erzeugen kein neues bytegenaues Artefakt: Das PDF ist bereits durch `PdfGoldenTest` festgenagelt, und die Outbox kopiert es unverändert. Bliebe `metadata.json` — dafür ist der `@JsonTest`-Rundlauf (Schicht Slice) die bessere Prüfung, weil er den Verlust einzelner Felder benennt, während eine Golden-Datei bei jedem neuen Feld rot wird, ohne dass etwas kaputt ist. Eine Schicht wegzulassen, ohne den Grund aufzuschreiben, ist dasselbe wie sie zu vergessen.
 - **Neue Golden-Dateien reagieren auf drei gepinnte Versionen.** Die bisherigen Golden-Artefakte hingen an einer (`jpegtran`); die aus diesem Meilenstein hängen an **drei** — `jpegtran`, `jbig2` und OpenPDF. Wird nach einem Container-Neubau eines davon rot, ist die Version der erste Verdächtige — das zu wissen erspart eine Stunde Jagd auf einen Logikfehler, der nicht da ist.
@@ -107,29 +107,29 @@ Byte-genaue Referenzartefakte unter `golden/` mit einem **sha256-Manifest**. Erg
 **PIT** (pitest 1.25.5) über den eigenen Gradle-Task `pitest`, Ziel sind die Kern-Pakete (`scanner`, `image`, `processing`, seit Meilenstein 3 zusätzlich `output` und `service`, seit Meilenstein 4 auch `output.outbox` und `output.paperless`). Der Task ist **nie Teil von `build`/`check`** und läuft nur auf ausdrücklichen Aufruf. Wächst das Ziel, ändert sich der Nenner: Die Schwelle ist dann neu einzumessen und mit Zahlen zu dokumentieren (TE-04) — das ist ein belegter Wechsel der Messgrundlage, kein stilles Senken.
 
 - **Warum:** Mutation deckt Lücken in der Assertion-Qualität auf, die Coverage allein nicht zeigt.
-- **Grenzen (gemessen, Spike B):** PIT funktioniert auf JUnit Platform 6 (das bekannte Problem 0 %-Coverage ist mit pitest 1.25.5 behoben). Die zeitgesteuerten Scanner-Tests machen Läufe über den ganzen Kern langsam; deshalb `timeoutConstInMillis` erhöht. Zahlen und Entscheidung in `docs/entscheidungen.md`.
-- **Stand (Einmessung Meilenstein 4, 04.10.2026, Commit `d6c63de`):** gesamt **66 %** Mutation Coverage (458/695), Test Strength 73 %, Dauer 2 h 25 min. Mit der Aufnahme von `output.outbox` und `output.paperless` wuchs der Nenner von 525 auf 695 Mutationen — ein belegter Wechsel der Messgrundlage. Alle Zahlen je Paket stehen in `docs/entscheidungen.md`.
-- **Schwelle:** `mutationThreshold = 66` in `build.gradle.kts` — der gemessene Wert als **Boden**, damit ein Rückgang den Task rot macht. Anheben, wenn der Score steigt; **nie stillschweigend senken**. Der Lauf zu Meilenstein 4 hat den Boden erstmals gesenkt, von 71 % — nicht stillschweigend, sondern mit Ursache und Gegenmaßnahme in `docs/entscheidungen.md`. Schwächste Pakete sind dort ebenfalls benannt.
-- **Neueinmessung zu Meilenstein 5:** Issue #138 schärft die Tests der schwächsten Pakete (`service`, `output.outbox`, `output.paperless`) und misst danach neu; die Schwellenanhebung läuft dort. Zahlen stehen danach — wie bisher — nur in `docs/entscheidungen.md` mit Datum und Commit, nicht hier.
+- **Grenzen (gemessen, Spike B):** PIT funktioniert auf JUnit Platform 6 (das bekannte Problem 0 %-Coverage ist mit pitest 1.25.5 behoben). Die zeitgesteuerten Scanner-Tests machen Läufe über den ganzen Kern langsam; deshalb `timeoutConstInMillis` erhöht. Zahlen und Entscheidung in `docs/internal/entscheidungen.md`.
+- **Stand (Einmessung Meilenstein 4, 04.10.2026, Commit `d6c63de`):** gesamt **66 %** Mutation Coverage (458/695), Test Strength 73 %, Dauer 2 h 25 min. Mit der Aufnahme von `output.outbox` und `output.paperless` wuchs der Nenner von 525 auf 695 Mutationen — ein belegter Wechsel der Messgrundlage. Alle Zahlen je Paket stehen in `docs/internal/entscheidungen.md`.
+- **Schwelle:** `mutationThreshold = 66` in `build.gradle.kts` — der gemessene Wert als **Boden**, damit ein Rückgang den Task rot macht. Anheben, wenn der Score steigt; **nie stillschweigend senken**. Der Lauf zu Meilenstein 4 hat den Boden erstmals gesenkt, von 71 % — nicht stillschweigend, sondern mit Ursache und Gegenmaßnahme in `docs/internal/entscheidungen.md`. Schwächste Pakete sind dort ebenfalls benannt.
+- **Neueinmessung zu Meilenstein 5:** Issue #138 schärft die Tests der schwächsten Pakete (`service`, `output.outbox`, `output.paperless`) und misst danach neu; die Schwellenanhebung läuft dort. Zahlen stehen danach — wie bisher — nur in `docs/internal/entscheidungen.md` mit Datum und Commit, nicht hier.
 - **Die Schicht `e2e` ist aus den `targetTests` ausgenommen** (gemessen, seit Meilenstein 4). Ihre Tests warten mit Awaitility und einer Obergrenze von 60 Sekunden — richtig für sie, falsch als Mutationsbasis: Eine Mutation, die die Zustellung kaputtmacht, lässt jeden solchen Test seine volle Wartezeit verbrennen, statt schnell rot zu werden. **Gemessen** an denselben 8 Mutationen von `OutputModules`: gegen `e2e` als `targetTests` dauert die Mutationsanalyse **4 min 53 s**, gegen den Unit-Test `OutputModulesTest` **1 s** — rund 37 Sekunden je Mutation gegenüber 0,13, also Faktor ~290. Auf die 695 Mutationen der vollen Messgrundlage hochgerechnet wären das etwa 7 Stunden allein für diesen Anteil. Dabei tötet `e2e` sogar **weniger**: 6 von 8 gegenüber 7 von 8. Die Mutationen in `output` und `service` werden von den Unit-, Slice- und Integrationstests ohnehin erreicht; `e2e` bringt Laufzeit, aber keine zusätzliche Reichweite. Das ist eine Einschränkung der Messgrundlage und steht deshalb hier, nicht nur als Kommentar in `build.gradle.kts`.
 - **Netz:** Die `org.pitest`-Artefakte sind nicht im warmen Cache; der erste `pitest`-Lauf löst sie online auf. DC-03 bleibt unberührt, weil es `./gradlew test` betrifft — der läuft weiterhin offline.
-- **Ausführungsort: lokal oder auf Abruf in CI** (seit 05.10.2026). Der volle Lauf geht auch über `.github/workflows/pitest.yml` — `workflow_dispatch` auf `dev`, an keinem `push`, auf `ubuntu-24.04-arm`, mit dem Bericht als Artefakt. Entscheidend für diese Schicht: Der Workflow führt `./gradlew pitest` **im Dev-Container-Image** aus (`.devcontainer/Dockerfile`), nicht in einer runner-seitigen Nachbildung. Damit stammen CI-Zahlen und lokale Zahlen aus derselben Umgebung und sind miteinander vergleichbar — eine Messgrundlage, die je nach Ausführungsort andere `jpegtran`-, `jbig2`- oder JDK-Versionen sähe, wäre keine. Der Ablauf steht in `docs/entwicklung.md`, die Begründung in `docs/entscheidungen.md`.
+- **Ausführungsort: lokal oder auf Abruf in CI** (seit 05.10.2026). Der volle Lauf geht auch über `.github/workflows/pitest.yml` — `workflow_dispatch` auf `dev`, an keinem `push`, auf `ubuntu-24.04-arm`, mit dem Bericht als Artefakt. Entscheidend für diese Schicht: Der Workflow führt `./gradlew pitest` **im Dev-Container-Image** aus (`.devcontainer/Dockerfile`), nicht in einer runner-seitigen Nachbildung. Damit stammen CI-Zahlen und lokale Zahlen aus derselben Umgebung und sind miteinander vergleichbar — eine Messgrundlage, die je nach Ausführungsort andere `jpegtran`-, `jbig2`- oder JDK-Versionen sähe, wäre keine. Der Ablauf steht in `docs/de/development.md`, die Begründung in `docs/internal/entscheidungen.md`.
 
 ### Wächter (Guard)
 
 Ergänzend zu den Schichten, als eigene Datei je Konzern:
 
-- **ArchUnit** (`archunit-junit6`): Architekturregeln — die Paketschichten `config`, `scanner`, `image`, `processing`, `output`, `service`, `cli` mit ihren Richtungen (Tabelle in `docs/plan.md`); **kein `@ConditionalOnProperty`** im Code (AU-03); **der Kern bleibt frei von Spring**.
+- **ArchUnit** (`archunit-junit6`): Architekturregeln — die Paketschichten `config`, `scanner`, `image`, `processing`, `output`, `service`, `cli` mit ihren Richtungen (Tabelle in `docs/internal/plan.md`); **kein `@ConditionalOnProperty`** im Code (AU-03); **der Kern bleibt frei von Spring**.
 
   Zwei Regeln sind bewusst anders gebaut als die übrigen: Auf `service` darf **nur `cli`** zugreifen (eine eingehende Regel — ohne sie wäre die oberste Schicht in der Richtung ungeprüft, die am meisten zählt), und `scanner`/`image`/`processing`/`output` dürfen nichts aus `org.springframework` importieren. Letzteres kann die Schichtenregel nicht leisten, weil `org.springframework` zu keiner Schicht gehört; sie greift genau dort, wo die Abkürzung verlockend ist — beim Hineininjizieren von `UnboundAirProperties` in einen Verarbeitungsschritt.
-- **Konventionstests:** alle Defaults zentral und in der Doku (KL-01, Referenz in `docs/konfiguration.md`), Exception-Hierarchie (SC-05), Test-Benennung.
+- **Konventionstests:** alle Defaults zentral und in der Doku (KL-01, Referenz in `docs/de/configuration.md`), Exception-Hierarchie (SC-05), Test-Benennung.
 
 ## Was fehlt und warum
 
 - **`@WebMvcTest` / `@DataJpaTest`:** Es gibt keine Web-Oberfläche (v1) und keine Datenbank. Beide Slices hätten nichts zu testen.
 - **Spring Cloud Contract:** Wir sind Consumer der paperless-API, kein Producer, der Verträge veröffentlicht. Der Vertrag wird deshalb mit WireMock + JSON-Schema auf Consumer-Seite gesichert.
 - **Testcontainers:** DC-03 verlangt offline grüne Tests; Testcontainers würde eine Container-Laufzeit im Test und echte Dienste (paperless, später ggf. DB) voraussetzen. Dazu kommt die GraalVM-Native-Image-Option.
-- **jqwik:** Anti-AI-Klausel (siehe Property-Schicht und `docs/entscheidungen.md`).
+- **jqwik:** Anti-AI-Klausel (siehe Property-Schicht und `docs/internal/entscheidungen.md`).
 
 ## GitHub-Tracking-Modell
 
@@ -165,4 +165,4 @@ Checkliste für künftige Test-Issues:
 | HTTP-Client (paperless) | `org.springframework.boot:spring-boot-starter-restclient` | verwaltet über Spring Boot 4.1.1 |
 | JSON (Outbox-Metadaten) | `tools.jackson.module:jackson-module-kotlin` | verwaltet über Spring Boot 4.1.1 |
 
-Auswahlbegründungen stehen in `docs/entscheidungen.md`, die Versions-Tabelle in `docs/plan.md`.
+Auswahlbegründungen stehen in `docs/internal/entscheidungen.md`, die Versions-Tabelle in `docs/internal/plan.md`.

@@ -1,6 +1,6 @@
 # Entscheidungen
 
-Begründungen zu den festen Entscheidungen. Grundlage ist `docs/plan.md` („Feste Entscheidungen" und „Entschieden – nicht mehr offen"); diese Datei füllt sich nach und nach (DO-06).
+Begründungen zu den festen Entscheidungen. Grundlage ist `docs/internal/plan.md` („Feste Entscheidungen" und „Entschieden – nicht mehr offen"); diese Datei füllt sich nach und nach (DO-06).
 
 ## Stack und Versionspolitik: neueste stabile, gepinnt — nicht LTS
 
@@ -12,7 +12,7 @@ Kotlin, weil der Dienst klein, nebenläufig und stark typgetrieben ist (Scanner-
 
 Die verworfene Alternative wäre **LTS als Obergrenze** (Java 25 statt 26, ältere Boot- und Kotlin-Linien). Ihr Preis wäre doppelt: Der Code dürfte neuere Sprach- und Bibliotheksmittel nicht nutzen, und wenn das LTS ausläuft, steht ein großer Sprung an — genau die Sorte Migrationsprojekt, die dieser Grundsatz vermeiden soll.
 
-**Die Kette begrenzt sich selbst.** Die Obergrenze setzt jeweils der älteste Baustein: Gradle begrenzt Java, Spring Boot begrenzt Kotlin. Beim Anheben einer Version ist deshalb die Tabelle in `docs/plan.md` mitzupflegen — wer Java anhebt, prüft Gradle; wer Kotlin anhebt, prüft Spring Boot. Das ist kein Zufall, sondern die Kehrseite von „neueste stabile": Ohne diese Regel würde ein Update das nächste stillschweigend sprengen.
+**Die Kette begrenzt sich selbst.** Die Obergrenze setzt jeweils der älteste Baustein: Gradle begrenzt Java, Spring Boot begrenzt Kotlin. Beim Anheben einer Version ist deshalb die Tabelle in `docs/internal/plan.md` mitzupflegen — wer Java anhebt, prüft Gradle; wer Kotlin anhebt, prüft Spring Boot. Das ist kein Zufall, sondern die Kehrseite von „neueste stabile": Ohne diese Regel würde ein Update das nächste stillschweigend sprengen.
 
 ## Warum nicht Java 27
 
@@ -98,7 +98,7 @@ Der Lauf dauert rund 2,5 Stunden und belegt dabei Gradle-Daemon, Kotlin-Daemon u
 
 **Kein `push`-Trigger.** Der Workflow startet ausschließlich manuell. 2,5 Stunden bei jedem Commit wären nach einer Woche abgeschaltet, und der Lauf ist bewusst kein Gate: Er ist die Einmessung der Messgrundlage, nicht die Ampel über jedem Push. `concurrency` mit `cancel-in-progress` ersetzt einen laufenden Start durch den neuen, statt parallel weitere 2,5 Stunden zu verbrennen.
 
-**Im Dev-Container-Image, nicht in einer Runner-Nachbildung.** Das ist die eigentliche Entscheidung. Die Zahlen aus `docs/entscheidungen.md` stammen bisher alle aus dem Dev Container; eine CI-Umgebung, die JDK, `jpegtran` und `jbig2` eigenständig installiert, wäre eine zweite Wahrheit über die Entwicklungsumgebung und ihre Zahlen nicht mit den bisherigen vergleichbar. Deshalb baut der Workflow `.devcontainer/Dockerfile` und läuft darin — dieselbe Datei, die lokal gilt. Runner ist `ubuntu-24.04-arm`, native `arm64`-Hardware wie bei der Imageprüfung, weil die Golden-Dateien gegen die Binärprogramme dieser Architektur aufgenommen sind.
+**Im Dev-Container-Image, nicht in einer Runner-Nachbildung.** Das ist die eigentliche Entscheidung. Die Zahlen aus `docs/internal/entscheidungen.md` stammen bisher alle aus dem Dev Container; eine CI-Umgebung, die JDK, `jpegtran` und `jbig2` eigenständig installiert, wäre eine zweite Wahrheit über die Entwicklungsumgebung und ihre Zahlen nicht mit den bisherigen vergleichbar. Deshalb baut der Workflow `.devcontainer/Dockerfile` und läuft darin — dieselbe Datei, die lokal gilt. Runner ist `ubuntu-24.04-arm`, native `arm64`-Hardware wie bei der Imageprüfung, weil die Golden-Dateien gegen die Binärprogramme dieser Architektur aufgenommen sind.
 
 **Ohne die `devcontainers/ci`-Action.** Sie würde die folgenden Schritte (Cache, Artefakt-Upload) ebenfalls im Container ausführen; das sind JavaScript-Actions, das Image bräuchte also Node allein für CI. Ein schlichtes `docker run` liefert dieselbe Umgebung, ohne den Dev Container für CI-Zwecke zu verändern.
 
@@ -139,7 +139,7 @@ Testcontainers ist keine Option. Drei Gründe, die zusammenspielen:
 2. **Keine externen Dienste in v1:** Der Dienst hat in v1 bewusst keine Datenbank und kein Web; es gibt schlicht keinen Dienst, der einen Container rechtfertigt. paperless wird mit WireMock, der Scanner mit dem Fake-Scanner ersetzt — beides deckt die Verträge präziser ab als eine echte Instanz.
 3. **GraalVM Native Image:** Nichts einbauen, was die spätere Native-Image-Option verbaut.
 
-Entscheidung des Auftraggebers (siehe `docs/plan.md`, DC-03).
+Entscheidung des Auftraggebers (siehe `docs/internal/plan.md`, DC-03).
 
 ## Wahl des Mutationswerkzeugs: PIT
 
@@ -271,7 +271,7 @@ Der Punkt ist festgehalten, weil er die ursprüngliche Entscheidung ergänzt: �
 
 Mit Meilenstein 3 kommen Dienst-Loop, Batch und PDF-Erzeugung dazu. Für keines davon gab es einen Platz: Der Wächter kannte `scanner`, `image`, `processing`, `output` und `cli`, wobei `cli` **nicht** auf `output` zugreifen darf. Eine Schleife, die scannt, verarbeitet und ein PDF baut, hätte in keine dieser Schichten gepasst, ohne eine Regel zu brechen oder eine Schicht zu ihrem Gegenteil zu machen.
 
-**Entscheidung: zwei neue Schichten.** `config` als Blatt ohne eigene Abhängigkeiten, `service` als Orchestrierung darüber. Die vollständige Richtungstabelle steht in `docs/plan.md`.
+**Entscheidung: zwei neue Schichten.** `config` als Blatt ohne eigene Abhängigkeiten, `service` als Orchestrierung darüber. Die vollständige Richtungstabelle steht in `docs/internal/plan.md`.
 
 Drei Punkte, die dabei bewusst so und nicht anders entschieden sind:
 

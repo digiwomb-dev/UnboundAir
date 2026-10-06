@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit
  * directory can reappear through a stray `git add`, and a dead relative link stays
  * silent until a reader clicks it -- the documentation is one linked web, with the
  * README signposting every file in `docs/` and CONTRIBUTING.md having taken two
- * sections out of `docs/entwicklung.md`.
+ * sections out of `docs/de/development.md`.
  *
  * **Why this test reads the filesystem.** Every other test here takes its fixtures
  * from the classpath, because its subject is a resource. The subject here is the
@@ -28,7 +28,9 @@ import java.util.concurrent.TimeUnit
  * up from the working directory looking for the repository marker instead of assuming
  * a particular working directory -- Gradle runs tests in the project directory, but
  * that is a default the build does not pin, so relying on it would make this guard
- * fragile for the wrong reason.
+ * fragile for the wrong reason. Since DO-12 the product documentation lives under
+ * `docs/de/` (and later `docs/en/`), the working documents under `docs/internal/` --
+ * the file collection below walks `docs/` recursively for exactly that reason.
  *
  * **Why each rule is checked twice.** The live checks run against the real
  * repository, which is the point of the guard -- but the tooling check needs `git`,
@@ -65,7 +67,7 @@ class RepositoryHygieneTest {
 
             assertThat(tracked)
                 .`as`("git ls-files must list the repository content, otherwise this proves nothing")
-                .contains("docs/plan.md", "build.gradle.kts")
+                .contains("docs/internal/plan.md", "build.gradle.kts")
 
             val offenders = offendingToolingPaths(tracked!!)
 
@@ -111,9 +113,17 @@ class RepositoryHygieneTest {
         fun `DO-08 every relative documentation link resolves`() {
             val files = documentationFiles()
 
-            assertThat(files)
-                .`as`("the guard must find the documentation files, otherwise it proves nothing")
+            val relative = files.map { repositoryRoot.relativize(it).toString() }
+
+            assertThat(relative.filter { it.startsWith("docs/de/") })
+                .`as`("docs/de must contribute documentation files, otherwise the guard proves nothing")
                 .isNotEmpty()
+            assertThat(relative.filter { it.startsWith("docs/internal/") })
+                .`as`("docs/internal must contribute documentation files, otherwise the guard proves nothing")
+                .isNotEmpty()
+            // docs/en is deliberately not asserted: until DO-16 fills it, it holds
+            // no product files, and asserting it would keep this guard red for the
+            // wrong reason.
 
             val (dead, checked) = deadLinks(repositoryRoot, files)
 
@@ -171,8 +181,8 @@ class RepositoryHygieneTest {
     /**
      * Every relative link target in [files] that does not resolve, together with the
      * number of targets actually checked. Targets are resolved against the file
-     * holding the link, not against the repository root: `protokoll.md` in
-     * `docs/plan.md` means `docs/protokoll.md`.
+     * holding the link, not against the repository root: `configuration.md` in
+     * `docs/de/operations.md` means `docs/de/configuration.md`.
      *
      * Absolute URLs and pure `#anchor` links are skipped; an anchor suffix on a file
      * target is stripped before the file is resolved.
@@ -237,7 +247,7 @@ class RepositoryHygieneTest {
                 .map { repositoryRoot.resolve(it) }
                 .filter { Files.isRegularFile(it) }
         val docs =
-            Files.list(repositoryRoot.resolve("docs")).use { stream ->
+            Files.walk(repositoryRoot.resolve("docs")).use { stream ->
                 stream.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".md") }.toList()
             }
         return (roots + docs).sorted()
@@ -246,7 +256,16 @@ class RepositoryHygieneTest {
     private companion object {
         val TOOLING_PATHS = listOf(".opencode", "opencode.json")
 
-        val ROOT_DOCUMENTS = listOf("README.md", "CONTRIBUTING.md", "SECURITY.md", "AGENTS.md")
+        val ROOT_DOCUMENTS =
+            listOf(
+                "README.md",
+                "README.de.md",
+                "CONTRIBUTING.md",
+                "CONTRIBUTING.de.md",
+                "SECURITY.md",
+                "SECURITY.de.md",
+                "AGENTS.md",
+            )
 
         val SKIPPED_SCHEMES = listOf("http://", "https://", "mailto:")
 
