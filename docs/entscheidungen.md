@@ -506,9 +506,39 @@ Zuerst war ein Dienstanbieter vorgesehen (DeepL, in CI, Glossar beim Anbieter). 
 
 **Warum das Skript ins Repository darf,** obwohl „Werkzeug-Konfiguration gehört nicht ins Repository" gilt: Prompt und Glossar sind nicht Werkzeugeinrichtung, sondern Projektsubstanz — ohne sie übersetzt jeder Lauf anders, wie bei den Workflow-Dateien, die ebenfalls im Repository liegen. Zwei Bedingungen halten die Regel gewahrt: keine fest verdrahtete Adresse (Endpunkt und Modell kommen aus `UNBOUNDAIR_DOCS_LLM_URL` und `UNBOUNDAIR_DOCS_LLM_MODEL`, wer kein LM Studio hat setzt etwas anderes ein oder übersetzt von Hand), und das Skript ist nie Teil von `build`, sondern läuft auf Abruf wie der Mutationslauf.
 
+## Spike E (Starlight-Inhaltsquelle, #227)
+
+Stand: 06.10.2026, Astro 7.3.5, `@astrojs/starlight` 0.42.5, per pnpm installiert. Gerüst: zwei deutsche Dateien und eine englische, gebaut mit `./node_modules/.bin/astro build`. Das Gerüst ist danach gelöscht — die echte Seite kommt erst mit WO 4.
+
+**Ohne `src/content.config.ts` gibt es keine Sammlungen.** Der erste Bau meldete `The collection "docs" does not exist or is empty` und erzeugte nur `404.html`. Nötig ist:
+
+```ts
+import { defineCollection } from 'astro:content';
+import { docsLoader, i18nLoader } from '@astrojs/starlight/loaders';
+import { docsSchema, i18nSchema } from '@astrojs/starlight/schema';
+
+export const collections = {
+  docs: defineCollection({ loader: docsLoader(), schema: docsSchema() }),
+  i18n: defineCollection({ loader: i18nLoader(), schema: i18nSchema() }),
+};
+```
+
+Die Warnung zur Sammlung `i18n` (`base directory .../i18n/ does not exist`) ist folgenlos, solange keine UI-Texte überschrieben werden.
+
+**1. Inhaltswurzel umleiten: per Option nein, per Symlink ja.** `docsLoader()` nimmt in 0.42.5 nur `generateId` entgegen — kein `base`, kein `pattern`. Die Zeile `Loads content files from the src/content/docs/ directory` in `loaders.d.ts` ist wörtlich zu nehmen: Der Pfad ist fest verdrahtet. Verzeichnis-Symlinks je Sprache (`src/content/docs/de -> ../../../docs/de`, ebenso `en`) werden dagegen vom Content-Layer-Glob gefolgt: Derselbe Stand einmal als echte Dateien, einmal als Symlinks gebaut, ergab dieselben vier Seiten (`/de/operations`, `/de/configuration`, `/en/operations`, plus 404). Entscheidung für WO 4: Symlinks je Sprache, kein Kopierschritt, keine Dateien unter `site/`. Das Markdown bleibt, wo Beitragende und `git log` es erwarten.
+
+**2. Frontmatter: `title:` ist Pflicht, und es genügt.** Eine Datei ohne Frontmatter bricht den Bau hart ab (`InvalidContentEntryDataError: docs → en/operations data does not match collection schema`). Alle Spike-Dateien trugen nur `title:` und bauten grün — mehr braucht der Übersetzungs-Prompt nicht zu wissen, weniger geht nicht.
+
+**3. Sprachpaarung über den Dateinamen: ja.** `de/operations.md` und `en/operations.md` wurden als dieselbe Seite in zwei Sprachen erkannt (`/de/operations`, `/en/operations`).
+
+**4. Rückfall bei fehlender Übersetzung: ja, aber die Richtung hängt an `defaultLocale`.** Mit `defaultLocale: 'de'` bekam die nur deutsch vorhandene Seite eine englische Rückfall-URL (`/en/configuration/`), die den deutschen Inhalt mit sichtbarer Markierung zeigt („This content is not available in your language yet."), Bau grün. Mit `defaultLocale: 'en'` entstand keine Rückfallseite (englisch 404). Der Rückfall zeigt also Inhalt der Default-Sprache auf der URL der fehlenden Sprache — Vorgabe für WO 4, welche Sprache Default wird.
+
+**5. Drittparteien-Kontakt (Nachtrag aus der Datenschutzprüfung):** `grep` über `dist/` fand kein einziges `https://` in `src=`, `href=` oder `url(`. Alle geladenen Mittel (`script`, `link`, `img`) zeigen auf `/_astro/*` oder `/favicon.svg` — gleiche Herkunft. Die übrigen `https://`-Zeichenketten liegen ausschließlich in JS-Bündeln (Pagefind-Übersetzervermerke u. Ä.), kein dynamischer Import, kein `fetch` auf Fremdhosts. Die Rückfallseite bringt nichts Externes mit — sie nutzt dasselbe Layout mit denselben lokalen Mitteln.
+
 ## Spike-Ergebnisse (Zusammenfassung)
 
 - **Spike A (kotest-property auf JUnit Platform 6):** läuft. 1 Test, 0 Failures auf Platform 6.0.3 (Spring Boot 4.1.1, `junit-jupiter` 6.0.3).
 - **Spike B (Mutation):** PIT funktioniert (Zahlen oben), kein Fallback nötig.
 - **Spike C (jbig2enc, #140):** Gemeinsames Symbolwörterbuch bestätigt, byte-deterministisch, Version jbig2 0.29-2.1build1 / Programm meldet jbig2enc 0.28, auf zwei echten Seiten 36× kleiner als die Grau-JPEGs; -r ist tot, -s verlustbehaftet mit 0,0058 % Pixeln.
 - **Spike D (OpenPDF-Determinismus, #141):** byte-identische PDFs erreichbar; Naht ist `PdfWriter.getInfo()` (FILEID/CreationDate/ModDate/Producer); nur `/ID` variiert sonst; brotli4j wird ausgeschlossen (Default aus, native Libs); JPEG roh bestätigt via PDFBox-Raw-Stream.
+- **Spike E (Starlight-Inhaltsquelle, #227):** `docsLoader()` kennt kein `base` — Umleitung per Symlink je Sprache (vom Glob gefolgt, identischer Bau); `title:` Pflicht und genügend; Paarung über Dateinamen bestätigt; Rückfall mit Markierung hängt an `defaultLocale`; kein Drittparteien-Kontakt in `dist/`.
