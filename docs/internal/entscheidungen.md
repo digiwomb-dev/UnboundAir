@@ -502,6 +502,27 @@ Astro 7.3.5, Starlight 0.42.5, `@astrojs/sitemap` 3.7.4, installiert per npm mit
 
 **Datenschutz-Zusagen aus WO 4:** globales `head` leer (Bedingung 2 — die CSP steht in `Head.astro`, weil ein `meta`-Tag niemanden kontaktiert, ein globaler `head`-Eintrag aber der Haken für Fremdskripte wäre); `prefetch: false` (Bedingung 7, bewusst); `credits: false`, nur der Repository-Verweis unter `social` (Bedingung 8); Sitemap ohne `legal-notice` (Naht für #234); Imprint-Ersetzung vor dem Bau aus den Secrets `IMPRINT_NAME`/`IMPRINT_ADDRESS` mit Token `{{IMPRINT_NAME}}`/`{{IMPRINT_ADDRESS}}` in `docs/de/legal-notice.md` (Naht für #234 — Datei und Token kommen von dort, dieser Workflow liefert nur Schritt, Abbruch bei leerem Secret und fork-bewusstes Auslassen); Deploy nur vom Default-Branch, nie aus einem PR. Das DS-01-Tor (#233) kommt zwischen Bau und Deploy; das Umschalten der Pages-Quelle in den Repository-Einstellungen wartet darauf.
 
+## Datenschutzprüfung: Urteil mit Auflagen, Tor davor (DS-01, #233)
+
+**Urteil: Freigabe mit Auflagen.** Gemessen am Auslieferungsstand: Starlight lädt keine Schriften, Symbole oder Skripte von Dritten (Systemschrift-Stapel, kein `@font-face`, kein CDN); Pagefind läuft vollständig im Browser, Shiki färbt zur Bauzeit. Eine echte GitHub-Pages-Seite als Kontrolle zeigte null fremde Rechner und null Cookies. Es geht also nicht darum, ein Leck zu schließen, sondern keines zu öffnen — an den zwei Stellen, wo es leicht passiert: Starlights eigene Doku empfiehlt Analysewerkzeuge (und lädt sie per `head`-Option selbst), und Astros Bau-Telemetrie sendet aus CI (die `isCI`-Stille betrifft nur den Hinweis, nicht das Senden).
+
+**Die zwölf Auflagen** (geprüft teils per Datei, teils per Tor aus #233):
+
+1. `ASTRO_TELEMETRY_DISABLED: "1"` in der Umgebung des Bau-Jobs.
+2. `head` in `site/astro.config.mjs` leer — der Haken, über den Starlights Doku Analyse von einem CDN lädt. `head`-Frontmatter je Seite bleibt erlaubt für Marken, die nichts laden (`meta robots`).
+3. Keine Analyse jeder Art, einschließlich der „datenschutzfreundlichen".
+4. Suche bleibt Pagefind — kein Docsearch, Algolia oder Typesense.
+5. Keine Einbettungen — kein `astro-embed`, keine Video- oder Social-Rahmen.
+6. Favicon, Bilder und `og:image` aus `site/public/` oder `src/assets/`.
+7. `prefetch` bewusst entschieden: `false`, Begründung dieser Absatz — keine spekulativen Anfragen, bis das Tor jeden Deploy bewacht.
+8. `credits: false`; `social` verweist nur auf Eigenes (das Repository).
+9. `npm ci --ignore-scripts` statt Installation mit Skripten, mit eingechecktem `site/package-lock.json`.
+10. Jedes `uses:` auf 40-stellige Commit-SHA gepinnt, keinen beweglichen Tag.
+11. `node_modules/` in `.gitignore`, bevor der erste Node-Befehl läuft.
+12. Minimale Workflow-Rechte (`contents: read` für den Bau, `pages: write` und `id-token: write` nur für den Deploy, sonst nichts).
+
+**Das Tor** (`site/tools/check-third-party.mjs`, Schritt in `docs.yml` vor dem Deploy, vom Deploy-Job abhängig): Es sammelt `src=`, `href=`, `url(`, `@import`, `srcset=`, `<iframe` und `<form action=` aus gebautem HTML und CSS, lässt Relative, seiteninterne und `data:`-Ziele fallen, hält den Rest gegen eine Zulassungsliste mit nur der eigenen Seiten-Adresse und scheitert zusätzlich hart an bekannten Fremdmustern. Textverweise (`<a href>`, etwa auf das Repository) prüft es nur gegen die Fremdmuster — sonst würde es heulen, bis es jemand abschaltet. Zusätzlich scheitert es an `@font-face` mit fremder `url(` und an fehlendem `ASTRO_TELEMETRY_DISABLED`. Was es nicht findet (zusammengesetzte URLs zur Laufzeit, echtes Browserverhalten, Kompromittierung nach dem Bau, Sendungen des Bau-Rechners), steht in seinem Kopfkommentar — die CSP aus WO 4 ist die Ergänzung am Besucherende, keines ersetzt das andere.
+
 ## Übersetzung: lokales LLM auf Abruf, CI prüft nur (DO-14, DO-15)
 
 **Entscheidung: Übersetzt wird lokal auf Abruf mit einem LLM über LM Studio — Erstmodell Gemma 4 26B, benannter Rückfallweg Qwen3.6 27B. CI übersetzt nie, sie prüft nur. Skript, Glossar und Prompt liegen versioniert im Repository.**

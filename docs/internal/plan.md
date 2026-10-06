@@ -325,6 +325,11 @@ Die folgenden fünf Anforderungen gehören zu **Meilenstein 6** und damit nicht 
 
 **Werkzeug-Konfiguration gehört nicht ins Repository.** Was die lokale Arbeitsumgebung einrichtet – Editor-, Assistenz- oder sonstige Werkzeugeinstellungen – wird nicht mitgeliefert: Es sagt nichts über UnboundAir, und wer das Projekt von Hand baut, trägt es ohne Nutzen mit. `AGENTS.md` bleibt als werkzeugneutrale Konvention zur Arbeitsweise; die Projektregeln selbst stehen nach DO-10 in `CONTRIBUTING.md`.
 
+### Seitengarantien (DS)
+
+- **DS-01** Die veröffentlichte Seite kontaktiert keinen Dritten: keine Schriften, Bilder oder Skripte von fremden Rechnern, keine Analyse, keine Einbettungen. Weil jede Abhängigkeitsaktualisierung und jede kopierte Konfiguration das still brechen kann, prüft vor jedem Deploy ein Tor den gebauten Stand neu — der Deploy hängt vom Tor ab, nicht umgekehrt.
+  *Abnahme:* Die Prüfung läuft in `docs.yml` vor dem Deploy, und der Deploy-Job hängt von ihr ab; ein gepflanzter Fremdverweis, eine externe Schrift in `@font-face` und ein entferntes `ASTRO_TELEMETRY_DISABLED` machen den Bau jeweils rot; derselbe Lauf geht lokal gegen `site/dist/`; was die Prüfung nicht findet, steht in ihrem Kopfkommentar.
+
 ## Arbeit wird in GitHub getrackt
 
 Der Fortschritt lebt nicht mehr in dieser Datei, sondern in GitHub: [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues). Jeder Meilenstein aus „Umfang von v1" ist ein Milestone, jede Aufgabe ein Issue – Impl+Test-Paare als Eltern-Issue mit zwei Sub-Issues. Welche Anforderungen ein Meilenstein umsetzt, steht in seiner Milestone-Beschreibung. Labels, Milestones, Issues und die Issue-Vorlagen sind auf Englisch – wie Code, Commits und PR-Titel. Die Doku wird auf Deutsch verfasst und auf Englisch veröffentlicht (siehe „Doku (DO)").

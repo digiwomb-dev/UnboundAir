@@ -77,15 +77,44 @@ jobs:
         with:
           path: site/dist
 
-  # The DS-01 gate (#233) will sit between build and deploy: the deploy job
-  # will depend on it, not merely run beside it. Until #233 lands, flipping
-  # the Pages source to "GitHub Actions" in the repository settings waits —
-  # building without deploying is fine, publishing without the gate is not.
+  # DS-01 gate (#233): re-checks every production change to the published
+  # pages before they may deploy. Runs on the artifact, not on a rebuild, so
+  # the check sees exactly what the deploy would publish. The deploy job
+  # depends on this check instead of running beside it.
+  check:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      ASTRO_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Download built site
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: github-pages
+          path: gate-dist
+      - name: Check for third-party contact (DS-01)
+        # Runnable locally too: build the site, then run
+        # `node site/tools/check-third-party.mjs site/dist`.
+        run: node site/tools/check-third-party.mjs gate-dist
+
+  # The DS-01 gate (#233) sits between build and deploy: the deploy job
+  # depends on it, not merely runs beside it. Flipping the Pages source to
+  # "GitHub Actions" in the repository settings waits until this gate is
+  # green: building without deploying is fine, publishing without the gate
+  # is what the gate prevents.
   deploy:
     # No deploy from a pull request: only the default branch carries values
     # worth publishing, and fork builds must never publish.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: build
+    needs: [build, check]
     runs-on: ubuntu-latest
     permissions:
       pages: write
