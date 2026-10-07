@@ -45,6 +45,7 @@ export default defineConfig({
       // Starlight would append the path below the site directory
       // (`src/content/docs/…`), which does not exist in the repository.
       components: {
+        Footer: './src/components/Footer.astro',
         EditLink: './src/components/EditLink.astro',
         Head: './src/components/Head.astro',
       },
