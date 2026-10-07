@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
       - name: Build the dev container image
         # The same image local development uses: JDK 26, jpegtran and
@@ -56,7 +56,7 @@ jobs:
         # container), so the cache lands on the runner's disk and survives
         # both the container and the run - each run starts from the
         # previous one's cache instead of re-downloading everything.
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .gradle
           key: gradle-home-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle/wrapper/gradle-wrapper.properties') }}
@@ -87,7 +87,7 @@ jobs:
         # 90 days is the maximum GitHub keeps an artifact - nothing above
         # it exists, so a "raise it further" request is moot.
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: pitest-report
           path: build/reports/pitest/
