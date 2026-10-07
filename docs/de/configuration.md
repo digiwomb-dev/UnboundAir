@@ -41,7 +41,7 @@ Die Zeit-Einstellungen nehmen eine nackte Zahl als **Sekunden** (`20` heißt 20 
 | `unboundair.batch-timeout` | `UNBOUNDAIR_BATCHTIMEOUT` | `20` (Sekunden) | Wie lange nach der letzten Seite auf eine weitere gewartet wird, bevor das Dokument geschlossen wird (DL-04). |
 | `unboundair.idle-minutes` | `UNBOUNDAIR_IDLEMINUTES` | *(nicht gesetzt)* | Nach wie vielen Minuten ohne Seite langsamer abgefragt wird (DL-06). Ohne Wert ändert sich nichts – das ist der Auslieferungszustand. |
 
-> **Diese vier Werte sind vorläufig.** Sie sind geschätzt, nicht gemessen. Der Befehl `measure` liefert die Zahlen, aus denen die endgültigen Defaults abgeleitet werden; bis dahin bleiben OF-01 bis OF-03 in `offene-fragen.md` offen. Wer den Dienst heute betreibt und ein besseres Verhalten beobachtet, sollte die Werte anpassen – dafür sind sie konfigurierbar.
+> **Diese vier Werte sind vorläufig.** Sie sind geschätzt, nicht gemessen. Der Befehl `measure` liefert die Zahlen, aus denen die endgültigen Defaults abgeleitet werden; bis dahin bleiben OF-01 bis OF-03 in `docs/internal/offene-fragen.md` offen. Wer den Dienst heute betreibt und ein besseres Verhalten beobachtet, sollte die Werte anpassen – dafür sind sie konfigurierbar.
 
 ### Scanner
 
@@ -86,6 +86,6 @@ Dieses frühe Scheitern ist Absicht: Ein Modul mit leerem Token würde den Fehle
 
 - **Der paperless-Token als Wert.** Secrets gehören nicht in eine Konfigurationsdatei. Der Token kommt als Umgebungsvariable (`unboundair.output.paperless.token`) oder als eingebundene Datei, deren Pfad über eine Umgebungsvariable kommt (`unboundair.output.paperless.token-file`, AU-05). Welche Quelle gilt und warum der Dienst ohne beide gar nicht erst startet, steht unter „Token-Auflösung".
 - **Die Backoff-Werte der Outbox.** Nach dem ersten Fehlversuch wartet die Outbox 30 Sekunden, bei jedem weiteren verdoppelt sich die Wartezeit, gedeckelt bei einer Stunde. Das sind bewusst keine Einstellungen, sondern Konstruktor-Parameter von `Outbox`: Sie stimmen einen Algorithmus pro Instanz ab, den niemand im Betrieb umstellen muss – dafür bekäme die Datei nur einen Schalter, den niemand dreht.
-- **`normalize` (SV-04).** Zurückgestellt, bis entschieden ist, was es tun soll – siehe „Offene Entscheidungen" in `plan.md`.
+- **`normalize` (SV-04).** Zurückgestellt, bis entschieden ist, was es tun soll – siehe „Offene Entscheidungen" in `docs/internal/plan.md`.
 - **Die Zeitzone.** Der Dateiname eines Dokuments nutzt die lokale Zeit des Containers. Gesteuert wird sie über die übliche Umgebungsvariable `TZ`, nicht über eine eigene Einstellung.
 - **Log-Level.** Logging läuft über die Standardmittel von Spring Boot und Logback (`logging.level.*`), nicht über eigene `unboundair.*`-Einstellungen. Die Ausgabe geht auf stdout (KL-02).
