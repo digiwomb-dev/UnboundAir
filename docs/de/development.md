@@ -36,7 +36,7 @@ Das Repository lässt sich auch aus einem [Worktree](https://git-scm.com/docs/gi
 
 Eine Einschränkung gibt es: **Git-Befehle funktionieren im Dev Container nur im normalen Klon, nicht im Worktree.** Ein Worktree enthält statt eines `.git`-Verzeichnisses nur eine Datei, die auf das gemeinsame Git-Verzeichnis des Hauptklons zeigt – und das liegt außerhalb des eingehängten Ordners. Zum Bauen und Testen spielt das keine Rolle: Der Gradle-Build braucht kein Git. Git-Befehle gehören ohnehin neben den Container, nicht hinein.
 
-Die `devcontainer`-CLI kann das gemeinsame Git-Verzeichnis mitmounten (`--mount-git-worktree-common-dir`), verlangt dafür aber mit relativen Pfaden angelegte Worktrees (`git worktree add --relative-paths`, ab Git 2.48). Siehe OF-12 in `offene-fragen.md`.
+Die `devcontainer`-CLI kann das gemeinsame Git-Verzeichnis mitmounten (`--mount-git-worktree-common-dir`), verlangt dafür aber mit relativen Pfaden angelegte Worktrees (`git worktree add --relative-paths`, ab Git 2.48). Siehe OF-12 in `docs/internal/offene-fragen.md`.
 
 Beim ersten Start wird das Image gebaut, das dauert einige Minuten. Die Ausgabe wirkt dabei streckenweise wie eingefroren, weil die Fortschrittsanzeige der Container-Runtime gepuffert durchgereicht wird. `--log-level debug` zeigt stattdessen jeden Schritt einzeln.
 
@@ -74,7 +74,7 @@ Alles im Dev Container ausführen:
 
 `spotlessCheck` hängt an der `check`-Task und läuft damit bei `build` automatisch mit. `spotlessApply` ändert Dateien – bewusst einsetzen, nicht nebenbei.
 
-Geprüft wird mit **ktlint**; Spotless ist nur der Rahmen, der es startet. Warum dieser Umweg nötig ist, steht in `plan.md` unter „Entschieden – nicht mehr offen" und in `offene-fragen.md` unter OF-11.
+Geprüft wird mit **ktlint**; Spotless ist nur der Rahmen, der es startet. Warum dieser Umweg nötig ist, steht in `docs/internal/plan.md` unter „Entschieden – nicht mehr offen" und in `docs/internal/offene-fragen.md` unter OF-11.
 
 Die Tests kommen ohne echte Geräte und ohne fremde Dienste aus: Der Scanner wird durch einen Fake-Scanner ersetzt, der im Test als TCP-Server läuft und das Verhalten des echten Geräts nachbildet – inklusive seiner Eigenheiten wie der Füllbytes in den Antworten.
 
@@ -84,7 +84,7 @@ Eine Netzwerkverbindung braucht trotzdem, wer zum ersten Mal baut: Der Wrapper l
 
 ## Mutationstest (`pitest`)
 
-Zusätzlich zu den gewöhnlichen Tests gibt es einen Mutationslauf: Er verändert den Produktivcode an vielen Stellen minimal und prüft, ob die Tests das merken. Das deckt schwache Zusicherungen auf, die eine reine Zeilenabdeckung nicht zeigt. Die Schicht ist in `teststrategie.md` unter „Mutation" beschrieben.
+Zusätzlich zu den gewöhnlichen Tests gibt es einen Mutationslauf: Er verändert den Produktivcode an vielen Stellen minimal und prüft, ob die Tests das merken. Das deckt schwache Zusicherungen auf, die eine reine Zeilenabdeckung nicht zeigt. Die Schicht ist in `docs/internal/teststrategie.md` unter „Mutation" beschrieben.
 
 ```bash
 ./gradlew pitest          # Mutationslauf über die Kern-Pakete
@@ -101,7 +101,7 @@ Vier Dinge, die man vorher wissen sollte:
   ./gradlew --stop && pkill -f MutationTestMinion; pkill -f pitest-command-line
   ```
 
-Es gibt eine **Schwelle**: Fällt die Mutationsabdeckung unter den in `build.gradle.kts` gepinnten Wert, schlägt der Task fehl. Der Wert ist der zuletzt gemessene Stand und wirkt als Boden – er wird angehoben, wenn der Score steigt, und nicht stillschweigend gesenkt. Die aktuellen Zahlen je Paket stehen in `entscheidungen.md`.
+Es gibt eine **Schwelle**: Fällt die Mutationsabdeckung unter den in `build.gradle.kts` gepinnten Wert, schlägt der Task fehl. Der Wert ist der zuletzt gemessene Stand und wirkt als Boden – er wird angehoben, wenn der Score steigt, und nicht stillschweigend gesenkt. Die aktuellen Zahlen je Paket stehen in `docs/internal/entscheidungen.md`.
 
 ### Lieber auf Abruf in CI laufen lassen
 
@@ -111,7 +111,7 @@ Wegen der 2,5 Stunden und des Speicherbedarfs muss der volle Lauf nicht am Entwi
 gh workflow run pitest --ref dev
 ```
 
-Oder im Reiter „Actions" den Workflow `pitest` wählen und als Branch `dev` angeben. Dass die Workflow-Datei auch auf `main` liegt, ist kein Versehen: Die Actions-Oberfläche bietet zum manuellen Start nur Workflows des Default-Branches an. Laufen soll er trotzdem auf `dev` – dem Integrations-Branch (siehe `plan.md`, „Git-Ablauf").
+Oder im Reiter „Actions" den Workflow `pitest` wählen und als Branch `dev` angeben. Dass die Workflow-Datei auch auf `main` liegt, ist kein Versehen: Die Actions-Oberfläche bietet zum manuellen Start nur Workflows des Default-Branches an. Laufen soll er trotzdem auf `dev` – dem Integrations-Branch (siehe `docs/internal/plan.md`, „Git-Ablauf").
 
 Vier Punkte dazu:
 
@@ -120,7 +120,7 @@ Vier Punkte dazu:
 - **Der Bericht ist das Ergebnis.** Er liegt nur auf dem Runner, deshalb lädt der Workflow `build/reports/pitest/` als Artefakt `pitest-report` hoch – aufbewahrt 90 Tage, das ist das Maximum bei GitHub. Ohne diesen Schritt bliebe von 2,5 Stunden nur grün oder rot übrig.
 - **Ein Lauf zur Zeit.** Ein zweiter Start ersetzt einen laufenden (`concurrency` mit `cancel-in-progress`), statt parallel weitere 2,5 Stunden zu verbrennen.
 
-Die Neueinmessung der Schwelle (TE-04) gehört damit in CI, nicht auf den Entwicklungsrechner. Die gemessenen Zahlen wandern von dort nach `entscheidungen.md` – mit Datum und Commit, wie bisher.
+Die Neueinmessung der Schwelle (TE-04) gehört damit in CI, nicht auf den Entwicklungsrechner. Die gemessenen Zahlen wandern von dort nach `docs/internal/entscheidungen.md` – mit Datum und Commit, wie bisher.
 
 ## Laufzeit-Image bauen
 
@@ -171,7 +171,7 @@ sha256sum gradle/wrapper/gradle-wrapper.jar
 
 ## Dokumentationsseite
 
-Die Doku steht auch als gerenderte Seite bereit (deutsch, Englisch folgt mit DO-16): https://digiwomb-dev.github.io/UnboundAir/
+Die Doku steht auch als gerenderte Seite bereit (deutsch und englisch): https://digiwomb-dev.github.io/UnboundAir/
 
 Lokal bauen (Node bleibt auf `site/` beschränkt — Gradle, Dev Container und Laufzeit-Image berührt das nicht):
 
