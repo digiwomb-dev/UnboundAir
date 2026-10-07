@@ -2,7 +2,7 @@
 title: Operations
 ---
 
-<!-- translated from docs/de/operations.md @ e766871c0e8b920fc88c75a6ea0190e88d096b7f -->
+<!-- translated from docs/de/operations.md @ 0eb9e0298e8838d229d98cd16df35eea7f57f4e1 -->
 
 
 The service runs as a container (DO-03). This file describes what the host and the container must provide for that — independent of any particular container runtime. Commands below are examples, each marked as such.
@@ -82,6 +82,9 @@ services:
   unboundair:
     image: ghcr.io/digiwomb-dev/unboundair:nightly
     container_name: unboundair
+    # Ohne Kommando zeigt der Container nur die Hilfe und endet mit Exit 1 —
+    # deshalb steht hier explizit der Dienst.
+    command: ["run"]
     # Host-Netzwerk mit Grund siehe oben — kein Bridge-Netzwerk.
     network_mode: host
     restart: unless-stopped
@@ -134,6 +137,8 @@ Wants=network-online.target
 [Container]
 Image=ghcr.io/digiwomb-dev/unboundair:nightly
 ContainerName=unboundair
+# Ohne Kommando zeigt der Container nur die Hilfe und endet mit Exit 1.
+Exec=run
 # Host-Netzwerk mit Grund siehe oben — kein Bridge-Netzwerk.
 Network=host
 # Dauerhaft: Ohne dieses Volume verliert jeder Neustart die
