@@ -189,6 +189,30 @@ jobs:
         if: always()
         run: docker rm -f fake-scanner
 
+      - name: Compare the toolchain fingerprint of both images
+        # CI-06: same system dependencies, not just the same Dockerfile
+        # lines. Prints the diff, so a drift names itself.
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/.github/scripts:/scripts:ro" \
+            --entrypoint sh unboundair-devcontainer /scripts/toolchain-fingerprint.sh \
+            > fingerprint-dev-${{ matrix.arch }}.txt
+          docker run --rm \
+            -v "${{ github.workspace }}/.github/scripts:/scripts:ro" \
+            --entrypoint sh unboundair:ci /scripts/toolchain-fingerprint.sh \
+            > fingerprint-runtime-${{ matrix.arch }}.txt
+          diff -u fingerprint-dev-${{ matrix.arch }}.txt fingerprint-runtime-${{ matrix.arch }}.txt
+
+      - name: Upload the fingerprints
+        # Both files: the final job compares the architectures against
+        # each other, so a drift in either image is caught.
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: toolchain-fingerprint-${{ matrix.arch }}
+          path: |
+            fingerprint-dev-${{ matrix.arch }}.txt
+            fingerprint-runtime-${{ matrix.arch }}.txt
+
       - name: Keep the verified image
         # Only meaningful when called: the nightly and the release push
         # exactly this image instead of rebuilding it.
@@ -201,3 +225,23 @@ jobs:
         with:
           name: unboundair-image-${{ matrix.arch }}
           path: unboundair-image-${{ matrix.arch }}.tar
+
+  toolchain-compare:
+    # Development happens on both architectures, so an arm64 and an amd64
+    # machine must test against the same package versions. A difference
+    # here usually means one architecture's archive got an update first —
+    # exactly when two developers would see different golden results.
+    needs: image-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download both architectures' fingerprints
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: toolchain-fingerprint-*
+          merge-multiple: true
+          path: fingerprints
+
+      - name: Compare arm64 against amd64
+        run: |
+          diff -u fingerprints/fingerprint-dev-arm64.txt fingerprints/fingerprint-dev-amd64.txt
+          diff -u fingerprints/fingerprint-runtime-arm64.txt fingerprints/fingerprint-runtime-amd64.txt
