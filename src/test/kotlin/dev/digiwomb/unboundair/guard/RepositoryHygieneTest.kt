@@ -121,6 +121,9 @@ class RepositoryHygieneTest {
             assertThat(relative.filter { it.startsWith("docs/internal/") })
                 .`as`("docs/internal must contribute documentation files, otherwise the guard proves nothing")
                 .isNotEmpty()
+            assertThat(relative.filter { it.startsWith("docs/en/") })
+                .`as`("docs/en must contribute documentation files now that DO-16 fills it, otherwise the guard proves nothing")
+                .isNotEmpty()
             // docs/en is deliberately not asserted: until DO-16 fills it, it holds
             // no product files, and asserting it would keep this guard red for the
             // wrong reason.
@@ -166,6 +169,88 @@ class RepositoryHygieneTest {
                 .`as`("the two resolving links and the dead one are checked, the web and anchor links are not")
                 .isEqualTo(3)
         }
+
+        /**
+         * DO-16 -- links from English files into the German-only working
+         * documents carry their marking. A reader following an unmarked link
+         * walks into German text unannounced.
+         */
+        @Test
+        fun `DO-16 links into working documents carry their German-only marking`() {
+            val files = documentationFiles().filter { isEnglishFile(it) }
+
+            assertThat(files.map { repositoryRoot.relativize(it).toString() })
+                .`as`("the marking rule must find English files, otherwise it proves nothing")
+                .isNotEmpty()
+
+            val unmarked = unmarkedInternalLinks(repositoryRoot, files)
+
+            assertThat(unmarked)
+                .`as`("every link from an English file into docs/internal/ carries (German only); these do not: %s", unmarked)
+                .isEmpty()
+        }
+
+        /**
+         * DO-16 -- the rule itself, on a synthetic file. Proves the check bites
+         * and pins that same-language links need no marking.
+         */
+        @Test
+        fun `DO-16 the rule reports an unmarked link and spares the rest`(
+            @TempDir root: Path,
+        ) {
+            Files.createDirectories(root.resolve("docs/internal"))
+            Files.createDirectories(root.resolve("docs/en"))
+            Files.writeString(root.resolve("docs/internal/plan.md"), "# plan\n")
+            val file = root.resolve("docs/en/operations.md")
+            Files.writeString(
+                file,
+                """
+                Marked: [plan](../internal/plan.md) (German only).
+                Not marked: [plan](../internal/plan.md).
+                Same language: [other](configuration.md).
+                """.trimIndent(),
+            )
+
+            assertThat(unmarkedInternalLinks(root, listOf(file)))
+                .containsExactly("docs/en/operations.md:2 -> ../internal/plan.md")
+        }
+    }
+
+    /**
+     * The English documentation files: everything under `docs/en/` plus the
+     * English root files (`README.md`, not `README.de.md`).
+     */
+    private fun isEnglishFile(file: Path): Boolean {
+        val relative = repositoryRoot.relativize(file).toString()
+        return relative.startsWith("docs/en/") || relative in ENGLISH_ROOT_DOCUMENTS
+    }
+
+    /**
+     * Every link from [files] into `docs/internal/` whose line carries no
+     * `(German only)` marking. Targets resolve against the file holding the
+     * link, like in [deadLinks].
+     */
+    private fun unmarkedInternalLinks(
+        root: Path,
+        files: List<Path>,
+    ): List<String> {
+        val unmarked = mutableListOf<String>()
+        files.forEach { file ->
+            val directory = file.parent
+            Files.readAllLines(file).forEachIndexed { index, line ->
+                LINK.findAll(line).forEach { match ->
+                    val target = match.groupValues[1].trim().substringBefore("#")
+                    if (target.isEmpty()) return@forEach
+                    val resolved = directory.resolve(target).normalize()
+                    if (!resolved.startsWith(root.resolve("docs/internal"))) return@forEach
+                    val after = line.substring(match.range.last + 1)
+                    if (!after.contains("(German only)")) {
+                        unmarked += "${root.relativize(file)}:${index + 1} -> $target"
+                    }
+                }
+            }
+        }
+        return unmarked
     }
 
     /**
@@ -254,6 +339,8 @@ class RepositoryHygieneTest {
     }
 
     private companion object {
+        val ENGLISH_ROOT_DOCUMENTS = listOf("README.md", "CONTRIBUTING.md", "SECURITY.md")
+
         val TOOLING_PATHS = listOf(".opencode", "opencode.json")
 
         val ROOT_DOCUMENTS =
