@@ -2,9 +2,8 @@
 title: Operations
 ---
 
-<!-- translated from docs/de/operations.md @ 5dd6ceb97c7be90eef91de16b60922e5140ebfe2 -->
+<!-- translated from docs/de/operations.md @ e766871c0e8b920fc88c75a6ea0190e88d096b7f -->
 
-# Operations
 
 The service runs as a container (DO-03). This file describes what the host and the container must provide for that — independent of any particular container runtime. Commands below are examples, each marked as such.
 

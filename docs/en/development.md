@@ -2,9 +2,8 @@
 title: Development
 ---
 
-<!-- translated from docs/de/development.md @ 0e4da4e375801bd3a11fac702e2c02249dec4537 -->
+<!-- translated from docs/de/development.md @ e766871c0e8b920fc88c75a6ea0190e88d096b7f -->
 
-# Development
 
 How to build and test `UnboundAir`. All work happens in the dev container — the machine itself needs nothing installed beyond a container runtime and dev-container tooling, in particular no JDK and no Gradle.
 

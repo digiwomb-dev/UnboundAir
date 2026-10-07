@@ -30,7 +30,11 @@ The following pass through byte-identical — character for character:
   becomes `CONTRIBUTING.md`, `README.de.md` becomes `README.md`,
   `SECURITY.de.md` becomes `SECURITY.md`)
 - frontmatter: the `title:` key stays, only its text is translated; a `head:`
-  block (e.g. the `noindex` marker) is reproduced byte-identical
+  block (e.g. the `noindex` marker) and a `sidebar:` block are reproduced
+  byte-identical
+- no top-level heading in the body: Starlight renders the frontmatter
+  `title:` as the page heading, so the German `# Titel` first line is
+  dropped, not translated
 - raw HTML anchors and `{{TOKENS}}` (e.g. `{{IMPRINT_BLOCK}}`): reproduce byte-identical, never translate, never rewrap
 
 Keep the document structure: same headings in the same order (translated

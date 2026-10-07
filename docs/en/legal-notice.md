@@ -5,11 +5,12 @@ head:
     attrs:
       name: robots
       content: noindex, nofollow, noarchive, nosnippet
+sidebar:
+  hidden: true
 ---
-<!-- translated from docs/de/legal-notice.md @ 113593c9186f9a1b1ae2a2f780998d3d206d204f -->
+<!-- translated from docs/de/legal-notice.md @ e766871c0e8b920fc88c75a6ea0190e88d096b7f -->
 
 
-# Legal Notice
 
 ## Provider identification
 
