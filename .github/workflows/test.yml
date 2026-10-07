@@ -93,6 +93,21 @@ jobs:
             unboundair-devcontainer \
             ./gradlew build
 
+      - name: Check the jar is reproducible
+        # CI-07, arm64 leg only: anyone can rebuild a tagged commit and
+        # compare the hash with the release asset. Same container, second
+        # bootJar with rerun tasks; different hashes fail the step printing
+        # both. Measured green locally before adding (identical SHA-256).
+        if: matrix.arch == 'arm64'
+        run: |
+          DOCKER_RUN="docker run --rm --user 1001 -v ${{ github.workspace }}:/workspaces/UnboundAir -w /workspaces/UnboundAir -e HOME=/workspaces/UnboundAir/.gradle -e GRADLE_USER_HOME=/workspaces/UnboundAir/.gradle unboundair-devcontainer"
+          first=$($DOCKER_RUN sha256sum build/libs/unboundair.jar | cut -d' ' -f1)
+          $DOCKER_RUN ./gradlew bootJar --rerun-tasks
+          second=$($DOCKER_RUN sha256sum build/libs/unboundair.jar | cut -d' ' -f1)
+          echo "first build:  $first"
+          echo "second build: $second"
+          test "$first" = "$second"
+
       - name: Upload the tested jar (arm64 leg)
         # The artefact the nightly and the release publish: the jar this
         # run tested, not a rebuild.
