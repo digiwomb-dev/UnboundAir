@@ -154,8 +154,13 @@ jobs:
         # The fake scanner runs in the dev container too: the runner itself
         # stays free of Java (no setup-java), and the check exercises the
         # same image the tests ran in. FakeScannerMain serves on 0.0.0.0,
-        # so the published port is reachable from the host for the poll and
-        # for the status container below.
+        # so the published port is reachable from the host.
+        #
+        # Readiness is probed with the real check, not with TCP-open: the
+        # published port accepts connections while Gradle inside is still
+        # starting (cold cache), and a TCP probe would pass vacuously. Up
+        # to five minutes cover a cold Gradle start; the final attempt
+        # outside the loop fails the step when the fake never answers.
         run: |
           docker run -d --name fake-scanner \
             --user 1001 \
@@ -166,11 +171,11 @@ jobs:
             -e GRADLE_USER_HOME=/workspaces/UnboundAir/.gradle \
             unboundair-devcontainer \
             ./gradlew fakeScanner --console=plain > fake-scanner.log 2>&1
-          for i in $(seq 1 30); do
-            if (echo > /dev/tcp/127.0.0.1/2323) >/dev/null 2>&1; then
+          for i in $(seq 1 60); do
+            if docker run --rm --network host unboundair:ci status --host 127.0.0.1 --port 2323 >> fake-scanner.log 2>&1; then
               break
             fi
-            sleep 1
+            sleep 5
           done
           # Host networking: the container reaches the scanner over the
           # host's network (docs/internal/plan.md DO-03), so the FakeScanner on
