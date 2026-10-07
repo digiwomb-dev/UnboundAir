@@ -155,8 +155,20 @@ def main(argv):
     commit = repo_run("rev-parse", "HEAD")
     german_rel = os.path.relpath(source, root).replace(os.sep, "/")
     marker = f"<!-- translated from {german_rel} @ {commit} -->\n"
+    # Astro only parses frontmatter at the very start of the file: the marker
+    # goes into line 1, or behind the frontmatter block when there is one.
+    lines = english.splitlines(keepends=True)
+    if lines and lines[0].rstrip("\n") == "---":
+        try:
+            closing = next(i for i in range(1, len(lines)) if lines[i].rstrip("\n") == "---")
+            head, tail = lines[: closing + 1], lines[closing + 1 :]
+            english = "".join(head) + marker + "\n" + "".join(tail).lstrip("\n")
+        except StopIteration:
+            english = marker + english
+    else:
+        english = marker + english
     with open(target, "w", encoding="utf-8") as handle:
-        handle.write(marker + english)
+        handle.write(english)
     print("translate: draft written; read it before committing it.")
 
 

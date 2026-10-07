@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
  * guard only proves it is structurally intact and current.
  *
  * **Pairs without a marker are skipped, not failed.** The marker
- * (`<!-- translated from docs/de/<file> @ <commit> -->` in line 1) arrives with
+ * (`<!-- translated from docs/de/<file> @ <commit> -->` in line 1, or the first non-blank line after frontmatter) arrives with
  * the translator (#231); before that there is nothing whose staleness could be
  * computed. Each rule is therefore checked twice: against the live repository
  * and against a synthetic pair that is known to be broken. The synthetic half
@@ -257,6 +257,33 @@ class TranslationGuardTest {
             val unmarked = writePair(root, de = "# Title\n", en = "# Title\n")
             assertThat(provenanceViolation(root, unmarked)).isNull()
         }
+
+        @Test
+        fun `DO-15 a marker after frontmatter counts, a buried one does not`(
+            @TempDir root: Path,
+        ) {
+            assumeTrue(gitAvailable(), "the staleness proof needs git")
+            val pair = initGitPair(root, german = "# Title\n")
+            val first = gitRev(root, "HEAD")
+            appendGitPair(root, germanExtra = "\nMore.\n")
+            val withFrontmatter =
+                writePair(
+                    root,
+                    de = "# Title\n",
+                    en = "---\ntitle: Title\n---\n\n<!-- translated from docs/de/doc.md @ " + first + " -->\n\n# Title\n",
+                )
+            assertThat(provenanceViolation(root, withFrontmatter)).startsWith("docs/en/doc.md: translation older than docs/de/doc.md")
+
+            val buried =
+                writePair(
+                    root,
+                    de = "# Title\n",
+                    en = "# Title\n\nText.\n\n<!-- translated from docs/de/doc.md @ " + first + " -->\n",
+                )
+            // Only line 1 or the first line after frontmatter carries the
+            // marker; anywhere else it is not a marker but content.
+            assertThat(provenanceViolation(root, buried)).isNull()
+        }
     }
 
     private fun livePairs(): List<DocPair> {
@@ -353,21 +380,36 @@ class TranslationGuardTest {
         germanSide: Boolean,
     ): String {
         val text = Files.readString(if (germanSide) pair.german else pair.english)
-        // The provenance marker lives in line 1 of the English file by
-        // convention; it is metadata about the pair, never content.
+        // The provenance marker is metadata about the pair, never content. It
+        // sits in line 1, or in the first non-blank line after frontmatter —
+        // Astro only parses frontmatter at the very start of the file, so a
+        // marker above it would break the site build (found in #232).
         if (!germanSide) {
             val lines = text.lines()
-            if (lines.isNotEmpty() && MARKER.containsMatchIn(lines.first())) {
-                return lines.drop(1).joinToString("\n")
+            val markerIndex = markerLineIndex(lines)
+            if (markerIndex != null) {
+                return (lines.take(markerIndex) + lines.drop(markerIndex + 1)).joinToString("\n")
             }
         }
         return text
     }
 
     private fun markerOf(pair: DocPair): Pair<String, String>? {
-        val first = Files.readString(pair.english).lines().firstOrNull() ?: return null
-        val match = MARKER.find(first) ?: return null
+        val lines = Files.readString(pair.english).lines()
+        val index = markerLineIndex(lines) ?: return null
+        val match = MARKER.find(lines[index]) ?: return null
         return match.groupValues[1] to match.groupValues[2]
+    }
+
+    private fun markerLineIndex(lines: List<String>): Int? {
+        if (lines.isEmpty()) return null
+        if (MARKER.containsMatchIn(lines.first())) return 0
+        if (lines.first().trim() != "---") return null
+        val closing = lines.drop(1).indexOfFirst { it.trim() == "---" }
+        if (closing < 0) return null
+        val candidate = (closing + 2 until lines.size).firstOrNull { lines[it].isNotBlank() } ?: return null
+        if (MARKER.containsMatchIn(lines[candidate])) return candidate
+        return null
     }
 
     private fun gitAvailable(): Boolean =
