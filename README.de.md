@@ -4,6 +4,8 @@ Macht aus einem Mustek iScan Air (S400W) einen „Einlegen und fertig"-Scanner: 
 
 Kein Knopfdruck, keine Hersteller-Software, keine Windows-Anwendung. Kotlin und Spring Boot, Betrieb als Container.
 
+[![Nightly](https://github.com/digiwomb-dev/UnboundAir/actions/workflows/nightly.yml/badge.svg)](https://github.com/digiwomb-dev/UnboundAir/actions/workflows/nightly.yml)
+
 > **Im Aufbau – v1 ist noch nicht fertig.** Ein Überblick steht unten unter [„Stand"](#stand); woran gerade gearbeitet wird, zeigen die [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues) – dort steht es aus erster Hand, statt hier zu veralten.
 
 ## Was es können soll

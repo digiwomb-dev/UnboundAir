@@ -4,6 +4,8 @@ Turns a Mustek iScan Air (S400W) into a "load and done" scanner: feed a sheet, t
 
 No button presses, no manufacturer software, no Windows application. Kotlin and Spring Boot, running as a container.
 
+[![Nightly](https://github.com/digiwomb-dev/UnboundAir/actions/workflows/nightly.yml/badge.svg)](https://github.com/digiwomb-dev/UnboundAir/actions/workflows/nightly.yml)
+
 > **Under construction – v1 is not finished yet.** An overview is below under ["Status"](#status); what is being worked on right now is in the [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) and [Issues](https://github.com/digiwomb-dev/UnboundAir/issues) – first-hand, instead of going stale here.
 
 ## What it should do

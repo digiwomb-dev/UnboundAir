@@ -1,0 +1,97 @@
+# CI-02/CI-05: nightly run on dev that publishes its container to GHCR
+# (docs/internal/plan.md).
+#
+# What it publishes: the images CI-03 verified in this run — loaded and
+# pushed, never rebuilt between the check and the push — as one
+# multi-architecture tag that cannot be mistaken for a release. What it
+# does not publish: releases (CI-04), a `latest` tag, signing or SBOM.
+#
+# Tests run before anything publishes: a nightly image that was never
+# tested is worse than none, because its existence implies it was checked.
+# Publication depends on a green suite, it does not run alongside it.
+#
+# Scheduled workflows run on the default branch, so this file must live on
+# `main` for the schedule to fire — and everything it calls is therefore
+# pinned to `@dev` with `ref: dev` passed along (calling the file by SHA
+# would freeze the workflow while the code moves on; calling `main`'s copy
+# of the workflows against `dev`'s code would test the wrong pairing).
+# The `ref` inputs of the called workflows exist for exactly this.
+name: nightly
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+# A scheduled job modifies nothing in the repository.
+permissions:
+  contents: read
+  packages: write
+
+# Superseded nightlies cancel; distinct from the test/image groups so a
+# nightly never cancels — and is never cancelled by — those runs.
+concurrency:
+  group: nightly
+  cancel-in-progress: true
+
+jobs:
+  test:
+    # The suite from CI-01, against dev rather than the caller: inside a
+    # called workflow the `github` context is the caller's, so without the
+    # input a nightly started from `main` would quietly test `main`.
+    uses: digiwomb-dev/UnboundAir/.github/workflows/test.yml@dev
+    with:
+      ref: dev
+    secrets: inherit
+
+  images:
+    # The build CI-03 verified in this run, fed with CI-01's tested jar:
+    # its tarballs are kept as artefacts, which the publish job loads.
+    needs: test
+    uses: digiwomb-dev/UnboundAir/.github/workflows/image.yml@dev
+    with:
+      ref: dev
+      jar-artifact: unboundair-jar
+    secrets: inherit
+
+  publish:
+    needs: images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the verified images
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: unboundair-image-*
+          merge-multiple: true
+          path: images
+
+      - name: Log in to GHCR
+        # The only secret involved is the automatically provided token;
+        # nothing else has to exist for publication to work.
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push per-architecture tags and combine them
+        # The verified bits travel untouched: each tarball is loaded and
+        # pushed under its architecture tag, then both are combined into
+        # the multi-architecture nightly tag with no layer rebuild.
+        # Load and tag interleaved on purpose: both tarballs hold an image
+        # named `unboundair:ci`, so loading the second before tagging the
+        # first would silently retag the wrong architecture.
+        # `nightly`, never `latest` and never a bare version: a nightly
+        # image under a release-looking tag would eventually be pulled by
+        # someone believing it is a release.
+        run: |
+          docker load -i images/unboundair-image-arm64.tar
+          docker tag unboundair:ci ghcr.io/digiwomb-dev/unboundair:nightly-arm64
+          docker push ghcr.io/digiwomb-dev/unboundair:nightly-arm64
+          docker load -i images/unboundair-image-amd64.tar
+          docker tag unboundair:ci ghcr.io/digiwomb-dev/unboundair:nightly-amd64
+          docker push ghcr.io/digiwomb-dev/unboundair:nightly-amd64
+          docker buildx imagetools create \
+            -t ghcr.io/digiwomb-dev/unboundair:nightly \
+            ghcr.io/digiwomb-dev/unboundair:nightly-arm64 \
+            ghcr.io/digiwomb-dev/unboundair:nightly-amd64

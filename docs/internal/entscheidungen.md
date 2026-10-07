@@ -104,6 +104,8 @@ Der Schutz gilt **auch für Administratoren** (`enforce_admins`), und das ist de
 
 **Der Rest der Tabelle, kurz begründet:** Tests laufen im Dev-Container-Image (dort ist die Kette gepinnt, und `pitest.yml` beweist das Muster); PR **und** Nightly (der PR prüft Änderungen, die Nacht prüft die Welt — Basis-Image, gewanderte Abhängigkeiten); Nightly veröffentlicht (sonst gäbe es kein fahrbares Image des Entwicklungsstands); veröffentlicht wird, was getestet wurde (ein zweiter Bau wäre ein zweiter, ungeprüfter Stand); die Version lebt in `build.gradle.kts` (eine Wahrheit, der Tag wiederholt sie); amd64 fährt die volle Suite (nur sie vergleicht Werkzeugausgaben mit Golden-Dateien); Releases sind unveränderlich mit Bescheinigung (ein Release, das sich nachträglich ändert, ist keines); Dependabot mit Abklingzeit (Pins altern sonst nur, Sicherheit eingeschlossen).
 
+**Sichtbarkeit ohne Spam (CI-02):** Ein fehlgeschlagener Nachtlauf meldet sich nirgends von selbst — GitHub mailt nur an, wer die Datei zuletzt anfasste. Statt Issue-Spam zeigt ein Nightly-Badge in beiden READMEs den Stand dauerhaft öffentlich. Die Kehrseite steht hier, damit sie kein Befund wird: Bis die Datei auf `main` liegt (nur dort feuert der Zeitplan) und die Pages-Quelle samt Secrets stehen, zeigt das Badge „unbekannt" statt grün.
+
 ## Der Mutationslauf läuft auf Abruf in CI, im Dev-Container-Image (TE-04)
 
 **Entscheidung: Der volle PIT-Lauf ist zusätzlich als GitHub-Actions-Workflow verfügbar (`workflow_dispatch`, nur von Hand) und führt `./gradlew pitest` im Dev-Container-Image aus.**
