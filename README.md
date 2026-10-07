@@ -25,12 +25,12 @@ Two things are non-negotiable: **nothing is ever recompressed** – cropping and
 - **Multi-page PDFs:** pages fed within a time window land in one document. Window expired or scanner off: the PDF is built.
 - **Outbox with retries:** finished documents sit on disk until a module has accepted them – neither a restart nor an unreachable destination loses anything.
 - **paperless-ngx as output module,** through an interface further modules can dock onto.
-- **Running as a container,** currently for `linux/arm64`.
+- **Running as a container,** for `linux/arm64` and `linux/amd64`.
 
 ## Prerequisites
 
 - A **Mustek iScan Air S400W** – none of this transfers to other devices.
-- A **machine holding the scanner's WLAN** (host), with a **container runtime** (Docker or Podman). Currently `linux/arm64` only.
+- A **machine holding the scanner's WLAN** (host), with a **container runtime** (Docker or Podman).
 - A **paperless-ngx instance with API token** – the only output module in v1. Without a token the service does not start.
 - For `color-mode = bw` additionally `jbig2`; it is included in the container.
 
@@ -44,7 +44,7 @@ What to set up on the host – WLAN profile, packet filter, volume, secret – i
 | Multi-page PDFs, time window, batch completion | Rotation and straightening |
 | Outbox with retries across restarts | `normalize` (SV-04, deliberately open) |
 | paperless-ngx upload | further output modules |
-| Container image for `arm64` | Native image, `linux/amd64` |
+| Container images for `arm64` and `amd64` | Native image |
 
 ## Quick start
 

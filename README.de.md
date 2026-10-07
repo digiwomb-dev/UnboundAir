@@ -25,12 +25,12 @@ Zwei Dinge sind dabei nicht verhandelbar: **Es wird nie neu komprimiert** – Zu
 - **Mehrseitige PDFs:** Seiten, die innerhalb eines Zeitfensters eingelegt werden, landen in einem Dokument. Zeitfenster abgelaufen oder Scanner aus: Das PDF wird gebaut.
 - **Outbox mit Wiederholung:** Fertige Dokumente liegen auf der Platte, bis ein Modul sie angenommen hat – ein Neustart oder ein nicht erreichbares Ziel verliert nichts.
 - **paperless-ngx als Ausgabe-Modul,** über eine Schnittstelle, an die weitere Module andocken können.
-- **Betrieb als Container,** derzeit für `linux/arm64`.
+- **Betrieb als Container,** für `linux/arm64` und `linux/amd64`.
 
 ## Voraussetzungen
 
 - Ein **Mustek iScan Air S400W** – auf andere Geräte ist nichts davon übertragbar.
-- Ein **Rechner, der das WLAN des Scanners hält** (Host), mit einer **Container-Runtime** (Docker oder Podman). Derzeit nur `linux/arm64`.
+- Ein **Rechner, der das WLAN des Scanners hält** (Host), mit einer **Container-Runtime** (Docker oder Podman).
 - Eine **paperless-ngx-Instanz mit API-Token** – das einzige Ausgabe-Modul in v1. Ohne Token startet der Dienst nicht.
 - Für `color-mode = bw` zusätzlich `jbig2`; im Container ist es enthalten.
 
@@ -44,7 +44,7 @@ Was auf dem Host einzurichten ist – WLAN-Profil, Paketfilter, Volume, Secret �
 | Mehrseitige PDFs, Zeitfenster, Batch-Abschluss | Drehen und Geraderücken |
 | Outbox mit Wiederholung über Neustarts | `normalize` (SV-04, bewusst offen) |
 | paperless-ngx-Upload | weitere Ausgabe-Module |
-| Container-Image für `arm64` | Native Image, `linux/amd64` |
+| Container-Images für `arm64` und `amd64` | Native Image |
 
 ## Schnellstart
 
