@@ -6,7 +6,7 @@ title: Betrieb
 
 Der Dienst läuft als Container (DO-03). Diese Datei beschreibt, was dafür auf dem Host und am Container gelten muss — unabhängig von einer bestimmten Container-Runtime. Befehle unten sind Beispiele, jeweils als solche markiert.
 
-> **Hinweis zum Stand (Meilenstein 5):** Wohin Container-Images veröffentlicht werden (Registry, Image-Name) ist noch nicht entschieden; ein konkretes Deployment-Beispiel kommt erst mit Meilenstein 6. Wo unten ein Image-Name stehen müsste, steht deshalb ein Platzhalter.
+> **Hinweis zum Stand:** Images landen in `ghcr.io/digiwomb-dev/unboundair`. Nightly-Bauten tragen `nightly` (Multi-Architektur-Index über beide Plattformen), daneben je Architektur `nightly-arm64` und `nightly-amd64` — nie `latest` und nie eine Versionsnummer, damit niemand einen Nightly-Bau für ein Release hält. Ein konkretes Deployment-Beispiel kommt mit DP-01 (Work order 16); wo unten ein Image-Name stehen müsste, steht bis dahin ein Platzhalter.
 
 ## 1. Host-Voraussetzungen: Scanner-WLAN, NetworkManager, nftables
 
