@@ -11,7 +11,7 @@ import java.security.MessageDigest
 
 /**
  * Golden master test for the full processing chain (SV-03 with the SV-01
- * crop as its first step, "golden-master" layer of docs/teststrategie.md).
+ * crop as its first step, "golden-master" layer of docs/internal/teststrategie.md).
  *
  * The committed golden file `golden/envelope_dl_300dpi_chain_gray.jpg` is the
  * real output of the production chain [CropStep] -> [GrayscaleStep] run

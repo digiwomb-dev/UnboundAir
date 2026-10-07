@@ -28,7 +28,7 @@ import java.nio.file.Path
  * The chain tests of criteria 2 to 4 run the real [CropStep] and
  * [GrayscaleStep], which invoke `jpegtran` (a system dependency of the
  * container, so the tests stay offline per DC-03) and therefore sit in the
- * integration layer of docs/teststrategie.md; the dummy step test of
+ * integration layer of docs/internal/teststrategie.md; the dummy step test of
  * criterion 1 is a pure JVM unit test. Every test copies its fixture into
  * [tempDir] and passes the processor a fresh [workDir], mirroring how the
  * chain receives pages in production; the committed fixtures are never

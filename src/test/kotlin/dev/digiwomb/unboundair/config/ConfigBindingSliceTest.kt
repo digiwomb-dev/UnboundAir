@@ -10,7 +10,7 @@ import java.time.Duration
 
 /**
  * Slice tests for the configuration binding (KL-01), the third layer of
- * `docs/teststrategie.md`.
+ * `docs/internal/teststrategie.md`.
  *
  * Two things are pinned here, and they are different claims:
  *
@@ -272,7 +272,7 @@ class ConfigBindingSliceTest {
     }
 
     /**
-     * Context smoke (layer 3 of `docs/teststrategie.md`): boot a context and
+     * Context smoke (layer 3 of `docs/internal/teststrategie.md`): boot a context and
      * confirm the configuration is resolvable at all.
      *
      * This asserts no behaviour on purpose. Its job is to catch wiring errors --

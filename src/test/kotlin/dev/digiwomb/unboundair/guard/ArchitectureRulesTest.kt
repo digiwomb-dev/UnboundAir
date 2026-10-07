@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 
 /**
- * Architecture guard ("Wächter" layer of docs/teststrategie.md): enforces the structural
+ * Architecture guard ("Wächter" layer of docs/internal/teststrategie.md): enforces the structural
  * decisions of docs/plan.md as executable rules, so an architectural regression turns
  * the build red instead of rotting silently.
  *

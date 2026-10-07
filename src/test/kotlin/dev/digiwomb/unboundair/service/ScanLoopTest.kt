@@ -20,7 +20,7 @@ import kotlin.concurrent.thread
 
 /**
  * Tests that [ScanLoop] scans with its configured resolution (issue #223: SC-07, SC-08).
- * "Integration" layer of docs/teststrategie.md: a real [ScannerClient] talks over a real
+ * "Integration" layer of docs/internal/teststrategie.md: a real [ScannerClient] talks over a real
  * TCP socket to the loopback [FakeScanner], and the test observes which dpi command arrived.
  *
  * Offline (DC-03): only the loopback [FakeScanner] is involved. The processor runs an empty

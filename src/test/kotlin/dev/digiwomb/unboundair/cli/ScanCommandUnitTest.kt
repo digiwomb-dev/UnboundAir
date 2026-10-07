@@ -7,7 +7,7 @@ import java.time.LocalDateTime
 
 /**
  * Unit tests for the pure companion functions of [ScanCommand] (the "unit"
- * layer of docs/teststrategie.md): no Spring context, no scanner, no
+ * layer of docs/internal/teststrategie.md): no Spring context, no scanner, no
  * `jpegtran`, no file I/O — offline per DC-03.
  *
  * [CommandTest] covers the same companion from the integration layer, where

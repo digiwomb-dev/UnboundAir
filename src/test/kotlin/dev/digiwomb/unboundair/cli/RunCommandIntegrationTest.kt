@@ -35,7 +35,7 @@ import kotlin.concurrent.thread
  * a literal `--unboundair.scanner.host=…` argument could never reach the dispatch. Only the
  * command itself (`run`) goes through `argv`, mirroring `DispatchCommandTest`.
  *
- * Timing is structural, not tuned (docs/teststrategie.md: wait for the state, not for a count).
+ * Timing is structural, not tuned (docs/internal/teststrategie.md: wait for the state, not for a count).
  * The loop scans on its first turn and the batch closes on the second (`batch-timeout` shorter
  * than `poll-interval`), while the outbox runner — on the same interval, offset by half a
  * period — deletes the delivered entry on its *next* pass. The entry is therefore observable for
@@ -275,7 +275,7 @@ class RunCommandIntegrationTest {
         const val OUTBOX_RUNNER_THREAD_NAME = "outbox-runner"
 
         /**
-         * Generous on purpose (docs/teststrategie.md): the scan lands after roughly one
+         * Generous on purpose (docs/internal/teststrategie.md): the scan lands after roughly one
          * `poll-interval`, and the bound is never exhausted when everything works.
          */
         const val ENTRY_AWAIT_SECONDS = 90L

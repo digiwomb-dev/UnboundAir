@@ -11,7 +11,7 @@ import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
 /**
- * Convention guard ("Konventionstest" of the Wächter layer in docs/teststrategie.md)
+ * Convention guard ("Konventionstest" of the Wächter layer in docs/internal/teststrategie.md)
  * over the repository itself rather than over the code: no tooling configuration is
  * tracked (DO-10), and every relative documentation link resolves (DO-08).
  *

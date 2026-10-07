@@ -310,7 +310,7 @@ class ServiceEndToEndTest {
         const val OUTBOX_RUNNER_THREAD_NAME = "outbox-runner"
 
         /**
-         * Generous on purpose (docs/teststrategie.md): three scans take seconds; the
+         * Generous on purpose (docs/internal/teststrategie.md): three scans take seconds; the
          * bounds below are never exhausted when everything works.
          */
         const val SCAN_AWAIT_SECONDS = 90L

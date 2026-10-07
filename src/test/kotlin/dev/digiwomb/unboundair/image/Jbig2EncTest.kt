@@ -19,7 +19,7 @@ import java.nio.file.Path
  * by the base image digest, and the size relations asserted below depend on
  * it. Integration, not unit, because the real external `jbig2` runs — the
  * same system dependency the runtime image carries
- * (`docs/teststrategie.md` places `jpegtran` in this layer for exactly that
+ * (`docs/internal/teststrategie.md` places `jpegtran` in this layer for exactly that
  * reason).
  *
  * All pages are hand-built PBM files (`P4` header plus packed rows, MSB

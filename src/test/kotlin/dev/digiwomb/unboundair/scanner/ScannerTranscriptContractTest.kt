@@ -6,7 +6,7 @@ import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 
 /**
- * Contract tests (layer "contract" in docs/teststrategie.md) that pin the FakeScanner
+ * Contract tests (layer "contract" in docs/internal/teststrategie.md) that pin the FakeScanner
  * to the real device protocol (SC-01..SC-04): a real [ScannerClient] session against
  * the fake must produce a transcript that is byte-equal (hex) to the committed golden
  * transcript files under [golden/transcripts].

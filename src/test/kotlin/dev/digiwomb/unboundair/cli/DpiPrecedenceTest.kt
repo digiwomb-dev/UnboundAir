@@ -27,7 +27,7 @@ import kotlin.concurrent.thread
  * which made the properties unreachable. Now a missing flag is `null` and the dispatch falls
  * back to the property, for `scan` and for `run` alike.
  *
- * "Integration" layer of docs/teststrategie.md: every test boots the full Spring context
+ * "Integration" layer of docs/internal/teststrategie.md: every test boots the full Spring context
  * without a web environment and observes which dpi command reached the loopback [FakeScanner].
  * Properties travel the way a container passes them — via `builder.properties(...)`, not as
  * command line tokens, because `parseCliArgs` rejects every `--`-prefixed token it does not

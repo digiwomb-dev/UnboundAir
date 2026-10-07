@@ -9,7 +9,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 /**
- * Convention guard ("Konventionstest" of the Wächter layer in docs/teststrategie.md)
+ * Convention guard ("Konventionstest" of the Wächter layer in docs/internal/teststrategie.md)
  * over the deployment examples in `docs/de/operations.md` (DP-01).
  *
  * The failure mode worth a test: Spring's relaxed binding drops hyphens

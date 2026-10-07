@@ -11,7 +11,7 @@ import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
 /**
- * Convention guard ("Konventionstest" of the Wächter layer in docs/teststrategie.md)
+ * Convention guard ("Konventionstest" of the Wächter layer in docs/internal/teststrategie.md)
  * over translations: every English file under `docs/en/` is paired with its German
  * source under `docs/de/` by filename, and the guard goes red when the pair drifts
  * apart structurally (DO-15).

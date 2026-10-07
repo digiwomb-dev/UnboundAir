@@ -10,7 +10,7 @@ import java.nio.file.Path
 import java.security.MessageDigest
 
 /**
- * Tests for the `crop` command (BE-03, "integration" layer of docs/teststrategie.md).
+ * Tests for the `crop` command (BE-03, "integration" layer of docs/internal/teststrategie.md).
  *
  * The acceptance criterion of BE-03 is that the command reproduces the SV-01
  * result on the real test images. This test drives [CropCommand.run] on a

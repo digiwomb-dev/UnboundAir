@@ -7,7 +7,7 @@ import java.security.MessageDigest
 
 /**
  * Tests for the sha256 manifest of the golden directory (SV-01, SV-03;
- * "golden-master" layer of docs/teststrategie.md).
+ * "golden-master" layer of docs/internal/teststrategie.md).
  *
  * The golden files under `src/test/resources/golden/` are pinned by
  * `manifest.sha256`, one line per file: `<sha256 lowercase hex>  <path

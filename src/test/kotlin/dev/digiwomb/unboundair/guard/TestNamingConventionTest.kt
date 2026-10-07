@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 
 /**
- * Convention guard ("Konventionstest" of the Wächter layer in docs/teststrategie.md):
+ * Convention guard ("Konventionstest" of the Wächter layer in docs/internal/teststrategie.md):
  * every test class in `dev.digiwomb.unboundair` must be traceable back to a requirement
  * from docs/plan.md.
  *
