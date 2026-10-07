@@ -29,8 +29,9 @@ concurrency:
 jobs:
   mutation-run:
     # Native arm64, like the image workflow: the project's own hardware is
-    # arm64, and the golden files were recorded against the binaries of
-    # that platform.
+    # arm64. The golden files were recorded against the binaries of that
+    # platform and are additionally verified on native amd64 by the CI-01
+    # matrix, finding: no difference.
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 360
 

@@ -116,7 +116,7 @@ Oder im Reiter „Actions" den Workflow `pitest` wählen und als Branch `dev` an
 Vier Punkte dazu:
 
 - **Es ist derselbe Dev Container.** Der Workflow baut das Image aus `.devcontainer/Dockerfile` und führt `./gradlew pitest` darin aus. Damit messen CI und lokaler Lauf in derselben Umgebung – gleiche JDK-, `jpegtran`- und `jbig2`-Versionen. Eine runner-seitige Nachbildung wäre eine zweite Wahrheit über die Entwicklungsumgebung.
-- **Native `arm64`**, wie bei der Imageprüfung: `ubuntu-24.04-arm`. Die Golden-Dateien sind gegen die Binärprogramme dieser Architektur aufgenommen.
+- **Nativ auf beiden Architekturen**, wie bei der Imageprüfung: `ubuntu-24.04-arm` und der Standard-x86-Runner. Die Golden-Dateien sind gegen die Binärprogramme beider Architekturen geprüft — die CI-01-Matrix fährt beide nativ, Befund: kein Unterschied.
 - **Der Bericht ist das Ergebnis.** Er liegt nur auf dem Runner, deshalb lädt der Workflow `build/reports/pitest/` als Artefakt `pitest-report` hoch – aufbewahrt 90 Tage, das ist das Maximum bei GitHub. Ohne diesen Schritt bliebe von 2,5 Stunden nur grün oder rot übrig.
 - **Ein Lauf zur Zeit.** Ein zweiter Start ersetzt einen laufenden (`concurrency` mit `cancel-in-progress`), statt parallel weitere 2,5 Stunden zu verbrennen.
 

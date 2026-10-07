@@ -2,7 +2,7 @@
 title: Development
 ---
 
-<!-- translated from docs/de/development.md @ 91624cba289cfef5b50ed90fe38fc685d9ea18a7 -->
+<!-- translated from docs/de/development.md @ 60a1bb78ad7885cb2a0fd5921411e385230d8088 -->
 
 # Development
 
@@ -118,7 +118,7 @@ Or pick the `pitest` workflow in the "Actions" tab and name `dev` as the branch.
 Four points on that:
 
 - **It is the same dev container.** The workflow builds the image from `.devcontainer/Dockerfile` and runs `./gradlew pitest` inside it. CI numbers and local numbers thus come from the same environment — same JDK, `jpegtran` and `jbig2` versions. A runner-side replica would be a second truth about the development environment.
-- **Native `arm64`**, like the image check: `ubuntu-24.04-arm`. The golden files are recorded against the binaries of that architecture.
+- **Native on both architectures**, like the image check: `ubuntu-24.04-arm` and the standard x86 runner. The golden files are verified against the binaries of both architectures — the CI-01 matrix runs both natively, finding: no difference.
 - **The report is the result.** It lives only on the runner, so the workflow uploads `build/reports/pitest/` as the `pitest-report` artefact — kept 90 days, GitHub's maximum. Without that step, 2.5 hours would leave nothing but green or red.
 - **One run at a time.** A second start replaces a running one (`concurrency` with `cancel-in-progress`) instead of burning another 2.5 hours in parallel.
 
