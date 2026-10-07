@@ -2,13 +2,13 @@
 title: Operations
 ---
 
-<!-- translated from docs/de/operations.md @ f9a5f790388ce3797548136df941dd37cab19c6b -->
+<!-- translated from docs/de/operations.md @ b3c10e6f3b343e022e1f95dfdba2b8b9d5cd13b6 -->
 
 # Operations
 
 The service runs as a container (DO-03). This file describes what the host and the container must provide for that — independent of any particular container runtime. Commands below are examples, each marked as such.
 
-> **Status note (milestone 5):** Where container images are published to (registry, image name) is not decided yet; a concrete deployment example arrives with milestone 6. Where an image name would stand below, a placeholder stands instead.
+> **Status note:** Images land in `ghcr.io/digiwomb-dev/unboundair`. Nightly builds carry `nightly` (multi-architecture index over both platforms), plus per architecture `nightly-arm64` and `nightly-amd64` — never `latest` and never a version number, so nobody mistakes a nightly build for a release. A concrete deployment example arrives with DP-01 (work order 16); where an image name would stand below, a placeholder stands until then.
 
 ## 1. Host prerequisites: scanner WLAN, NetworkManager, nftables
 
