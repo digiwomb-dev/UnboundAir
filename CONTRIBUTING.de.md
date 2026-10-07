@@ -14,9 +14,9 @@ Zwei Dateien gehören daneben:
 
 Das ist kein Stilgeschmack: Die Doku richtet sich an den Betreiber dieses Scanners, der Code an jeden, der ihn liest.
 
-**Stand heute:** Die Doku ist einsprachig deutsch. Die englische Fassung und die gerenderte Doku-Seite kommen mit Meilenstein 6 (DO-12 bis DO-16 in [`docs/internal/plan.md`](docs/internal/plan.md)) – bis dahin schreibst du Deutsch und musst nichts übersetzen.
+**Stand seit Meilenstein 6:** Die Doku liegt zweisprachig unter `docs/de/` und `docs/en/` – Deutsch wird verfasst, Englisch wird veröffentlicht (DO-12 bis DO-16 in [`docs/internal/plan.md`](docs/internal/plan.md)).
 
-**Danach gelten drei Regeln.** Du änderst immer die deutsche Datei unter `docs/de/`. Die englische Fassung entsteht durch einen Übersetzungslauf, der **lokal auf Abruf** läuft und dessen Entwurf du liest, bevor du ihn committest – CI übersetzt nie, sie prüft nur. Und: `plan.md`, `entscheidungen.md`, `offene-fragen.md` und `teststrategie.md` bleiben deutsch und werden nicht übersetzt; Links darauf tragen `(German only)`.
+**Es gelten drei Regeln.** Du änderst immer die deutsche Datei unter `docs/de/`. Die englische Fassung entsteht durch einen Übersetzungslauf, der **lokal auf Abruf** läuft und dessen Entwurf du liest, bevor du ihn committest – CI übersetzt nie, sie prüft nur. Und: `plan.md`, `entscheidungen.md`, `offene-fragen.md` und `teststrategie.md` bleiben deutsch und werden nicht übersetzt; Links darauf tragen `(German only)`.
 
 ## Commits und Pull Requests
 
