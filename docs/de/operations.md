@@ -63,7 +63,7 @@ Beim Beenden (SIGTERM/SIGINT) schließt der Dienst den offenen Batch noch ab und
 
 ## 7. Deployment-Beispiel: Compose-Datei und Quadlet
 
-Zwei fertige Dateien zum Kopieren — Compose für Docker, Quadlet für Podman mit systemd. Beide benennen das Image mit echtem Namen: `ghcr.io/digiwomb-dev/unboundair:nightly` (Multi-Architektur-Index über `linux/arm64` und `linux/amd64`). Releases erscheinen zusätzlich als Version (`1.2.0`, dazu `latest` außer bei Vorabversionen); wer stabil fahren will, pinnt eine Version, wer den Entwicklungsstand will, nimmt `nightly`. Alle mit `CHANGE` markierten Werte anpassen, den Rest übernehmen.
+Zwei fertige Dateien zum Kopieren — Compose für Docker, Quadlet für Podman mit systemd. Beide benennen das Image mit echtem Namen: `ghcr.io/digiwomb-dev/unboundair:nightly` (Multi-Architektur-Index über `linux/arm64` und `linux/amd64`). Releases erscheinen zusätzlich als Version (`1.2.0`, dazu `latest` außer bei Vorabversionen); wer stabil fahren will, pinnt eine Version, wer den Entwicklungsstand will, nimmt `nightly`. Alle mit `CHANGE` markierten Werte anpassen, den Rest übernehmen. Die Beispielblöcke tragen als erste Zeile `# Datei: <Name>` — daran erkennt der Wächter (`DeploymentExampleTest`) sie; beim Bearbeiten erhalten.
 
 **Host-Netzwerk in beiden Dateien mit Grund:** Der Container muss `192.168.18.33:23` über das WLAN des Hosts erreichen (DO-03). Mit Bridge-Netzwerk startet der Container und findet den Scanner nie — deshalb steht in beiden Dateien Host-Netzwerk, nicht als Vorschlag, sondern als Voraussetzung.
 
