@@ -13,8 +13,3 @@ head:
 
 {{IMPRINT_BLOCK}}
 
-## Spenden
-
-UnboundAir nimmt Spenden entgegen: <a href="{{DONATE_URL}}">Spenden</a>.
-
-Der Verweis ist ein reiner Textlink und führt auf ein externes Angebot — dort gelten dessen Bedingungen und dessen Datenschutzerklärung, nicht diese Seite.

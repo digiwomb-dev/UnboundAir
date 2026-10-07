@@ -33,6 +33,3 @@ Es gibt kein Cookie-Banner, weil es keine Cookies gibt.
 
 Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung (Art. 18), Datenübertragbarkeit (Art. 20), Widerspruch (Art. 21) sowie Beschwerde bei einer Aufsichtsbehörde.
 
-## Spenden
-
-Der Spendenverweis auf der Impressumsseite ist ein reiner Textlink auf ein externes Angebot — dort gelten dessen Bedingungen und dessen Datenschutzerklärung.

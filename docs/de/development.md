@@ -197,7 +197,7 @@ npm ci --ignore-scripts
 npm run build   # Ergebnis in site/dist/
 ```
 
-Das Tor aus DS-01 läuft lokal mit `npm run check` gegen `site/dist/`. Ohne die Secrets `IMPRINT_BLOCK` und `DONATE_URL` (nur in CI gesetzt, nie im Repository) schlägt die Imprint-Prüfung fehl — wie bei Fork-PRs, deren Bau nie deployt.
+Das Tor aus DS-01 läuft lokal mit `npm run check` gegen `site/dist/`. Ohne das Secret `IMPRINT_BLOCK` (nur in CI gesetzt, nie im Repository) schlägt die Imprint-Prüfung fehl — wie bei Fork-PRs, deren Bau nie deployt.
 
 Wie die Seite entsteht und was dabei aus Datenschutzgründen gilt, steht in `docs/internal/entscheidungen.md` (Abschnitte zur Doku-Seite und zur Übersetzung).
 
