@@ -2,9 +2,8 @@
 title: Configuration
 ---
 
-<!-- translated from docs/de/configuration.md @ 926a27555e9194c33c6703f595b0538671e86faf -->
+<!-- translated from docs/de/configuration.md @ e766871c0e8b920fc88c75a6ea0190e88d096b7f -->
 
-# Configuration
 
 Every `UnboundAir` setting with default and environment variable (DO-09, requirement KL-01). This file is the reference: what the code knows is in here — and what is in here exists in the code.
 

@@ -5,9 +5,10 @@ head:
     attrs:
       name: robots
       content: noindex, nofollow, noarchive, nosnippet
+sidebar:
+  hidden: true
 ---
 
-# Impressum
 
 ## Anbieterkennzeichnung
 

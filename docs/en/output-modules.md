@@ -2,9 +2,8 @@
 title: Output Modules
 ---
 
-<!-- translated from docs/de/output-modules.md @ feceb46672b9049adbee8189d8423aec25d25ed1 -->
+<!-- translated from docs/de/output-modules.md @ e766871c0e8b920fc88c75a6ea0190e88d096b7f -->
 
-# Output Modules
 
 How a finished document travels from the service to the output modules (AU-02, AU-03, AU-04). This file describes the general interface and the chain; what the individual settings mean is in `configuration.md`. v1 ships exactly one module, paperless-ngx — its specifics are in the "The paperless-ngx module" section below.
 

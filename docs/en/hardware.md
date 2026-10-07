@@ -2,9 +2,8 @@
 title: Hardware
 ---
 
-<!-- translated from docs/de/hardware.md @ 4272faea778f35a3115dd424971f44e687fab56a -->
+<!-- translated from docs/de/hardware.md @ e766871c0e8b920fc88c75a6ea0190e88d096b7f -->
 
-# Hardware: Mustek iScan Air (S400W)
 
 The device itself: what the scanner physically can do, which values were measured on it and which quirks it shows. Its counterpart is `docs/de/protocol.md`: that file tells **how** to talk to the device (commands, flow, answer formats); here stands **what** is talked to. Where the two touch, they reference instead of repeating.
 

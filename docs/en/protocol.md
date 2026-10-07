@@ -2,9 +2,8 @@
 title: Scanner Protocol
 ---
 
-<!-- translated from docs/de/protocol.md @ 2dab6146b05f4e17bb1711521342c7fb77c62d11 -->
+<!-- translated from docs/de/protocol.md @ e766871c0e8b920fc88c75a6ea0190e88d096b7f -->
 
-# Scanner Protocol
 
 Technical basis for the scanner client (SC-01 through SC-08). This file describes **how to talk to the device**: connection, commands, answers, scan flow and timing. **[Gerät]**
 

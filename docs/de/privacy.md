@@ -1,8 +1,9 @@
 ---
 title: Datenschutzerklärung
+sidebar:
+  hidden: true
 ---
 
-# Datenschutzerklärung
 
 ## Verantwortlicher
 
