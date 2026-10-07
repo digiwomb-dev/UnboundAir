@@ -6,8 +6,6 @@ title: Betrieb
 
 Der Dienst läuft als Container (DO-03). Diese Datei beschreibt, was dafür auf dem Host und am Container gelten muss — unabhängig von einer bestimmten Container-Runtime. Befehle unten sind Beispiele, jeweils als solche markiert.
 
-> **Hinweis zum Stand:** Images landen in `ghcr.io/digiwomb-dev/unboundair`. Nightly-Bauten tragen `nightly` (Multi-Architektur-Index über beide Plattformen), daneben je Architektur `nightly-arm64` und `nightly-amd64` — nie `latest` und nie eine Versionsnummer, damit niemand einen Nightly-Bau für ein Release hält. Releases tragen strikt SemVer ohne `v` (`1.2.0`, nicht `v1.2.0`); der Tag gleicht `version` in `build.gradle.kts` und sitzt auf `main`. Ein konkretes Deployment-Beispiel kommt mit DP-01 (Work order 16); wo unten ein Image-Name stehen müsste, steht bis dahin ein Platzhalter.
-
 ## 1. Host-Voraussetzungen: Scanner-WLAN, NetworkManager, nftables
 
 Die WLAN-Verbindung zum Scanner hält der Host, nicht der Container. Der Scanner spannt sein eigenes WLAN auf; der Host verbindet sich dorthin, der Container nutzt diese Verbindung des Hosts mit (siehe „Netzwerk").
@@ -62,3 +60,101 @@ Beim Beenden (SIGTERM/SIGINT) schließt der Dienst den offenen Batch noch ab und
 **Neustart:** Der Dienst ist auf Neustarts ausgelegt. Die Outbox auf dem Volume (siehe „Persistenz") sorgt dafür, dass nicht zugestellte Dokumente nach dem Neustart erneut versucht werden — mit wachsendem Abstand (Start 30 s, Verdopplung, Deckel 1 h, unbegrenzte Versuche) und ohne dass dafür etwas zu tun wäre. Die Runtime sollte den Container bei Absturz neu starten (Beispiel: eine Restart-Richtlinie wie „bei Fehler neu starten"); das Polling findet danach von selbst wieder in den Scanner-Zustand zurück (DL-01, DL-02).
 
 **Update:** Ein neues Image einspielen heißt: neuen Container mit denselben Einstellungen starten — dieselben `UNBOUNDAIR_…`-Variablen, dieselbe Token-Datei-Einbindung, dasselbe Volume auf die Outbox. Reihenfolge aus Rücksicht auf den offenen Batch: Erst den alten Container sauber stoppen (mit dem Stop-Timeout aus „Beenden", damit der Batch noch in die Outbox kommt), dann den neuen starten. Die Outbox auf dem Volume macht das Update verlustfrei: Was der alte Container noch nicht losgeworden ist, stellt der neue zu.
+
+## 7. Deployment-Beispiel: Compose-Datei und Quadlet
+
+Zwei fertige Dateien zum Kopieren — Compose für Docker, Quadlet für Podman mit systemd. Beide benennen das Image mit echtem Namen: `ghcr.io/digiwomb-dev/unboundair:nightly` (Multi-Architektur-Index über `linux/arm64` und `linux/amd64`). Releases erscheinen zusätzlich als Version (`1.2.0`, dazu `latest` außer bei Vorabversionen); wer stabil fahren will, pinnt eine Version, wer den Entwicklungsstand will, nimmt `nightly`. Alle mit `CHANGE` markierten Werte anpassen, den Rest übernehmen.
+
+**Host-Netzwerk in beiden Dateien mit Grund:** Der Container muss `192.168.18.33:23` über das WLAN des Hosts erreichen (DO-03). Mit Bridge-Netzwerk startet der Container und findet den Scanner nie — deshalb steht in beiden Dateien Host-Netzwerk, nicht als Vorschlag, sondern als Voraussetzung.
+
+**Der Token steht in keiner der Dateien.** Er liegt als Datei daneben (`paperless-token.txt` bzw. `/srv/unboundair/paperless-token.txt`) und wird referenziert, nicht eingebettet: anlegen, nie committen. Scanner-Adresse und -Port stehen nicht in den Beispielen — die Defaults (`192.168.18.33`, `23`) passen; nur bei Abweichung `UNBOUNDAIR_SCANNER_HOST`/`UNBOUNDAIR_SCANNER_PORT` setzen.
+
+### Compose
+
+```yaml
+# Datei: compose.yaml — kopieren, CHANGE-Werte anpassen,
+# Token-Datei anlegen (nie committen), `docker compose up -d`.
+services:
+  unboundair:
+    image: ghcr.io/digiwomb-dev/unboundair:nightly
+    container_name: unboundair
+    # Host-Netzwerk mit Grund siehe oben — kein Bridge-Netzwerk.
+    network_mode: host
+    restart: unless-stopped
+    env_file:
+      - unboundair.env
+    secrets:
+      - paperless-token
+    volumes:
+      # Dauerhaft: Ohne dieses Volume verliert jeder Neustart die
+      # noch nicht zugestellten Dokumente (siehe „Persistenz").
+      - unboundair-outbox:/var/lib/unboundair/outbox
+
+secrets:
+  paperless-token:
+    # CHANGE: Datei mit dem paperless-Token anlegen, nie committen.
+    file: ./paperless-token.txt
+
+volumes:
+  unboundair-outbox:
+```
+
+```ini
+# Datei: unboundair.env — CHANGE-Werte anpassen.
+UNBOUNDAIR_OUTPUT_MODULES=paperless
+# CHANGE: Adresse der paperless-ngx-Instanz.
+UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL=https://paperless.example.org
+UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE=/run/secrets/paperless-token
+# CHANGE: Zeitzone des Standorts (der Dateiname nutzt die Container-Zeit).
+TZ=Europe/Berlin
+```
+
+Token-Datei anlegen und starten:
+
+```sh
+printf '%s' 'TOKEN-HIER-EINSETZEN' > paperless-token.txt
+docker compose up -d
+```
+
+### Quadlet
+
+```ini
+# Datei: unboundair.container — nach ~/.config/containers/systemd/ kopieren,
+# CHANGE-Werte anpassen, Token-Datei anlegen (nie committen), dann:
+# systemctl --user daemon-reload && systemctl --user enable --now unboundair
+[Unit]
+Description=UnboundAir scanner service
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=ghcr.io/digiwomb-dev/unboundair:nightly
+ContainerName=unboundair
+# Host-Netzwerk mit Grund siehe oben — kein Bridge-Netzwerk.
+Network=host
+# Dauerhaft: Ohne dieses Volume verliert jeder Neustart die
+# noch nicht zugestellten Dokumente (siehe „Persistenz").
+Volume=unboundair-outbox:/var/lib/unboundair/outbox
+# CHANGE: Token-Datei mit dem paperless-Token anlegen, nie committen.
+Volume=/srv/unboundair/paperless-token.txt:/run/secrets/paperless-token:ro
+Environment=UNBOUNDAIR_OUTPUT_MODULES=paperless
+# CHANGE: Adresse der paperless-ngx-Instanz.
+Environment=UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL=https://paperless.example.org
+Environment=UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE=/run/secrets/paperless-token
+# CHANGE: Zeitzone des Standorts (der Dateiname nutzt die Container-Zeit).
+Environment=TZ=Europe/Berlin
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target
+```
+
+Token-Datei anlegen:
+
+```sh
+printf '%s' 'TOKEN-HIER-EINSETZEN' | install -m 600 /dev/stdin /srv/unboundair/paperless-token.txt
+```
+
+Prüfen, ob es läuft: ins Container-Log schauen — pro Seite stehen dort Scan-Dauer, Übertragungsdauer, Größe und Maße (KL-02). Kommt nichts an, hilft der Abschnitt „Netzwerk" oben weiter.
