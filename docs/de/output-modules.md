@@ -104,9 +104,7 @@ class ArchiveModule(
     override val name: String = "archive"
 
     override fun send(document: OutputDocument) {
-        // Dokument an `endpoint` liefern.
-        // Gelingt es nicht, eine Ausnahme werfen —
-        // die Outbox behält das Dokument und versucht es erneut.
+        // ...
     }
 }
 ```

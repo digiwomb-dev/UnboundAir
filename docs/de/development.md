@@ -39,12 +39,12 @@ Die `devcontainer`-CLI kann das gemeinsame Git-Verzeichnis mitmounten (`--mount-
 
 Beim ersten Start wird das Image gebaut, das dauert einige Minuten. Die Ausgabe wirkt dabei streckenweise wie eingefroren, weil die Fortschrittsanzeige der Container-Runtime gepuffert durchgereicht wird. `--log-level debug` zeigt stattdessen jeden Schritt einzeln.
 
-Danach prüfen, ob die Umgebung stimmt:
+Danach prüfen, ob die Umgebung stimmt — erwartet werden Temurin 26, eine libjpeg-turbo-Version und eine jbig2enc-Version (letztere schreibt auf stderr bei Exit 0):
 
 ```bash
-java -version      # erwartet: Temurin, Version 26
-jpegtran -version  # erwartet: eine libjpeg-turbo-Version
-jbig2 -V           # erwartet: eine jbig2enc-Version; schreibt auf stderr, Exit 0
+java -version
+jpegtran -version
+jbig2 -V
 ```
 
 Alle drei müssen antworten. `jpegtran` ist keine Kür: Zuschnitt und Graustufen-Umwandlung laufen ausschließlich darüber, ohne das Programm schlagen die entsprechenden Tests fehl. Dasselbe gilt für `jbig2`: die 1-bit-Kodierung des `bw`-Modus (SV-08) läuft ausschließlich darüber, ohne das Programm schlagen `Jbig2EncTest`, `PdfBuilderJbig2Test` und `PdfBwGoldenTest` fehl.
@@ -62,13 +62,13 @@ Das ist folgenlos: Die Meldung stammt aus einer Metadaten-Abfrage der CLI, nicht
 
 ## Bauen und testen
 
-Alles im Dev Container ausführen:
+Alles im Dev Container ausführen — der Reihe nach: kompilieren, Linter und Tests; nur Tests; nur Linter; Formatierungsmängel automatisch beheben:
 
 ```bash
-./gradlew build           # kompilieren, Linter, Tests
-./gradlew test            # nur Tests
-./gradlew spotlessCheck   # nur Linter
-./gradlew spotlessApply   # Formatierungsmängel automatisch beheben
+./gradlew build
+./gradlew test
+./gradlew spotlessCheck
+./gradlew spotlessApply
 ```
 
 `spotlessCheck` hängt an der `check`-Task und läuft damit bei `build` automatisch mit. `spotlessApply` ändert Dateien – bewusst einsetzen, nicht nebenbei.
@@ -86,7 +86,7 @@ Eine Netzwerkverbindung braucht trotzdem, wer zum ersten Mal baut: Der Wrapper l
 Zusätzlich zu den gewöhnlichen Tests gibt es einen Mutationslauf: Er verändert den Produktivcode an vielen Stellen minimal und prüft, ob die Tests das merken. Das deckt schwache Zusicherungen auf, die eine reine Zeilenabdeckung nicht zeigt. Die Schicht ist in `docs/internal/teststrategie.md` unter „Mutation" beschrieben.
 
 ```bash
-./gradlew pitest          # Mutationslauf über die Kern-Pakete
+./gradlew pitest
 ```
 
 Vier Dinge, die man vorher wissen sollte:
@@ -193,7 +193,7 @@ Lokal bauen (Node bleibt auf `site/` beschränkt — Gradle, Dev Container und L
 ```bash
 cd site
 npm ci --ignore-scripts
-npm run build   # Ergebnis in site/dist/
+npm run build
 ```
 
 Das Tor aus DS-01 läuft lokal mit `npm run check` gegen `site/dist/`. Ohne das Secret `IMPRINT_BLOCK` (nur in CI gesetzt, nie im Repository) schlägt die Imprint-Prüfung fehl — wie bei Fork-PRs, deren Bau nie deployt.
