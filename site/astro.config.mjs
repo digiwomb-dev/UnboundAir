@@ -9,7 +9,13 @@ export default defineConfig({
   // repository), this line goes away together with the subpath in `site`.
   base: '/UnboundAir/',
   // Landing page: default locale first (English is the main language).
-  redirects: { '/': '/UnboundAir/en/operations/' },
+  // Locale roots (/de/, /en/) have no index pages of their own, so the
+  // site title link would land on a 404 without these.
+  redirects: {
+    '/': '/UnboundAir/en/operations/',
+    '/de/': '/UnboundAir/de/operations/',
+    '/en/': '/UnboundAir/en/operations/',
+  },
   // Consciously off (condition 7 in #229): no speculative requests of any
   // kind until the DS-01 gate (#233) watches every deploy.
   prefetch: false,
