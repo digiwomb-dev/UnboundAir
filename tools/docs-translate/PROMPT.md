@@ -26,7 +26,9 @@ The following pass through byte-identical — character for character:
 - file paths, property names (`unboundair.poll-interval`), environment
   variables (`UNBOUNDAIR_POLLINTERVAL`), CLI commands and flags
 - requirement IDs (`SC-01`, `AU-04`, `DO-12`), byte values and firmware
-  versions (`0x48`, `NB0a.032`, `nopaper\x00\x00\x00H`)
+  versions (`0x48`, `NB0a.032`, `nopaper\x00\x00\x00H`); provenance markers
+  translate by fixed mapping (`[Gerät]` to `[Device]`, `[Handbuch]` to
+  `[Manual]`, `[offen]` to `[open]` — `[Scan]` and `[App/s400w]` stay)
 - table structure: same rows, same columns, same cell count
 - link targets: every `](target)` keeps its target byte-identical, except
   root-guide links change language with the reader (`CONTRIBUTING.de.md`
