@@ -62,7 +62,7 @@ Beim Beenden (SIGTERM/SIGINT) schließt der Dienst den offenen Batch noch ab und
 
 ## 7. Deployment-Beispiel: Compose-Datei und Quadlet
 
-Zwei fertige Dateien zum Kopieren — Compose für Docker, Quadlet für Podman mit systemd. Beide benennen das Image mit echtem Namen: `ghcr.io/digiwomb-dev/unboundair:nightly` (Multi-Architektur-Index über `linux/arm64` und `linux/amd64`). Releases erscheinen zusätzlich als Version (`1.2.0`, dazu `latest` außer bei Vorabversionen); wer stabil fahren will, pinnt eine Version, wer den Entwicklungsstand will, nimmt `nightly`. Alle mit `CHANGE` markierten Werte anpassen, den Rest übernehmen. Die Beispielblöcke tragen als erste Zeile `# Datei: <Name>` — daran erkennt der Wächter (`DeploymentExampleTest`) sie; beim Bearbeiten erhalten.
+Zwei fertige Dateien zum Kopieren — Compose für Docker, Quadlet für Podman mit systemd. Beide benennen das Image mit echtem Namen: `ghcr.io/digiwomb-dev/unboundair:nightly` (Multi-Architektur-Index über `linux/arm64` und `linux/amd64`). Releases erscheinen zusätzlich als Version (`1.2.0`, dazu `latest` außer bei Vorabversionen); wer stabil fahren will, pinnt eine Version, wer den Entwicklungsstand will, nimmt `nightly`. Alle mit `CHANGE` markierten Werte anpassen (paperless-Adresse, Token-Datei anlegen, Zeitzone), den Rest übernehmen. Die Beispielblöcke tragen als erste Zeile `# file: <Name>` — daran erkennt der Wächter (`DeploymentExampleTest`) sie; beim Bearbeiten erhalten. Ohne Kommando zeigt der Container nur die Hilfe und endet mit Exit 1 — deshalb steht in beiden Beispielen explizit der Dienst.
 
 **Host-Netzwerk in beiden Dateien mit Grund:** Der Container muss `192.168.18.33:23` über das WLAN des Hosts erreichen (DO-03). Mit Bridge-Netzwerk startet der Container und findet den Scanner nie — deshalb steht in beiden Dateien Host-Netzwerk, nicht als Vorschlag, sondern als Voraussetzung.
 
@@ -71,16 +71,12 @@ Zwei fertige Dateien zum Kopieren — Compose für Docker, Quadlet für Podman m
 ### Compose
 
 ```yaml
-# Datei: compose.yaml — kopieren, CHANGE-Werte anpassen,
-# Token-Datei anlegen (nie committen), `docker compose up -d`.
+# file: compose.yaml
 services:
   unboundair:
     image: ghcr.io/digiwomb-dev/unboundair:nightly
     container_name: unboundair
-    # Ohne Kommando zeigt der Container nur die Hilfe und endet mit Exit 1 —
-    # deshalb steht hier explizit der Dienst.
     command: ["run"]
-    # Host-Netzwerk mit Grund siehe oben — kein Bridge-Netzwerk.
     network_mode: host
     restart: unless-stopped
     env_file:
@@ -88,13 +84,11 @@ services:
     secrets:
       - paperless-token
     volumes:
-      # Dauerhaft: Ohne dieses Volume verliert jeder Neustart die
-      # noch nicht zugestellten Dokumente (siehe „Persistenz").
       - unboundair-outbox:/var/lib/unboundair/outbox
 
 secrets:
   paperless-token:
-    # CHANGE: Datei mit dem paperless-Token anlegen, nie committen.
+    # CHANGE
     file: ./paperless-token.txt
 
 volumes:
@@ -102,12 +96,12 @@ volumes:
 ```
 
 ```ini
-# Datei: unboundair.env — CHANGE-Werte anpassen.
+# file: unboundair.env
 UNBOUNDAIR_OUTPUT_MODULES=paperless
-# CHANGE: Adresse der paperless-ngx-Instanz.
+# CHANGE
 UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL=https://paperless.example.org
 UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE=/run/secrets/paperless-token
-# CHANGE: Zeitzone des Standorts (der Dateiname nutzt die Container-Zeit).
+# CHANGE
 TZ=Europe/Berlin
 ```
 
@@ -121,9 +115,8 @@ docker compose up -d
 ### Quadlet
 
 ```ini
-# Datei: unboundair.container — nach ~/.config/containers/systemd/ kopieren,
-# CHANGE-Werte anpassen, Token-Datei anlegen (nie committen), dann:
-# systemctl --user daemon-reload && systemctl --user enable --now unboundair
+# file: unboundair.container
+# CHANGE
 [Unit]
 Description=UnboundAir scanner service
 After=network-online.target
@@ -132,20 +125,16 @@ Wants=network-online.target
 [Container]
 Image=ghcr.io/digiwomb-dev/unboundair:nightly
 ContainerName=unboundair
-# Ohne Kommando zeigt der Container nur die Hilfe und endet mit Exit 1.
 Exec=run
-# Host-Netzwerk mit Grund siehe oben — kein Bridge-Netzwerk.
 Network=host
-# Dauerhaft: Ohne dieses Volume verliert jeder Neustart die
-# noch nicht zugestellten Dokumente (siehe „Persistenz").
 Volume=unboundair-outbox:/var/lib/unboundair/outbox
-# CHANGE: Token-Datei mit dem paperless-Token anlegen, nie committen.
+# CHANGE
 Volume=/srv/unboundair/paperless-token.txt:/run/secrets/paperless-token:ro
 Environment=UNBOUNDAIR_OUTPUT_MODULES=paperless
-# CHANGE: Adresse der paperless-ngx-Instanz.
+# CHANGE
 Environment=UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL=https://paperless.example.org
 Environment=UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE=/run/secrets/paperless-token
-# CHANGE: Zeitzone des Standorts (der Dateiname nutzt die Container-Zeit).
+# CHANGE
 Environment=TZ=Europe/Berlin
 
 [Service]

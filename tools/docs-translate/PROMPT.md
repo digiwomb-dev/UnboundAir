@@ -19,7 +19,10 @@ Apply the glossary exactly as written:
 
 The following pass through byte-identical — character for character:
 
-- fenced code blocks, including the info string (` ```bash ` stays ` ```bash `)
+- fenced code blocks pass through byte-identical — including info strings,
+  with no prose inside: comments stay out of the blocks (a bare `# CHANGE`
+  or `# file: <name>` marker is the exception, never translated), and what
+  a command means is said in the text around the block, not beside it
 - file paths, property names (`unboundair.poll-interval`), environment
   variables (`UNBOUNDAIR_POLLINTERVAL`), CLI commands and flags
 - requirement IDs (`SC-01`, `AU-04`, `DO-12`), byte values and firmware

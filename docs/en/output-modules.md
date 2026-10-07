@@ -2,7 +2,7 @@
 title: Output Modules
 ---
 
-<!-- translated from docs/de/output-modules.md @ e766871c0e8b920fc88c75a6ea0190e88d096b7f -->
+<!-- translated from docs/de/output-modules.md @ 4d51b9bd5860349e1adb6b8bd9c6fc07e1f00f99 -->
 
 
 How a finished document travels from the service to the output modules (AU-02, AU-03, AU-04). This file describes the general interface and the chain; what the individual settings mean is in `configuration.md`. v1 ships exactly one module, paperless-ngx — its specifics are in the "The paperless-ngx module" section below.
@@ -106,9 +106,7 @@ class ArchiveModule(
     override val name: String = "archive"
 
     override fun send(document: OutputDocument) {
-        // Dokument an `endpoint` liefern.
-        // Gelingt es nicht, eine Ausnahme werfen —
-        // die Outbox behält das Dokument und versucht es erneut.
+        // ...
     }
 }
 ```
