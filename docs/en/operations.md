@@ -2,7 +2,7 @@
 title: Operations
 ---
 
-<!-- translated from docs/de/operations.md @ 3d7fa47f2855fb205b3aecfea2404cb5eb763e61 -->
+<!-- translated from docs/de/operations.md @ 5dd6ceb97c7be90eef91de16b60922e5140ebfe2 -->
 
 # Operations
 
@@ -68,7 +68,7 @@ On shutdown (SIGTERM/SIGINT) the service still completes the open batch and hand
 
 ## 7. Deployment example: Compose file and Quadlet
 
-Two ready-made files to copy — Compose for Docker, Quadlet for Podman with systemd. Both name the image with its real name: `ghcr.io/digiwomb-dev/unboundair:nightly` (multi-architecture index over `linux/arm64` and `linux/amd64`). Releases additionally appear as versions (`1.2.0`, plus `latest` except for pre-releases); whoever wants stability pins a version, whoever wants the development state takes `nightly`. Adjust every value marked `CHANGE`, adopt the rest.
+Two ready-made files to copy — Compose for Docker, Quadlet for Podman with systemd. Both name the image with its real name: `ghcr.io/digiwomb-dev/unboundair:nightly` (multi-architecture index over `linux/arm64` and `linux/amd64`). Releases additionally appear as versions (`1.2.0`, plus `latest` except for pre-releases); whoever wants stability pins a version, whoever wants the development state takes `nightly`. Adjust every value marked `CHANGE`, adopt the rest. The example blocks carry `# Datei: <name>` as their first line — the guard (`DeploymentExampleTest`) recognises them by it; keep it when editing.
 
 **Host networking in both files, with reason:** the container must reach `192.168.18.33:23` over the host's WLAN (DO-03). With bridge networking the container starts and never finds the scanner — so both files carry host networking, not as a suggestion but as a prerequisite.
 
