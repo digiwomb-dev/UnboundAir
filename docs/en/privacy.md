@@ -1,6 +1,8 @@
 ---
 title: Privacy Policy
 ---
+<!-- translated from docs/de/privacy.md @ 113593c9186f9a1b1ae2a2f780998d3d206d204f -->
+
 
 # Privacy Policy
 
