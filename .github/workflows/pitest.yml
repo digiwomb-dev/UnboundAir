@@ -1,5 +1,5 @@
 # TE-04 mutation run on demand: `./gradlew pitest` over all core packages,
-# executed inside the project's dev container (docs/plan.md, "Git-Ablauf").
+# executed inside the project's dev container (docs/internal/plan.md, "Git-Ablauf").
 #
 # The dev container is the environment the measurements are made in
 # (.devcontainer/Dockerfile - JDK 26, jpegtran, jbig2), so the run happens
@@ -10,7 +10,7 @@
 # need Node for CI's sake alone. The plain `docker run` gets the same
 # environment without touching the dev container.
 #
-# The full run takes roughly 2.5 h (docs/entwicklung.md), so it is
+# The full run takes roughly 2.5 h (docs/de/development.md), so it is
 # deliberately NOT wired to any push trigger - it starts only by hand from
 # the Actions tab (workflow_dispatch), on the dev branch. The workflow file
 # must also exist on `main`, the default branch: the Actions UI only offers
@@ -29,14 +29,15 @@ concurrency:
 jobs:
   mutation-run:
     # Native arm64, like the image workflow: the project's own hardware is
-    # arm64, and the golden files were recorded against the binaries of
-    # that platform.
+    # arm64. The golden files were recorded against the binaries of that
+    # platform and are additionally verified on native amd64 by the CI-01
+    # matrix, finding: no difference.
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 360
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
       - name: Build the dev container image
         # The same image local development uses: JDK 26, jpegtran and
@@ -55,7 +56,7 @@ jobs:
         # container), so the cache lands on the runner's disk and survives
         # both the container and the run - each run starts from the
         # previous one's cache instead of re-downloading everything.
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: .gradle
           key: gradle-home-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle/wrapper/gradle-wrapper.properties') }}
@@ -86,7 +87,7 @@ jobs:
         # 90 days is the maximum GitHub keeps an artifact - nothing above
         # it exists, so a "raise it further" request is moot.
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: pitest-report
           path: build/reports/pitest/

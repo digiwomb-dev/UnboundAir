@@ -98,6 +98,27 @@ class PaperlessContractTest {
                 .isEqualTo(2)
             assertThat(raw).`as`("each tag id travels as its own field value").contains("11").contains("22")
         }
+
+        @Test
+        fun `AU-05 the upload carries Content-Length so the body reaches Django`(
+            @TempDir dir: Path,
+        ) {
+            val fixture = fixture(dir, settings())
+            val taskId = "8d1c0b2e-1111-2222-3333-444455556666"
+            server.stubFor(post(urlEqualTo(POST_PATH)).willReturn(aResponse().withStatus(200).withBody("\"$taskId\"")))
+
+            fixture.module.send(fixture.document)
+
+            val header =
+                server.allServeEvents
+                    .first()
+                    .request.headers
+                    .getHeader("Content-Length")
+            assertThat(header).`as`("a byte-array body lets the client send Content-Length instead of chunked (issue #219)").isNotNull
+            assertThat(header.firstValue().toLong())
+                .`as`("Content-Length must describe a non-empty body")
+                .isGreaterThan(0)
+        }
     }
 
     @Nested

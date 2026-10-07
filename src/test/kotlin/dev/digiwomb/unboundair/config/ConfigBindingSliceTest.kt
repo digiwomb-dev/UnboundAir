@@ -10,7 +10,7 @@ import java.time.Duration
 
 /**
  * Slice tests for the configuration binding (KL-01), the third layer of
- * `docs/teststrategie.md`.
+ * `docs/internal/teststrategie.md`.
  *
  * Two things are pinned here, and they are different claims:
  *
@@ -108,6 +108,9 @@ class ConfigBindingSliceTest {
                 assertThat(properties.bwThreshold)
                     .`as`("unboundair.bw-threshold default (SV-08)")
                     .isEqualTo(128)
+                assertThat(properties.dpi)
+                    .`as`("unboundair.dpi default (SC-07, SC-08)")
+                    .isEqualTo(300)
 
                 // Reflection on purpose, approved by the client: the architecture
                 // guard applies to test classes too (config is a leaf and may not
@@ -245,10 +248,31 @@ class ConfigBindingSliceTest {
                         .isEqualTo(90)
                 }
         }
+
+        @Test
+        fun `KL-01 the dpi binds from its property name (SC-07, SC-08)`() {
+            runner
+                .withPropertyValues("unboundair.dpi=600")
+                .run { context ->
+                    assertThat(context.getBean(UnboundAirProperties::class.java).dpi)
+                        .`as`("unboundair.dpi=600 must bind (SC-07, SC-08)")
+                        .isEqualTo(600)
+                }
+        }
+
+        @Test
+        fun `KL-01 the dpi binds from its documented environment variable (SC-07, SC-08)`() {
+            runnerWithEnvironment(mapOf("UNBOUNDAIR_DPI" to "600"))
+                .run { context ->
+                    assertThat(context.getBean(UnboundAirProperties::class.java).dpi)
+                        .`as`("UNBOUNDAIR_DPI must override the 300 default (SC-07, SC-08)")
+                        .isEqualTo(600)
+                }
+        }
     }
 
     /**
-     * Context smoke (layer 3 of `docs/teststrategie.md`): boot a context and
+     * Context smoke (layer 3 of `docs/internal/teststrategie.md`): boot a context and
      * confirm the configuration is resolvable at all.
      *
      * This asserts no behaviour on purpose. Its job is to catch wiring errors --

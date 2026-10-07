@@ -87,6 +87,7 @@ class ScanLoop(
     private val offlinePollInterval: Duration,
     private val idleAfter: Duration? = null,
     private val idleInterval: Duration = offlinePollInterval,
+    private val dpi: Int = DEFAULT_DPI,
     private val listener: ScanLoopListener = object : ScanLoopListener {},
     private val sleeper: (Duration) -> Unit = { Thread.sleep(it.toMillis()) },
 ) {
@@ -138,7 +139,7 @@ class ScanLoop(
      */
     fun stop() {
         running.set(false)
-        batch.close()?.let { listener.onBatchClosed(it) }
+        closeBatch()
     }
 
     /**
@@ -155,7 +156,7 @@ class ScanLoop(
                 noteReachable(false)
                 // Offline is the second DL-04 trigger: the device switching
                 // itself off means the document is finished.
-                batch.close()?.let { listener.onBatchClosed(it) }
+                closeBatch()
                 return false
             }
 
@@ -165,8 +166,37 @@ class ScanLoop(
             scanOnePage()
         }
 
-        batch.closeIfDue()?.let { listener.onBatchClosed(it) }
+        closeBatchIfDue()
         return true
+    }
+
+    /**
+     * Closes the open batch now and delivers it, logging a failure.
+     *
+     * A failed close (for example the encoder failing) keeps the batch open
+     * for a retry instead of ending the service: the exception is logged and
+     * the loop carries on.
+     */
+    private fun closeBatch() {
+        try {
+            batch.close()?.let { listener.onBatchClosed(it) }
+        } catch (e: RuntimeException) {
+            log.error("closing the batch failed: {}", e.message, e)
+        }
+    }
+
+    /**
+     * Closes the batch if its window has expired, logging a failure.
+     *
+     * Like [closeBatch] but for the timeout trigger: a failed close keeps
+     * the batch open and the loop keeps polling.
+     */
+    private fun closeBatchIfDue() {
+        try {
+            batch.closeIfDue()?.let { listener.onBatchClosed(it) }
+        } catch (e: RuntimeException) {
+            log.error("closing the batch failed: {}", e.message, e)
+        }
     }
 
     /**
@@ -179,7 +209,7 @@ class ScanLoop(
     private fun scanOnePage() {
         val pageDir = Files.createTempDirectory(workDir, "page-")
         try {
-            val scan = client.scan(DEFAULT_DPI)
+            val scan = client.scan(dpi)
             val raw = pageDir.resolve("raw.jpg")
             Files.write(raw, scan.bytes)
 
@@ -189,7 +219,7 @@ class ScanLoop(
 
             lastActivity = clock.instant()
             val number = pageCounter.incrementAndGet()
-            logPage(number, scan, processed, processedBytes.size)
+            logPage(batch.pageCount, scan, processed, processedBytes.size)
             listener.onPageScanned(number, scan.bytes.size)
         } catch (e: ScannerException) {
             // DL-05: discard the page, keep the batch, carry on.
@@ -210,6 +240,11 @@ class ScanLoop(
      * transfer duration, size, and the dimensions in mm **after** cropping.
      * They are on one line rather than four, so a page is one entry in the
      * journal and two pages cannot interleave into something unreadable.
+     *
+     * The page [number] is the position within the current document
+     * ([Batch.pageCount]), not the run-wide counter: the first page of every
+     * document is logged as "page 1". The run-wide counter still goes to
+     * [ScanLoopListener.onPageScanned], whose `measure` semantics are unchanged.
      *
      * The size logged is that of the *processed* page, not of the raw scan:
      * that is what ends up in the document, and comparing it with the raw size

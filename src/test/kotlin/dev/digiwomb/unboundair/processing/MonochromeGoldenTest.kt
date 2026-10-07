@@ -12,7 +12,7 @@ import java.security.MessageDigest
 
 /**
  * Golden master test for the black-and-white chain (SV-08, the counterpart of
- * [ChainGrayGoldenTest], "golden-master" layer of docs/teststrategie.md).
+ * [ChainGrayGoldenTest], "golden-master" layer of docs/internal/teststrategie.md).
  *
  * The committed golden file `golden/envelope_dl_300dpi_bw.pbm` is the real
  * output of the production chain [CropStep] -> [GrayscaleStep] ->

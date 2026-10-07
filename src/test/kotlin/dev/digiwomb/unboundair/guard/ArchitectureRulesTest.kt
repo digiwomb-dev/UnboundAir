@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 
 /**
- * Architecture guard ("Wächter" layer of docs/teststrategie.md): enforces the structural
+ * Architecture guard ("Wächter" layer of docs/internal/teststrategie.md): enforces the structural
  * decisions of docs/plan.md as executable rules, so an architectural regression turns
  * the build red instead of rotting silently.
  *
@@ -262,8 +262,8 @@ class ArchitectureRulesTest {
      * `output.paperless` is the one named exception inside the core (docs/plan.md, "Der
      * Kern bleibt frei von Spring"): it may use the Spring `RestClient` and the
      * `spring-web` types for multipart and headers, because uploading is the single
-     * point in v1 where a core package talks outward and a second HTTP client for it
-     * would stand against "keep dependencies minimal". The exception is carved out by
+     * point in v1 where a core package talks outward and using the Spring
+     * client avoids introducing a second HTTP client. The exception is carved out by
      * package, not by class, so a new file there inherits it -- which is why the two
      * rules below fence that package in from the other side: no stereotypes (the AU-03
      * rule above covers all of `output..`) and no `UnboundAirProperties`.

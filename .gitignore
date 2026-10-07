@@ -16,3 +16,11 @@ build/
 
 # OS
 .DS_Store
+
+# Node (documentation site under site/ only)
+node_modules/
+site/dist/
+site/.astro/
+
+# Python bytecode (docs translation script)
+__pycache__/

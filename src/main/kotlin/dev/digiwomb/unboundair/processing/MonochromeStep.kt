@@ -75,10 +75,10 @@ class MonochromeStep(
          * @param threshold the luma threshold: luma below it becomes black,
          *   at or above it becomes white.
          * @return the complete `P4` file content (header plus bitmap).
+         *
+         * This function is internal (not private) so the property test can drive the pure packing function directly
+         * with in-memory images — the deliberate testability seam; production callers use it exactly as before.
          */
-        // Internal (not private) so the property test can drive the pure
-        // packing function directly with in-memory images — the deliberate
-        // testability seam; production callers use it exactly as before.
         internal fun pack(
             luma: LumaImage,
             threshold: Int,

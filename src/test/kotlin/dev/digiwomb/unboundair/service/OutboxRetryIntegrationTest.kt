@@ -26,9 +26,9 @@ import java.time.ZoneOffset
  * loop around it delivers: a throwing module keeps the document, a later attempt removes it,
  * the state survives a restart, and one failing document does not block another.
  *
- * **No threads, no sleeping.** Each pass runs synchronously: the runner's `sleeper` stops the
- * loop after exactly one turn (`sleeper = { runner.stop() }`), so `run()` returns after one
- * pass over the due entries. Time comes from fixed clocks per outbox; a redelivery is
+ * **No threads, no sleeping.** Each pass runs synchronously via [OutboxRunner.deliverDue]:
+ * the test calls one turn over the due entries directly and never starts the loop.
+ * Time comes from fixed clocks per outbox; a redelivery is
  * expressed by building the next outbox with a later fixed clock — which is exactly what a
  * restart would do, and avoids spinning on a backoff that has not elapsed yet.
  *
@@ -51,9 +51,15 @@ class OutboxRetryIntegrationTest {
             val outbox = Outbox(root, clockAt(START), backoffInitial = BACKOFF)
             val entry = outbox.accept(OutputDocument(pdfSource(dir, "source.pdf"), PAGE_COUNT, START, FINISH))
             val events = RecordingListener()
-            val runner = onePassRunner(outbox, OutputModules(listOf(alwaysFailing()), listOf("fake")), events)
+            val runner =
+                OutboxRunner(
+                    outbox,
+                    OutputModules(listOf(alwaysFailing()), listOf("fake")),
+                    pollInterval = Duration.ofMillis(1),
+                    listener = events,
+                )
 
-            runner.run()
+            runner.deliverDue()
 
             assertThat(Files.exists(entry.directory))
                 .`as`("a throwing module must not delete the document; the outbox is the only copy until success")
@@ -85,15 +91,14 @@ class OutboxRetryIntegrationTest {
             val modules = OutputModules(listOf(module), listOf("fake"))
 
             // First pass: the module throws, the entry backs off.
-            onePassRunner(outbox, modules).run()
+            OutboxRunner(outbox, modules, pollInterval = Duration.ofMillis(1)).deliverDue()
             assertThat(module.deliveries).`as`("the first attempt fails before any delivery").isEmpty()
 
             // Second pass: the clock has advanced past the backoff, the module succeeds now.
             val later = Outbox(root, clockAt(START.plus(BACKOFF).plusSeconds(1)), backoffInitial = BACKOFF)
             val pending = later.due()
             assertThat(pending).`as`("past the backoff the entry is due again").hasSize(1)
-            onePassRunner(later, modules).run()
-
+            OutboxRunner(later, modules, pollInterval = Duration.ofMillis(1)).deliverDue()
             assertThat(module.deliveries)
                 .`as`("the retry delivered exactly once")
                 .hasSize(1)
@@ -116,7 +121,11 @@ class OutboxRetryIntegrationTest {
             val root = dir.resolve("outbox")
             val outbox = Outbox(root, clockAt(START), backoffInitial = BACKOFF)
             val entry = outbox.accept(OutputDocument(pdfSource(dir, "source.pdf"), PAGE_COUNT, START, FINISH))
-            onePassRunner(outbox, OutputModules(listOf(alwaysFailing()), listOf("fake"))).run()
+            OutboxRunner(
+                outbox,
+                OutputModules(listOf(alwaysFailing()), listOf("fake")),
+                pollInterval = Duration.ofMillis(1),
+            ).deliverDue()
 
             // The process dies here; a new outbox over the same directory is the restart.
             val restarted =
@@ -132,7 +141,11 @@ class OutboxRetryIntegrationTest {
                 .isEqualTo(1)
 
             val module = FlakyModule(failuresLeft = 0)
-            onePassRunner(restarted, OutputModules(listOf(module), listOf("fake"))).run()
+            OutboxRunner(
+                restarted,
+                OutputModules(listOf(module), listOf("fake")),
+                pollInterval = Duration.ofMillis(1),
+            ).deliverDue()
             assertThat(module.deliveries).`as`("the restarted outbox delivers the recovered document").hasSize(1)
             assertThat(Files.exists(entry.directory))
                 .`as`("after the confirmed delivery the entry directory is gone")
@@ -155,7 +168,12 @@ class OutboxRetryIntegrationTest {
             val module = FailsOnStartModule(badStart)
             val events = RecordingListener()
 
-            onePassRunner(outbox, OutputModules(listOf(module), listOf("fake")), events).run()
+            OutboxRunner(
+                outbox,
+                OutputModules(listOf(module), listOf("fake")),
+                pollInterval = Duration.ofMillis(1),
+                listener = events,
+            ).deliverDue()
 
             assertThat(module.deliveredStarts)
                 .`as`("the good document was delivered in the same pass the bad one failed in")
@@ -177,25 +195,6 @@ class OutboxRetryIntegrationTest {
                 .`as`("the runner reported exactly the bad failure")
                 .containsExactly(bad.id)
         }
-    }
-
-    /** Builds a runner that performs exactly one pass over the due entries and then stops. */
-    private fun onePassRunner(
-        outbox: Outbox,
-        modules: OutputModules,
-        listener: OutboxRunnerListener = object : OutboxRunnerListener {},
-    ): OutboxRunner {
-        lateinit var runner: OutboxRunner
-        runner =
-            OutboxRunner(
-                outbox,
-                modules,
-                pollInterval = Duration.ofMillis(1),
-                listener = listener,
-                // One pass is the whole test step: stop instead of waiting for the next poll.
-                sleeper = { runner.stop() },
-            )
-        return runner
     }
 
     private fun alwaysFailing(): OutputModule = FlakyModule(failuresLeft = Int.MAX_VALUE)

@@ -7,7 +7,7 @@ package dev.digiwomb.unboundair.output
  * from `unboundair.output.modules`. Only modules whose [OutputModule.name] appears
  * in the configured comma list receive documents. The list is evaluated at runtime
  * -- no `@ConditionalOnProperty` or other Spring conditional bean machinery is used,
- * which keeps a GraalVM native image viable (leitplanke in AGENTS.md).
+ * which keeps a GraalVM native image viable (guardrail in docs/plan.md).
  *
  * Parsing is tolerant: whitespace around entries is trimmed and empty entries are
  * dropped. An empty or blank list is valid and means no module is selected -- this

@@ -18,7 +18,7 @@ import java.nio.file.Path
  * Tests for the subcommand dispatch of [UnboundAirApplication] (issue #21: the dispatch
  * around `crop`, the new `--color-mode` and `--keep-raw` options, and the updated usage
  * text), plus the processing-warning forwarding (issue #18: SV-02). "Integration"
- * layer of docs/teststrategie.md: every test boots the full Spring context without a web
+ * layer of docs/internal/teststrategie.md: every test boots the full Spring context without a web
  * environment, passes arguments exactly as they would appear on the command line, and
  * asserts the exit code plus the files written to disk.
  *

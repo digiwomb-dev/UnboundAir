@@ -2,12 +2,21 @@ package dev.digiwomb.unboundair
 
 import dev.digiwomb.unboundair.cli.CropCommand
 import dev.digiwomb.unboundair.cli.MeasureCommand
+import dev.digiwomb.unboundair.cli.RunCommand
 import dev.digiwomb.unboundair.cli.ScanCommand
 import dev.digiwomb.unboundair.cli.StatusCommand
+import dev.digiwomb.unboundair.config.UnboundAirProperties
 import dev.digiwomb.unboundair.processing.ColorMode
+import dev.digiwomb.unboundair.processing.CropStep
+import dev.digiwomb.unboundair.processing.GrayscaleStep
+import dev.digiwomb.unboundair.processing.MonochromeStep
+import dev.digiwomb.unboundair.processing.PageProcessor
 import dev.digiwomb.unboundair.processing.PageSettings
 import dev.digiwomb.unboundair.scanner.ScannerClient
 import dev.digiwomb.unboundair.scanner.ScannerException
+import dev.digiwomb.unboundair.service.Batch
+import dev.digiwomb.unboundair.service.ScanLoop
+import dev.digiwomb.unboundair.service.outputPipeline
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
@@ -18,8 +27,10 @@ import org.springframework.boot.WebApplicationType
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Clock
 import java.time.Duration
 
 /**
@@ -57,14 +68,16 @@ import java.time.Duration
  */
 @SpringBootApplication
 @ConfigurationPropertiesScan
-class UnboundAirApplication :
-    ApplicationRunner,
+@EnableConfigurationProperties(UnboundAirProperties::class)
+class UnboundAirApplication(
+    private val properties: UnboundAirProperties,
+) : ApplicationRunner,
     ExitCodeGenerator {
     private var commandExitCode = 0
 
     /**
-     * Dispatches the first argument to a subcommand (`status`, `scan`, or
-     * `crop`).
+     * Dispatches the first argument to a subcommand (`status`, `scan`,
+     * `measure`, `crop`, or `run`).
      *
      * Failures are reported on stderr and set a non-zero exit code; they do
      * not throw, so the process always terminates normally.
@@ -84,7 +97,14 @@ class UnboundAirApplication :
     override fun getExitCode(): Int = commandExitCode
 
     private fun dispatch(cli: CliArgs) {
-        val client = ScannerClient(cli.host, cli.port, ::warn)
+        // SC-06: an explicit --host/--port flag wins over the configured
+        // property, which in turn wins over the device constants. The other
+        // commands are run by a human who could type the flag; `run` starts
+        // in a container from the environment, so without this mapping it
+        // could only ever reach the default address.
+        val host = cli.host ?: properties.scanner.host
+        val port = cli.port ?: properties.scanner.port
+        val client = ScannerClient(host, port, ::warn)
         when (cli.command) {
             "status" -> {
                 println(StatusCommand(client).run())
@@ -92,9 +112,16 @@ class UnboundAirApplication :
 
             "scan" -> {
                 val settings =
-                    PageSettings(colorMode = cli.colorMode, keepRaw = cli.keepRaw, bwThreshold = cli.bwThreshold)
+                    PageSettings(
+                        colorMode = cli.colorMode ?: parseColorMode(properties.colorMode),
+                        keepRaw = cli.keepRaw ?: properties.keepRaw,
+                        bwThreshold = cli.bwThreshold ?: properties.bwThreshold,
+                    )
                 val result =
-                    ScanCommand(client, settings, ::warn).run(cli.dpi, cli.out?.let { Path.of(it) })
+                    ScanCommand(client, settings, ::warn).run(
+                        cli.dpi ?: properties.dpi,
+                        cli.out?.let { Path.of(it) },
+                    )
                 val message =
                     if (result.rawPath != null) {
                         "Saved: ${result.path} (${result.size} bytes), raw: ${result.rawPath}"
@@ -133,6 +160,44 @@ class UnboundAirApplication :
                 println("Saved: $result")
             }
 
+            "run" -> {
+                // BE-05: the service. The output side is assembled by
+                // outputPipeline, which already reads modules, outbox path
+                // and paperless settings from the properties; what remains
+                // here is the scan side, mapped from the same properties.
+                // Signal handling arrives in work order 6; until then run
+                // blocks until the process ends.
+                val clock = Clock.systemDefaultZone()
+                val pipeline = outputPipeline(properties, clock, clock.zone, ::warn)
+                val settings =
+                    PageSettings(
+                        colorMode = cli.colorMode ?: parseColorMode(properties.colorMode),
+                        keepRaw = cli.keepRaw ?: properties.keepRaw,
+                        bwThreshold = cli.bwThreshold ?: properties.bwThreshold,
+                    )
+                val processor =
+                    PageProcessor(listOf(CropStep(settings), GrayscaleStep(settings), MonochromeStep(settings)))
+                val loop =
+                    ScanLoop(
+                        client = client,
+                        batch =
+                            Batch(
+                                clock,
+                                properties.batchTimeout,
+                                Files.createTempDirectory("unboundair-batch"),
+                                pipeline.sink,
+                            ),
+                        processor = processor,
+                        workDir = Files.createTempDirectory("unboundair-work"),
+                        clock = clock,
+                        pollInterval = properties.pollInterval,
+                        offlinePollInterval = properties.offlinePollInterval,
+                        idleAfter = properties.idleMinutes?.let { Duration.ofMinutes(it.toLong()) },
+                        dpi = cli.dpi ?: properties.dpi,
+                    )
+                RunCommand(loop, pipeline.runner, ::warn).run()
+            }
+
             else -> {
                 log.error(USAGE)
                 commandExitCode = 1
@@ -162,13 +227,16 @@ class UnboundAirApplication :
     private fun parseCliArgs(raw: Array<String>): CliArgs {
         var command: String? = null
         val positional = mutableListOf<String>()
-        var host = ScannerClient.DEFAULT_HOST
-        var port = ScannerClient.DEFAULT_PORT
-        var dpi = 300
+        // Nullable on purpose: null means "no flag given", and the dispatch
+        // falls back to the configured property (SC-06). Defaulting to the
+        // device constants here would make the properties unreachable.
+        var host: String? = null
+        var port: Int? = null
+        var dpi: Int? = null
         var out: String? = null
-        var colorMode = ColorMode.GRAY
-        var keepRaw = false
-        var bwThreshold = PageSettings().bwThreshold
+        var colorMode: ColorMode? = null
+        var keepRaw: Boolean? = null
+        var bwThreshold: Int? = null
         var minutes = DEFAULT_MEASURE_MINUTES
         var pollSeconds = DEFAULT_POLL_SECONDS
 
@@ -276,13 +344,13 @@ class UnboundAirApplication :
 
     private data class CliArgs(
         val command: String?,
-        val host: String,
-        val port: Int,
-        val dpi: Int,
+        val host: String?,
+        val port: Int?,
+        val dpi: Int?,
         val out: String?,
-        val colorMode: ColorMode,
-        val keepRaw: Boolean,
-        val bwThreshold: Int,
+        val colorMode: ColorMode?,
+        val keepRaw: Boolean?,
+        val bwThreshold: Int?,
         val minutes: Int,
         val pollSeconds: Int,
         val positional: List<String>,
@@ -305,6 +373,7 @@ class UnboundAirApplication :
                 "  scan [--dpi 300|600] [--out FILE] Scan one page and write the processed JPEG.\n" +
                 "  crop IN OUT                       Crop an existing JPEG file (no scanner needed).\n" +
                 "  measure [--minutes N]             Measure the device; sends nothing to an output module.\n" +
+                "  run                               Run the service: poll the scanner and deliver documents.\n" +
                 "\n" +
                 "Options:\n" +
                 "  --host HOST                       Scanner host (default ${ScannerClient.DEFAULT_HOST}).\n" +

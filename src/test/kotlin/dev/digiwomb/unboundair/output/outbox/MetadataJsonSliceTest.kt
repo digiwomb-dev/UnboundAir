@@ -14,7 +14,7 @@ import java.time.Instant
 
 /**
  * Slice test for the outbox `metadata.json` round trip (AU-04, layer `slice` of
- * `docs/teststrategie.md`).
+ * `docs/internal/teststrategie.md`).
  *
  * The metadata is what the document does not carry inside itself. If it is lost in the
  * round trip, a restart delivers a document with the wrong file name (AU-05 derives it

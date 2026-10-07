@@ -31,10 +31,20 @@ FROM eclipse-temurin:26-jdk-noble@sha256:abe71c9b7140affd9a80d6ed313c428e3393d4d
 # UID, that drop fails with "seteuid 42 failed" and the build dies. Running
 # the download as root is the documented workaround and changes nothing on
 # hosts where the sandbox would work.
+#
+# Exact versions (Spike F, #249): apt verifies every .deb against the signed
+# archive index, so an exact version is effectively a hash pin. Only the
+# output-relevant packages are pinned — git, curl and sudo are tooling and
+# float. The same five versions stand in the runtime Dockerfile; CI-06
+# fails the build if the two images drift apart, and apt-watch.yml notices
+# when the archive moves on.
 RUN apt-get -o APT::Sandbox::User=root update \
     && apt-get -o APT::Sandbox::User=root install --no-install-recommends --yes \
-        libjpeg-turbo-progs \
-        jbig2 \
+        libjpeg-turbo-progs=2.1.5-2ubuntu2 \
+        libjpeg-turbo8=2.1.5-2ubuntu2 \
+        libjbig2enc0t64=0.29-2.1build1 \
+        jbig2=0.29-2.1build1 \
+        liblept5=1.82.0-3build4 \
         git \
         curl \
         sudo \

@@ -18,7 +18,7 @@ import java.nio.file.Path
 /**
  * Tests for the `--color-mode bw` option and the `--bw-threshold` setting
  * (issue #167: SV-08 -- the bw option and the threshold reach the settings).
- * "Integration" layer of docs/teststrategie.md: every test boots the full
+ * "Integration" layer of docs/internal/teststrategie.md: every test boots the full
  * Spring context without a web environment, passes arguments exactly as they
  * would appear on the command line, and asserts the exit code plus the files
  * written to disk.

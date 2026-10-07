@@ -1,0 +1,247 @@
+# CT-01/CI-03 image check: builds the container image on native hardware per
+# architecture and runs the three acceptance checks inside it (jpegtran,
+# jbig2, status).
+#
+# Matrix over both platforms, each on its matching native runner —
+# ubuntu-24.04-arm for arm64, the standard x86 runner for amd64. Native,
+# not QEMU: under QEMU a build can pass while the real thing fails, and
+# emulated builds are slow enough that people stop running them. A
+# build-only job would verify that the image assembles, which is not what
+# breaks — what breaks is a native binary that is missing or wrong for the
+# architecture, and only running it finds that. Both legs are required: a
+# matrix where one leg may fail without failing the workflow ends with a
+# permanently red leg nobody notices (fail-fast stays on for the same
+# reason).
+#
+# The jar comes from the dev container, never from setup-java on the
+# runner — so the image holds the same build the tests ran against. When
+# called, CI-01's tested jar arrives as the `jar-artifact` input instead,
+# and each leg's verified image is kept as a workflow artefact, so the
+# nightly and the release push exactly what passed here instead of
+# rebuilding it.
+#
+# This workflow pushes nothing and uses no secrets: publication is CI-05,
+# not here. The narrow trigger set keeps documentation commits from paying
+# for image builds that tell them nothing.
+name: image
+
+on:
+  push:
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.github/workflows/image.yml'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle/**'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - 'src/**'
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: "Git ref to check out and verify (callers pass their own)."
+        required: true
+        type: string
+      jar-artifact:
+        description: "Artefact holding CI-01's tested jar; when set, it is used instead of building one."
+        required: false
+        default: ""
+        type: string
+
+# A called workflow inherits its caller's name, so no `${{ github.workflow }}`
+# in the group; superseded runs still cancel.
+concurrency:
+  group: image-${{ inputs.ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  architecture-assertion:
+    # The Dockerfile is architecture-independent, so this runs once rather
+    # than in both matrix legs — a duplicated assertion is one people stop
+    # reading.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Assert no hardcoded architecture in Dockerfile
+        # CT-01 requires the Dockerfile to work without a pinned
+        # architecture; this keeps the requirement enforced rather than
+        # remembered.
+        run: |
+          if grep -Ei 'arm64|amd64|x86[_-]64|aarch64|--platform' Dockerfile; then
+            echo "Dockerfile pins an architecture, which CT-01 forbids."
+            exit 1
+          fi
+          echo "Dockerfile carries no hardcoded architecture."
+
+  image-check:
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
+          - arch: amd64
+            runner: ubuntu-latest
+            platform: linux/amd64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.ref != '' && inputs.ref || github.sha }}
+
+      - name: Build the dev container image
+        # The jar below is built inside the same image local development
+        # uses, so the image holds what the tests ran against.
+        run: docker build -t unboundair-devcontainer .devcontainer/
+
+      - name: Cache the Gradle home across runs
+        # Same path and key as the test workflow, so all three share one
+        # cache; anything beyond that stays open, per #236.
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .gradle
+          key: gradle-home-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-home-${{ runner.os }}-
+
+      - name: Take CI-01's tested jar from its artefact
+        if: inputs.jar-artifact != ''
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: ${{ inputs.jar-artifact }}
+          path: build/libs/
+
+      - name: Build application jar in the dev container
+        # Skipped when the caller hands over the tested jar: what gets
+        # published must be what passed, not a second build of it. Same
+        # mount shape as the test workflow.
+        if: inputs.jar-artifact == ''
+        run: |
+          docker run --rm \
+            --user 1001 \
+            -v "${{ github.workspace }}:/workspaces/UnboundAir" \
+            -w /workspaces/UnboundAir \
+            -e HOME=/workspaces/UnboundAir/.gradle \
+            -e GRADLE_USER_HOME=/workspaces/UnboundAir/.gradle \
+            unboundair-devcontainer \
+            ./gradlew bootJar
+
+      - name: Build image for ${{ matrix.platform }}
+        # On the matching native runner the platform flag is a no-op, but
+        # it states the requirement instead of relying on the default.
+        # No push: nothing has decided where images are published yet.
+        run: docker build --platform ${{ matrix.platform }} -t unboundair:ci --load .
+
+      - name: Check jpegtran is present
+        # The entrypoint is `java -jar`, so the check must override it: with
+        # the default entrypoint the arguments would reach the application as
+        # a subcommand instead of running jpegtran.
+        run: docker run --rm --entrypoint jpegtran unboundair:ci -version
+
+      - name: Check jbig2 is present
+        # jbig2 -V writes to stderr and exits 0, so a naive capture of
+        # stdout finds nothing. The step relies on the exit code: a missing
+        # binary fails the run, the version line on stderr does not.
+        # --entrypoint for the same reason as the jpegtran check above.
+        run: docker run --rm --entrypoint jbig2 unboundair:ci -V
+
+      - name: Check status reaches the scanner
+        # The fake scanner runs in the dev container too: the runner itself
+        # stays free of Java (no setup-java), and the check exercises the
+        # same image the tests ran in. FakeScannerMain serves on 0.0.0.0,
+        # so the published port is reachable from the host.
+        #
+        # Readiness is probed with the real check, not with TCP-open: the
+        # published port accepts connections while Gradle inside is still
+        # starting (cold cache), and a TCP probe would pass vacuously. Up
+        # to five minutes cover a cold Gradle start; the final attempt
+        # outside the loop fails the step when the fake never answers.
+        run: |
+          docker run -d --name fake-scanner \
+            --user 1001 \
+            -p 2323:2323 \
+            -v "${{ github.workspace }}:/workspaces/UnboundAir" \
+            -w /workspaces/UnboundAir \
+            -e HOME=/workspaces/UnboundAir/.gradle \
+            -e GRADLE_USER_HOME=/workspaces/UnboundAir/.gradle \
+            unboundair-devcontainer \
+            ./gradlew fakeScanner --console=plain > fake-scanner.log 2>&1
+          for i in $(seq 1 60); do
+            if docker run --rm --network host unboundair:ci status --host 127.0.0.1 --port 2323 >> fake-scanner.log 2>&1; then
+              break
+            fi
+            sleep 5
+          done
+          # Host networking: the container reaches the scanner over the
+          # host's network (docs/internal/plan.md DO-03), so the FakeScanner on
+          # 127.0.0.1:2323 is directly reachable from inside the container.
+          docker run --rm --network host unboundair:ci status --host 127.0.0.1 --port 2323
+
+      - name: Stop the fake scanner
+        # Always, so a failed status check leaves no container behind for
+        # the next run on a self-hosted runner. The log above stays readable
+        # regardless (build.gradle.kts: fakeScanner logs everything served).
+        if: always()
+        run: docker rm -f fake-scanner
+
+      - name: Compare the toolchain fingerprint of both images
+        # CI-06: same system dependencies, not just the same Dockerfile
+        # lines. Prints the diff, so a drift names itself.
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/.github/scripts:/scripts:ro" \
+            --entrypoint sh unboundair-devcontainer /scripts/toolchain-fingerprint.sh \
+            > fingerprint-dev-${{ matrix.arch }}.txt
+          docker run --rm \
+            -v "${{ github.workspace }}/.github/scripts:/scripts:ro" \
+            --entrypoint sh unboundair:ci /scripts/toolchain-fingerprint.sh \
+            > fingerprint-runtime-${{ matrix.arch }}.txt
+          diff -u fingerprint-dev-${{ matrix.arch }}.txt fingerprint-runtime-${{ matrix.arch }}.txt
+
+      - name: Upload the fingerprints
+        # Both files: the final job compares the architectures against
+        # each other, so a drift in either image is caught.
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: toolchain-fingerprint-${{ matrix.arch }}
+          path: |
+            fingerprint-dev-${{ matrix.arch }}.txt
+            fingerprint-runtime-${{ matrix.arch }}.txt
+
+      - name: Keep the verified image
+        # Only meaningful when called: the nightly and the release push
+        # exactly this image instead of rebuilding it.
+        if: inputs.jar-artifact != ''
+        run: docker save unboundair:ci -o unboundair-image-${{ matrix.arch }}.tar
+
+      - name: Upload the verified image
+        if: inputs.jar-artifact != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: unboundair-image-${{ matrix.arch }}
+          path: unboundair-image-${{ matrix.arch }}.tar
+
+  toolchain-compare:
+    # Development happens on both architectures, so an arm64 and an amd64
+    # machine must test against the same package versions. A difference
+    # here usually means one architecture's archive got an update first —
+    # exactly when two developers would see different golden results.
+    needs: image-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download both architectures' fingerprints
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: toolchain-fingerprint-*
+          merge-multiple: true
+          path: fingerprints
+
+      - name: Compare arm64 against amd64
+        run: |
+          diff -u fingerprints/fingerprint-dev-arm64.txt fingerprints/fingerprint-dev-amd64.txt
+          diff -u fingerprints/fingerprint-runtime-arm64.txt fingerprints/fingerprint-runtime-amd64.txt

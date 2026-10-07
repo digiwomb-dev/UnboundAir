@@ -12,7 +12,7 @@ import java.security.MessageDigest
 
 /**
  * Golden master test for the lossless crop (SV-01, "golden-master" layer of
- * docs/teststrategie.md).
+ * docs/internal/teststrategie.md).
  *
  * The committed golden file `golden/envelope_dl_300dpi_crop.jpg` is the real
  * output of `jpegtran -copy all -crop 1216x2494+560+56` on the fixture

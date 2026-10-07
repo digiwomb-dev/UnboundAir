@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test
  *
  * These generalise the fixed-example assertions of [MonochromeStepTest]
  * (boundary, polarity, padding) to arbitrary pages — the property layer's job
- * per `docs/teststrategie.md`: pinning invariants over generated inputs that
+ * per `docs/internal/teststrategie.md`: pinning invariants over generated inputs that
  * hand-written examples miss (every width's padding, every threshold's
  * polarity).
  *

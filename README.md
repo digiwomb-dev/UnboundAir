@@ -1,49 +1,114 @@
 # UnboundAir
 
-Macht aus einem Mustek iScan Air (S400W) einen „Einlegen und fertig"-Scanner: Blatt einlegen, der Dienst scannt von selbst, schneidet den schwarzen Rand verlustfrei ab, fügt mehrere Seiten zu einem PDF zusammen und übergibt es an ein Ausgabe-Modul. Das erste Modul lädt nach [paperless-ngx](https://docs.paperless-ngx.com/) hoch.
+Turns a Mustek iScan Air (S400W) into a "load and done" scanner: feed a sheet, the service scans by itself, crops the black border losslessly, joins several pages into one PDF and hands it to an output module. The first module uploads to [paperless-ngx](https://docs.paperless-ngx.com/).
 
-Kein Knopfdruck, keine Hersteller-Software, keine Windows-Anwendung. Kotlin und Spring Boot, Betrieb als Container.
+No button presses, no manufacturer software, no Windows application. Kotlin and Spring Boot, running as a container.
 
-> **Im Aufbau – v1 ist noch nicht fertig.** Welche Meilensteine erledigt sind und woran gerade gearbeitet wird, zeigen die [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues); dort steht der Stand aus erster Hand, statt hier zu veralten.
+[![Nightly](https://github.com/digiwomb-dev/UnboundAir/actions/workflows/nightly.yml/badge.svg)](https://github.com/digiwomb-dev/UnboundAir/actions/workflows/nightly.yml)
 
-## Was es können soll
+> **Under construction – v1 is not finished yet.** An overview is below under ["Status"](#status); what is being worked on right now is in the [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) and [Issues](https://github.com/digiwomb-dev/UnboundAir/issues) – first-hand, instead of going stale here.
 
-1. Scanner einschalten, der Rechner verbindet sich mit dessen WLAN.
-2. Blatt einlegen – der Dienst erkennt das und scannt ohne weiteres Zutun.
-3. Weitere Blätter innerhalb eines Zeitfensters gehören zum selben Dokument.
-4. Zeitfenster abgelaufen oder Scanner aus: PDF bauen und an die konfigurierten Ausgabe-Module übergeben.
+## What it should do
 
-Zwei Dinge sind dabei nicht verhandelbar: **Es wird nie neu komprimiert** – Zuschnitt und Graustufen laufen ausschließlich über `jpegtran`, die JPEGs wandern unverändert ins PDF. Und **am Protokoll wird nichts erfunden**: Was über das Gerät nicht bekannt ist, wird konfigurierbar gebaut und in `docs/offene-fragen.md` geführt, statt geraten zu werden.
+1. Switch the scanner on, the machine joins its WLAN.
+2. Feed a sheet – the service notices and scans without further action.
+3. Further sheets within a time window belong to the same document.
+4. Window expired or scanner off: build the PDF and hand it to the configured output modules.
 
-## Wegweiser durch die Dokumentation
+Two things are non-negotiable: **nothing is ever recompressed** – cropping and grayscale run exclusively through `jpegtran`, the JPEGs travel into the PDF unchanged. And **nothing about the protocol is invented**: what is not known about the device is built configurable and kept in `docs/internal/offene-fragen.md` instead of being guessed.
 
-Die Doku ist auf Deutsch. Je nachdem, was du vorhast:
+## What it does
 
-| Du willst … | Lies |
+- **Scanning without button presses:** the service polls the device regularly, notices a fed sheet and scans by itself.
+- **Lossless cropping:** the device's black border drops away via `jpegtran` – without recompressing the JPEG.
+- **Grayscale, colour or 1-bit black and white** (`gray`, `color`, `bw`). The first two are lossless; `bw` expressly is not and needs `jbig2`.
+- **Multi-page PDFs:** pages fed within a time window land in one document. Window expired or scanner off: the PDF is built.
+- **Outbox with retries:** finished documents sit on disk until a module has accepted them – neither a restart nor an unreachable destination loses anything.
+- **paperless-ngx as output module,** through an interface further modules can dock onto.
+- **Running as a container,** currently for `linux/arm64`.
+
+## Prerequisites
+
+- A **Mustek iScan Air S400W** – none of this transfers to other devices.
+- A **machine holding the scanner's WLAN** (host), with a **container runtime** (Docker or Podman). Currently `linux/arm64` only.
+- A **paperless-ngx instance with API token** – the only output module in v1. Without a token the service does not start.
+- For `color-mode = bw` additionally `jbig2`; it is included in the container.
+
+What to set up on the host – WLAN profile, packet filter, volume, secret – is in [`docs/en/operations.md`](docs/en/operations.md).
+
+## Status
+
+| Running | Not built yet |
 |---|---|
-| wissen, was gebaut wird und warum | [`docs/plan.md`](docs/plan.md) – Auftrag, feste Entscheidungen, alle Anforderungen mit IDs und Abnahmekriterien |
-| den aktuellen Stand sehen | [GitHub-Issues](https://github.com/digiwomb-dev/UnboundAir/issues) und [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) – offene Aufgaben, was in Arbeit und was erledigt ist |
-| selbst bauen und testen | [`docs/entwicklung.md`](docs/entwicklung.md) – Dev Container, Build, Testlauf |
-| eine Einstellung nachschlagen | [`docs/konfiguration.md`](docs/konfiguration.md) – jede Einstellung mit Default, Umgebungsvariable und Bedeutung |
-| ein Ausgabe-Modul verstehen oder schreiben | [`docs/ausgabe-module.md`](docs/ausgabe-module.md) – die Modul-Schnittstelle, die Kette über die Outbox, das paperless-Modul und die Anleitung für ein eigenes Modul |
-| wissen, wie getestet wird | [`docs/teststrategie.md`](docs/teststrategie.md) – die acht Testschichten, die Werkzeuge je Schicht und die Gründe dafür |
-| wissen, warum etwas so entschieden wurde | [`docs/entscheidungen.md`](docs/entscheidungen.md) – Begründungen zu den festen Entscheidungen, inklusive der gemessenen Zahlen |
-| wissen, was am Gerät noch unklar ist | [`docs/offene-fragen.md`](docs/offene-fragen.md) – offene Punkte mit Status, Herkunft und dem Umgang damit im Code |
-| am Projekt mitarbeiten | [`AGENTS.md`](AGENTS.md) – Arbeitsweise, Leitplanken, Regeln |
+| Scanning, lossless cropping, grayscale/colour/1-bit | Web UI |
+| Multi-page PDFs, time window, batch completion | Rotation and straightening |
+| Outbox with retries across restarts | `normalize` (SV-04, deliberately open) |
+| paperless-ngx upload | further output modules |
+| Container image for `arm64` | Native image, `linux/amd64` |
 
-Weitere Dateien entstehen später: `protokoll.md` und `hardware.md` (Gerät und Protokoll) sowie `betrieb.md` (Container-Betrieb). Sie sind in `plan.md` als Anforderungen DO-01 bis DO-04 beschrieben und gehören zu Meilenstein 5.
+## Quick start
 
-## Warum es das gibt
+Prerequisites see above. Pull the image and start it — `nightly` runs the development state; releases carry versions (`1.2.0`, plus `latest` except for pre-releases):
 
-Der Scanner ist WLAN-only und spricht ein eigenes, undokumentiertes TCP-Protokoll auf Port 23. Die mitgelieferte Windows-Anwendung verlangt für jede Seite Klicks; SANE und eSCL helfen nicht weiter, weil das Gerät keines davon spricht.
+```sh
+docker run --network=host \
+  -v unboundair-outbox:/var/lib/unboundair/outbox \
+  -v /path/to/tokenfile:/run/secrets/paperless-token:ro \
+  -e UNBOUNDAIR_OUTPUT_MODULES=paperless \
+  -e UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL=https://paperless.example.org \
+  -e UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE=/run/secrets/paperless-token \
+  -e TZ=Europe/Berlin \
+  ghcr.io/digiwomb-dev/unboundair:nightly
+```
 
-Das Protokollwissen stammt aus eigener Analyse am Gerät, aus dem Handbuch und aus [AirScan](https://github.com/markosjal/AirScan), das die CC0-lizenzierte Implementierung s400w enthält. Übernommen wurde daraus nur Protokollwissen, kein Code – und kein Hersteller-Code.
+Adjust address, token file and timezone. Scanner address only on deviation from `192.168.18.33` (`UNBOUNDAIR_SCANNER_HOST`).
 
-## Stand der Technik
+Feed a sheet – the service scans by itself, waits briefly for further pages and drops the finished PDF into paperless-ngx (visible there and in the container log on stdout). If nothing arrives, [`docs/en/operations.md`](docs/en/operations.md) helps with operation — it also holds the complete examples (Compose file, Quadlet).
 
-- Kotlin, Spring Boot, Gradle mit Kotlin DSL
-- Apache PDFBox für die PDF-Erzeugung
-- `jpegtran` aus libjpeg-turbo für verlustfreie Bildoperationen
-- Läuft als Container; entwickelt und getestet wird ausschließlich gegen einen Fake-Scanner
+Otherwise: [`docs/en/configuration.md`](docs/en/configuration.md) for every setting, [`docs/en/operations.md`](docs/en/operations.md) for real operation, [`docs/en/development.md`](docs/en/development.md) for building and testing.
 
-Die genauen Versionen stehen in `docs/plan.md` unter „Feste Entscheidungen".
+## Building yourself
+
+Whoever wants to change instead of run: build the image yourself — how is in [`docs/en/development.md`](docs/en/development.md).
+
+## Guide through the documentation
+
+The docs are in English and German. Depending on what you are up to:
+
+| You want to … | Read |
+|---|---|
+| know what gets built and why | [`docs/internal/plan.md`](docs/internal/plan.md) (German only) – mission, firm decisions, all requirements with IDs and acceptance criteria |
+| see the current state | [GitHub issues](https://github.com/digiwomb-dev/UnboundAir/issues) and [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) – open tasks, what is in progress and what is done |
+| build and test yourself | [`docs/en/development.md`](docs/en/development.md) – dev container, build, test run |
+| look up a setting | [`docs/en/configuration.md`](docs/en/configuration.md) – every setting with default, environment variable and meaning |
+| understand or write an output module | [`docs/en/output-modules.md`](docs/en/output-modules.md) – the module interface, the chain through the outbox, the paperless module and the guide for a module of your own |
+| know how testing works | [`docs/internal/teststrategie.md`](docs/internal/teststrategie.md) (German only) – the eight test layers, the tools per layer and the reasons |
+| know why something was decided so | [`docs/internal/entscheidungen.md`](docs/internal/entscheidungen.md) (German only) – reasons for the firm decisions, including the measured numbers |
+| know what is still unclear about the device | [`docs/internal/offene-fragen.md`](docs/internal/offene-fragen.md) (German only) – open points with status, provenance and how the code deals with them |
+| know what the scanner sends over the wire | [`docs/en/protocol.md`](docs/en/protocol.md) – the TCP protocol on port 23: messages, flows, what was measured and what is still open |
+| know what the hardware can and cannot do | [`docs/en/hardware.md`](docs/en/hardware.md) – device, WLAN behaviour, measured scan properties |
+| run the service as a container | [`docs/en/operations.md`](docs/en/operations.md) – host prerequisites, network, volume, secrets, shutdown, logs |
+| contribute to the project | [`CONTRIBUTING.md`](CONTRIBUTING.md) – language, commits, git flow, issue convention, guardrails |
+| report a security hole | [`SECURITY.md`](SECURITY.md) – the private reporting route, token handling, scope |
+
+## Why it exists
+
+The scanner is WLAN-only and speaks its own undocumented TCP protocol on port 23. The bundled Windows application wants clicks for every page; SANE and eSCL are no help because the device speaks neither.
+
+The protocol knowledge comes from our own analysis on the device, from the manual and from [AirScan](https://github.com/markosjal/AirScan), which holds the CC0-licensed s400w implementation. Only protocol knowledge was taken from it, no code – and no manufacturer code.
+
+## State of the art
+
+- Kotlin, Spring Boot, Gradle with Kotlin DSL
+- OpenPDF for PDF generation (Apache PDFBox only as independent verifier in tests)
+- `jpegtran` from libjpeg-turbo for lossless image operations
+- Runs as a container; automated tests run offline against a fake scanner
+
+The exact versions are in `docs/internal/plan.md` under "Feste Entscheidungen".
+
+## Licence and provenance
+
+UnboundAir is under the Apache License 2.0 – see [`LICENSE`](LICENSE).
+
+On the provenance of the protocol knowledge: s400w is CC0-licensed, only protocol knowledge was taken from it, no code. AirScan is named as a source. The repository holds no manufacturer code: no Mustek binaries, no installers.
+

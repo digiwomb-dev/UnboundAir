@@ -1,0 +1,45 @@
+---
+/*
+ * Page footer: Starlight's default plus the mandatory disclosure links.
+ * Both disclosure pages exist in both languages under the same slugs, so the
+ * links follow the current locale; the base path keeps them working below
+ * the project-pages subpath. No third-party content here — two local links.
+ */
+import Default from '@astrojs/starlight/components/Footer.astro';
+
+const route = Astro.locals.starlightRoute;
+const lang = route.lang ?? 'de';
+const base = import.meta.env.BASE_URL;
+const prefix = route.locale ? `${route.locale}/` : '';
+const legalHref = `${base}${prefix}legal-notice/`;
+const privacyHref = `${base}${prefix}privacy/`;
+const legalLabel = lang === 'de' ? 'Impressum' : 'Legal Notice';
+const privacyLabel = lang === 'de' ? 'Datenschutz' : 'Privacy';
+const navLabel = lang === 'de' ? 'Rechtliches' : 'Legal';
+---
+
+<Default {...Astro.props} />
+<nav aria-label={navLabel} class="legal sl-flex">
+  <a href={legalHref}>{legalLabel}</a>
+  <span aria-hidden="true">·</span>
+  <a href={privacyHref}>{privacyLabel}</a>
+</nav>
+
+<style>
+  @layer starlight.components {
+    .legal {
+      gap: 0.75rem;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-size: var(--sl-text-sm);
+      color: var(--sl-color-gray-3);
+    }
+    .legal a {
+      text-decoration: none;
+      color: var(--sl-color-gray-3);
+    }
+    .legal a:hover {
+      color: var(--sl-color-white);
+    }
+  }
+</style>

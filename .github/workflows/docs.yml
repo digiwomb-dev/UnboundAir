@@ -1,0 +1,140 @@
+# Documentation site: static build in CI, published to GitHub Pages (DO-13).
+#
+# Constraints from the data protection review live here as much as in the
+# site itself; each carries its condition number from #229.
+#
+# Node is confined to site/: Gradle, the dev container and the runtime image
+# never touch it, and ./gradlew build must not need it.
+
+# No permissions by default; every job takes exactly what it needs.
+# The pull-request build ends up with contents:read and nothing else.
+permissions: {}
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      # Condition 1: Astro's build telemetry posts to telemetry.astro.build
+      # from the runner; isCI only silences the notice, not the sending.
+      ASTRO_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Install site dependencies
+        # Condition 9: ci with frozen scripts refused — no postinstall runs
+        # on the runner. esbuild still works: npm carries its platform
+        # binary as an optional dependency, which needs no script.
+        working-directory: site
+        run: npm ci --ignore-scripts
+      - name: Inject imprint from secrets (#234, DS-02)
+        # The legal notice carries a placeholder instead of personal data:
+        # {{IMPRINT_BLOCK}} (full provider block: name, c/o address, e-mail,
+        # second fast contact route — Markdown, multiline). It arrives here
+        # from a repository secret and never touches the repository;
+        # substituted with Python so multiline blocks and special characters
+        # survive intact.
+        # Fork pull requests get no secrets, so the substitution and the
+        # assertion below are both skipped there — with comment, not
+        # silently: their builds never deploy (see the deploy job), so a
+        # placeholder cannot leak onto the published site.
+        if: github.event.pull_request.head.repo.fork != 'true'
+        env:
+          IMPRINT_BLOCK: ${{ secrets.IMPRINT_BLOCK }}
+        run: |
+          python3 - <<EOF
+          import os, sys
+          block = os.environ["IMPRINT_BLOCK"]
+          # A published placeholder is worse than a missing page.
+          if not block.strip(): sys.exit("IMPRINT_BLOCK is empty")
+          for page in ("docs/de/legal-notice.md", "docs/en/legal-notice.md",
+                       "docs/de/privacy.md", "docs/en/privacy.md"):
+              text = open(page, encoding="utf-8").read()
+              text = text.replace("{{IMPRINT_BLOCK}}", block.strip())
+              open(page, "w", encoding="utf-8").write(text)
+          EOF
+      - name: Build the site
+        working-directory: site
+        run: npm run build
+      - name: Assert no imprint placeholders remain
+        # Skipped on fork pull requests together with the substitution above;
+        # see the comment there. Covers the provider block; the check
+        # script (#233) watches third-party contact, not placeholders.
+        if: github.event.pull_request.head.repo.fork != 'true'
+        run: |
+          if grep -rn "IMPRINT_BLOCK" site/dist/ | grep "{{"; then
+            echo "imprint placeholders reached the output" >&2
+            exit 1
+          fi
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: site/dist
+
+  # DS-01 gate (#233): re-checks every production change to the published
+  # pages before they may deploy. Runs on the artifact, not on a rebuild, so
+  # the check sees exactly what the deploy would publish. The deploy job
+  # depends on this check instead of running beside it.
+  check:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      ASTRO_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Download built site
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: github-pages
+          path: gate-dist
+      - name: Check for third-party contact (DS-01)
+        # Runnable locally too: build the site, then run
+        # `node site/tools/check-third-party.mjs site/dist`.
+        run: node site/tools/check-third-party.mjs gate-dist
+
+  # The DS-01 gate (#233) sits between build and deploy: the deploy job
+  # depends on it, not merely runs beside it. Flipping the Pages source to
+  # "GitHub Actions" in the repository settings waits until this gate is
+  # green: building without deploying is fine, publishing without the gate
+  # is what the gate prevents.
+  deploy:
+    # No deploy from a pull request: only the default branch carries values
+    # worth publishing, and fork builds must never publish.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build, check]
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

@@ -262,8 +262,9 @@ class Outbox(
  * **Why this cannot overflow.** The delay is multiplied as a [BigDecimal] count of nanoseconds, which has no upper bound, and every
  * step is clamped to [cap] *before* the next multiplication — so the running value never exceeds [cap] and the result is converted
  * back to a [Duration] only once it is known to fit. A naive `toNanos()` times a factor would wrap `Long` after roughly 63 doublings
- * and return a negative delay; here the value has no range to run out of. The loop also stops as soon as the cap is reached, so a
- * growing backoff costs a handful of iterations (seven for the defaults) no matter how large [attempt] is.
+ * and return a negative delay; here the value has no range to run out of. The loop also stops as soon as the delay stops changing:
+ * a growing backoff reaches the cap after a handful of iterations (seven for the defaults), while a shrinking one (factor below 1)
+ * floors to zero and stays there — so either direction costs a handful of iterations no matter how large [attempt] is.
  *
  * @param attempt how many attempts have already failed *before* the one being scheduled; `0` yields [initial], so the first failure
  *   waits [initial]. This is the `attempts` counter as it stands when the failure is recorded, before it is incremented.
@@ -285,12 +286,14 @@ fun backoffDelay(
     val capNanos = cap.toExactNanos()
     var delayNanos = initial.toExactNanos().min(capNanos)
     var remaining = attempt
-    while (remaining > 0 && delayNanos < capNanos) {
-        delayNanos =
+    while (remaining > 0 && delayNanos < capNanos && delayNanos.signum() != 0) {
+        val next =
             delayNanos
                 .multiply(BigDecimal(factor))
                 .setScale(0, RoundingMode.FLOOR)
                 .min(capNanos)
+        if (next == delayNanos) break
+        delayNanos = next
         remaining--
     }
     return delayNanos.toDurationOfNanos()

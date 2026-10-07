@@ -1,0 +1,52 @@
+# CI-08: pinned versions are kept current (docs/internal/plan.md).
+#
+# Everything here is pinned on purpose — Gradle dependencies, both base
+# image digests, every action by SHA. Without automation the pins only
+# ever age, security fixes included.
+#
+# Updates go to dev and take the normal dev-to-main path (security updates
+# ignore target-branch by design and go to the default branch). A 7-day
+# cooldown keeps a freshly published — and possibly freshly compromised —
+# release from being adopted the same day. Both Dockerfiles share one
+# group name so the two images move together.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    target-branch: dev
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+
+  - package-ecosystem: gradle
+    directory: "/"
+    target-branch: dev
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+
+  - package-ecosystem: docker
+    directory: "/"
+    target-branch: dev
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      dockerfiles:
+        patterns:
+          - "*"
+
+  - package-ecosystem: docker
+    directory: "/.devcontainer"
+    target-branch: dev
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      dockerfiles:
+        patterns:
+          - "*"

@@ -1,0 +1,16 @@
+# Keep the build context small and vendor knowledge out of the image.
+# AGENTS.md forbids committing _input/; copying it into an image would be
+# the same mistake by another route.
+_input/
+.git/
+
+# The dev container definition is not part of the runtime image.
+.devcontainer/
+
+# Gradle caches and intermediate build output stay out; only the bootJar
+# artefact (build/libs/unboundair.jar) is copied into the image.
+.gradle/
+build/*
+!build/libs
+build/libs/*
+!build/libs/unboundair.jar

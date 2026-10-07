@@ -184,6 +184,188 @@ class PdfBuilderJbig2Test {
     }
 
     /**
+     * The unknown-magic guard must name the bytes it found, not just the path
+     * (SV-08): without the bytes the message does not distinguish an empty
+     * file from a corrupt one, and the `describeBytes` truncation to the
+     * first two bytes would go unasserted.
+     */
+    @Test
+    fun `SV-08 an unknown magic names the path and the bytes found`(
+        @TempDir dir: Path,
+    ) {
+        val bogus = dir.resolve("not_an_image.bin")
+        Files.write(bogus, byteArrayOf(0x00, 0x01, 0x02, 0x03))
+        val jbig2 = Jbig2Enc.Jbig2Output(ByteArray(0), listOf(ByteArray(0)))
+
+        assertThatThrownBy { builder.build(listOf(PdfPage(bogus, 300)), jbig2, dir.resolve("out.pdf")) }
+            .`as`("an undetectable file must name the file and the bytes that defeated the detection")
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining(bogus.toString())
+            .hasMessageContaining("00 01")
+    }
+
+    /**
+     * Empty files take the `describeBytes` empty branch (SV-08): the message
+     * must say the file is empty rather than printing bytes that are not
+     * there.
+     */
+    @Test
+    fun `SV-08 an empty file fails naming the path and the empty-file note`(
+        @TempDir dir: Path,
+    ) {
+        val empty = dir.resolve("empty.bin")
+        Files.write(empty, ByteArray(0))
+
+        assertThatThrownBy { builder.build(listOf(PdfPage(empty, 300)), dir.resolve("out.pdf")) }
+            .`as`("an empty file must fail loudly, naming the file and the empty-file note")
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining(empty.toString())
+            .hasMessageContaining("an empty file")
+    }
+
+    /**
+     * A single-byte file exercises the short-file branch of `pageFormat`
+     * (SV-08): fewer than two magic bytes is neither JPEG nor PBM, and the
+     * message must show the one byte found.
+     */
+    @Test
+    fun `SV-08 a single-byte file fails naming the path and the byte found`(
+        @TempDir dir: Path,
+    ) {
+        val short = dir.resolve("short.bin")
+        Files.write(short, byteArrayOf(0x41))
+
+        assertThatThrownBy { builder.build(listOf(PdfPage(short, 300)), dir.resolve("out.pdf")) }
+            .`as`("a truncated magic must fail loudly, naming the file and the byte found")
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining(short.toString())
+            .hasMessageContaining("41")
+    }
+
+    /**
+     * A missing file takes the `IOException` branch of the format detection
+     * (SV-08, AU-01): the message must still name the file that caused it.
+     */
+    @Test
+    fun `SV-08, AU-01 a missing file fails naming the path`(
+        @TempDir dir: Path,
+    ) {
+        val missing = dir.resolve("missing.jpg")
+
+        assertThatThrownBy { builder.build(listOf(PdfPage(missing, 300)), dir.resolve("out.pdf")) }
+            .`as`("an unreadable file must fail loudly, naming the file that caused it")
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining(missing.toString())
+            .hasMessageContaining("Cannot detect the format of")
+    }
+
+    /**
+     * The JPEG stream entry point rejects a PBM as well (AU-01): the
+     * `build` overload is covered elsewhere, this pins the `writeTo`
+     * sibling so a guard removed from one path cannot hide behind the
+     * other.
+     */
+    @Test
+    fun `AU-01 a PBM in the JPEG writeTo entry point is rejected naming the file and both formats`(
+        @TempDir dir: Path,
+    ) {
+        val pbm = writePbm(dir, "page.pbm", PAGE_WIDTH, PAGE_HEIGHT, blockRows(PAGE_WIDTH, PAGE_HEIGHT, 0))
+
+        assertThatThrownBy {
+            builder.writeTo(
+                listOf(PdfPage(pbm, 300)),
+                java.io.ByteArrayOutputStream(),
+            )
+        }.`as`("a PBM page must not silently enter the JPEG stream path")
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining(pbm.toString())
+            .hasMessageContaining("JPEG")
+            .hasMessageContaining("PBM")
+    }
+
+    /**
+     * Mixed pages are rejected, not guessed (SV-08): a JPEG has no business
+     * in the JBIG2 entry point, and silently running it through `BitmapInfo`
+     * would be the quiet corruption this guard exists to prevent.
+     */
+    @Test
+    fun `SV-08 a JPEG in the JBIG2 build entry point is rejected naming the file and both formats`(
+        @TempDir dir: Path,
+    ) {
+        val jpeg = writeJpegMagic(dir, "page.jpg")
+        val jbig2 = Jbig2Enc.Jbig2Output(ByteArray(0), listOf(ByteArray(0)))
+
+        assertThatThrownBy { builder.build(listOf(PdfPage(jpeg, 300)), jbig2, dir.resolve("out.pdf")) }
+            .`as`("a JPEG page must not silently enter the JBIG2 path")
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining(jpeg.toString())
+            .hasMessageContaining("JBIG2")
+            .hasMessageContaining("JPEG")
+    }
+
+    /**
+     * The JBIG2 stream entry point rejects a JPEG as well (SV-08): the
+     * `build` overload is covered above, this pins the `writeTo` sibling.
+     */
+    @Test
+    fun `SV-08 a JPEG in the JBIG2 writeTo entry point is rejected naming the file and both formats`(
+        @TempDir dir: Path,
+    ) {
+        val jpeg = writeJpegMagic(dir, "page.jpg")
+        val jbig2 = Jbig2Enc.Jbig2Output(ByteArray(0), listOf(ByteArray(0)))
+
+        assertThatThrownBy {
+            builder.writeTo(
+                listOf(PdfPage(jpeg, 300)),
+                jbig2,
+                java.io.ByteArrayOutputStream(),
+            )
+        }.`as`("a JPEG page must not silently enter the JBIG2 stream path")
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining(jpeg.toString())
+            .hasMessageContaining("JBIG2")
+            .hasMessageContaining("JPEG")
+    }
+
+    /**
+     * The page-count guard (SV-08): every page needs its stream, and the
+     * message must name both counts so the mismatch is diagnosable without
+     * counting.
+     */
+    @Test
+    fun `SV-08 a JBIG2 page-count mismatch in writeTo names both numbers`(
+        @TempDir dir: Path,
+    ) {
+        val pbm = writePbm(dir, "page.pbm", PAGE_WIDTH, PAGE_HEIGHT, blockRows(PAGE_WIDTH, PAGE_HEIGHT, 0))
+        val jbig2 = Jbig2Enc.Jbig2Output(ByteArray(0), listOf(ByteArray(0), ByteArray(1)))
+
+        assertThatThrownBy {
+            builder.writeTo(
+                listOf(PdfPage(pbm, 300)),
+                jbig2,
+                java.io.ByteArrayOutputStream(),
+            )
+        }.`as`("one page with two encoded streams must fail naming both counts")
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("2 page(s) for 1 page(s)")
+    }
+
+    /**
+     * Writes a minimal JPEG-magic file (`FF D8` followed by two filler
+     * bytes): enough for the content-based format detection to report
+     * JPEG, never parsed as an image because the mixed-document guard
+     * fires first.
+     */
+    private fun writeJpegMagic(
+        dir: Path,
+        name: String,
+    ): Path {
+        val target = dir.resolve(name)
+        Files.write(target, byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte()))
+        return target
+    }
+
+    /**
      * Returns the image stream on [pageIndex].
      *
      * The lookup stays on the high-level [PDImageXObject]: only the filter and

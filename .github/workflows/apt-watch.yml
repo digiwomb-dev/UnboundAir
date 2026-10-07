@@ -1,0 +1,29 @@
+# Monthly apt pin watch (follow-up of Spike F, #249, for #252): fails when
+# the Ubuntu archive offers a different version than the Dockerfiles pin,
+# or when the two Dockerfiles pin differently. Dependabot does not cover
+# apt, and the nightly only notices breakage, not lagging behind — this
+# run is what starts a bump.
+name: apt-watch
+
+on:
+  schedule:
+    - cron: '0 6 1 * *'
+  workflow_dispatch:
+
+# Reads Dockerfiles and the archive; writes nothing anywhere.
+permissions:
+  contents: read
+
+concurrency:
+  group: apt-watch
+  cancel-in-progress: true
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Compare pins against the archive
+        run: ./.github/scripts/apt-watch.sh
