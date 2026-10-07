@@ -2,7 +2,7 @@
 title: Development
 ---
 
-<!-- translated from docs/de/development.md @ 60a1bb78ad7885cb2a0fd5921411e385230d8088 -->
+<!-- translated from docs/de/development.md @ a6a1d8e776a31f45669246f85ae7252e9f3ea826 -->
 
 # Development
 
@@ -123,6 +123,22 @@ Four points on that:
 - **One run at a time.** A second start replaces a running one (`concurrency` with `cancel-in-progress`) instead of burning another 2.5 hours in parallel.
 
 Remeasuring the threshold (TE-04) thus belongs in CI, not on the development machine. The measured numbers travel from there to `docs/internal/entscheidungen.md` — with date and commit, as before.
+
+## Continuous integration
+
+What the automation does — and what it expects from you. Details live in the workflow files themselves; this file only describes what to count on.
+
+**On every pull request against `dev`** (`.github/workflows/test.yml`) the full `./gradlew build` runs — suite plus linter — **inside the dev container image**, on both architectures (native `linux/arm64`, native `linux/amd64`). Green on both is required for merging (ruleset on `dev`). The checkout fetches the full history (`fetch-depth: 0`): the translation guard compares commit states, and without history it would call every translation current — whoever copies the workflow as a template leaves that alone.
+
+**Both architectures run the full suite**, because development happens on both: green means the same on either machine. The golden files are verified against the binaries of both architectures.
+
+**Nightly on `dev`** (`.github/workflows/nightly.yml`) runs the same suite plus the image build of both architectures; what was checked there lands in `ghcr.io/digiwomb-dev/unboundair` — `:nightly` as a multi-architecture index, plus `:nightly-arm64` and `:nightly-amd64`. Never `latest`, never a version. Whether the night was green shows the badge in `README.md`.
+
+**Image build and check** (`.github/workflows/image.yml`) build both images and run the CT-01 set inside them (`jpegtran` present, `jbig2` present, `status` reaches the fake scanner) — natively per architecture, never under emulation: under QEMU a build can go green while the real thing fails.
+
+**Cutting a release** (`.github/workflows/release.yml`), in this order: raise `version` in `build.gradle.kts` by pull request to `dev`; merge `dev` into `main`; tag that commit on `main` with exactly that version — strict SemVer, no `v` (`1.2.0`, not `v1.2.0`). A wrong tag, a tag differing from the build, or a tag off `main` fails loudly with reason; the bad tag is deleted by hand, not by the workflow. The release starts as a draft with all assets and goes public last — afterwards it is immutable. `0.y.z` and pre-releases carry the pre-release flag.
+
+**Everything stays runnable locally:** the mutation run still starts on demand, and the guards run before pushing — translation and deployment example in `./gradlew test`, the third-party gate via `npm run check` against `site/dist/`.
 
 ## Building the runtime image
 
