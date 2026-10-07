@@ -199,7 +199,7 @@ npm ci --ignore-scripts
 npm run build   # Ergebnis in site/dist/
 ```
 
-The DS-01 gate runs locally with `npm run check` against `site/dist/`. Without the `IMPRINT_BLOCK` and `DONATE_URL` secrets (set only in CI, never in the repository) the imprint assertion fails — like on fork PRs, whose build never deploys.
+The DS-01 gate runs locally with `npm run check` against `site/dist/`. Without the `IMPRINT_BLOCK` secret (set only in CI, never in the repository) the imprint assertion fails — like on fork PRs, whose build never deploys.
 
 How the site comes about and what holds for data protection is in `docs/internal/entscheidungen.md` (the sections on the documentation site and on translation).
 

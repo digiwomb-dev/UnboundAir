@@ -33,6 +33,3 @@ There is no cookie banner, because there are no cookies.
 
 Access (Art. 15), rectification (Art. 16), erasure (Art. 17), restriction (Art. 18), portability (Art. 20), objection (Art. 21), and the right to lodge a complaint with a supervisory authority.
 
-## Donations
-
-The donation reference on the legal notice page is a plain text link to an external offering — its terms and its privacy policy apply there.
