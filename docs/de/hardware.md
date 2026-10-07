@@ -10,7 +10,7 @@ Grundlage ist der Stand aus `_input/iscan-air-wissen.md` (liegt nur lokal vor, w
 
 ## Herkunft der Aussagen
 
-Jede Aussage trägt ihre Herkunft. Die Markierungen sind dieselben wie in `protokoll.md`:
+Jede Aussage trägt ihre Herkunft. Die Markierungen sind dieselben wie in `protocol.md`:
 
 **[Gerät]** am echten Gerät verifiziert · **[App/s400w]** aus der Windows-App bzw. der s400w-Implementierung, am Gerät noch nicht getestet · **[Handbuch]** aus dem Handbuch zum S400W · **[Scan]** an 1–2 echten Scans beobachtet · **[offen]** noch unbekannt, wartet auf Messung.
 
@@ -30,7 +30,7 @@ Ohne diese Markierungen wäre nicht erkennbar, welche Werte gemessen und welche 
 - Der Scanner vergibt per DHCP Adressen aus `192.168.18.0/24` **[Gerät]** (am Testgerät erhielt der Client `192.168.18.1` **[Gerät]**).
 - Die Windows-App prüft genau das: Die SSID beginnt mit `DIRECT-`, die eigene IP beginnt mit `192.168.18` **[App/s400w]**.
 - Bis zu 8 Clients gleichzeitig, Reichweite ca. 18–30 m **[Handbuch]**.
-- Adresse und Port des Scanners selbst (Default `192.168.18.33`, Port `23`) sowie das Verbindungsverhalten gehören zum Protokoll — siehe `protokoll.md`.
+- Adresse und Port des Scanners selbst (Default `192.168.18.33`, Port `23`) sowie das Verbindungsverhalten gehören zum Protokoll — siehe `protocol.md`.
 
 ## Einschalten und Energie
 
@@ -54,12 +54,12 @@ An echten Scans beobachtet (jeweils 1–2 Vorlagen, keine Statistik):
 
 Verhalten, das vom Gerät kommt und kein Protokollfehler ist:
 
-- **Füllbytes in Antworten:** Das Gerät hängt an kurze Antwortwörter Null-Bytes und ein `H` an. Deshalb vergleicht der Client Antworten per Präfix — Details und Byte-Beispiele stehen in `protokoll.md`, nicht hier.
+- **Füllbytes in Antworten:** Das Gerät hängt an kurze Antwortwörter Null-Bytes und ein `H` an. Deshalb vergleicht der Client Antworten per Präfix — Details und Byte-Beispiele stehen in `protocol.md`, nicht hier.
 - **Seitengrößen weichen vom Papierformat ab** (siehe oben, OF-05) **[Scan]**.
 - **`devbusy`:** Das Gerät kann auf eine Statusabfrage mit `devbusy` antworten; die Antwort ist aus der App bekannt **[App/s400w]**, aber wie häufig sie bei regelmäßigem Abfragen kommt, ist **nicht** gemessen **[offen]** — siehe OF-02 in `docs/internal/offene-fragen.md`.
 - **Niedriger Akku** (`battlow`, siehe oben, OF-10) **[App/s400w]**.
 
-Protokollfragen, die eng danebenliegen (Antwortlängen, Pausen, Doppelscans), gehören nach `protokoll.md` bzw. OF-04, OF-07 und OF-08 in `docs/internal/offene-fragen.md` und werden hier nicht geführt.
+Protokollfragen, die eng danebenliegen (Antwortlängen, Pausen, Doppelscans), gehören nach `protocol.md` bzw. OF-04, OF-07 und OF-08 in `docs/internal/offene-fragen.md` und werden hier nicht geführt.
 
 ## Noch zu messen: Lücken für `measure`
 
