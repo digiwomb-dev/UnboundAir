@@ -1,0 +1,103 @@
+# CI-01: the test suite on every pull request against dev (docs/internal/plan.md).
+#
+# The full `./gradlew build` runs inside the dev container image on both
+# architectures as a matrix — native ubuntu-24.04-arm and the standard x86
+# runner. `build` rather than `test`: the linter runs too, and the run ends
+# with the jar it just tested, which the nightly and the release publish
+# instead of building a second one.
+#
+# Why the container rather than a bare runner with setup-java: AGENTS.md
+# requires tests in the dev container, the toolchain is pinned in the image
+# instead of assembled per run, and it is the same environment a contributor
+# has locally. The shape (build image, tool check, shared Gradle cache,
+# bind-mounted docker run) follows pitest.yml.
+#
+# No `paths` filter, unlike image.yml: the guards check documentation, so a
+# documentation-only change is precisely a case where the suite speaks up.
+# No secrets anywhere, so pull requests from forks run the same checks.
+
+name: test
+
+on:
+  pull_request:
+    branches: [dev]
+  workflow_call:
+    inputs:
+      ref:
+        description: "Git ref to check out and test (callers pass their own; without it a nightly from main would quietly test main instead of dev)."
+        required: true
+        type: string
+
+# Fork-safe: this workflow needs nothing beyond reading the repository.
+permissions:
+  contents: read
+
+# A called workflow inherits its caller's name, so `${{ github.workflow }}`
+# in the group would let caller and callee cancel each other. The plain
+# ref cannot collide that way; superseded runs still cancel.
+concurrency:
+  group: test-${{ inputs.ref || github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+          - arch: amd64
+            runner: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository with full history
+        # fetch-depth 0 is load-bearing, not tidy: the translation guard
+        # compares a German file against its translation's origin commit,
+        # and a shallow clone has no history to compare against.
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.ref != '' && inputs.ref || github.sha }}
+
+      - name: Refuse a shallow checkout
+        # A guard that reports green because it could not see anything is
+        # worse than no guard: fail here naming the reason instead.
+        run: test "$(git rev-parse --is-shallow-repository)" = false
+
+      - name: Build the dev container image
+        run: docker build -t unboundair-devcontainer .devcontainer/
+
+      - name: Check the dev container answers like DC-01 wants
+        run: docker run --rm unboundair-devcontainer sh -c 'java -version && jpegtran -version && jbig2 -V'
+
+      - name: Cache the Gradle home across runs
+        # Same path and key as pitest.yml, so both workflows share one
+        # cache; anything beyond that stays open, per #236.
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .gradle
+          key: gradle-home-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-home-${{ runner.os }}-
+
+      - name: Run the build in the dev container
+        # Same mount shape as pitest.yml: the Gradle home lives in the
+        # workspace mount, so the cache above lands on the runner's disk.
+        run: |
+          docker run --rm \
+            --user 1001 \
+            -v "${{ github.workspace }}:/workspaces/UnboundAir" \
+            -w /workspaces/UnboundAir \
+            -e HOME=/workspaces/UnboundAir/.gradle \
+            -e GRADLE_USER_HOME=/workspaces/UnboundAir/.gradle \
+            unboundair-devcontainer \
+            ./gradlew build
+
+      - name: Upload the tested jar (arm64 leg)
+        # The artefact the nightly and the release publish: the jar this
+        # run tested, not a rebuild.
+        if: matrix.arch == 'arm64'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: unboundair-jar
+          path: build/libs/unboundair.jar
