@@ -48,9 +48,7 @@ What to set up on the host – WLAN profile, packet filter, volume, secret – i
 
 ## Quick start
 
-Prerequisites see above. You still have to build the image yourself – how is in [`docs/en/development.md`](docs/en/development.md); where images get published is still open (see [`docs/en/operations.md`](docs/en/operations.md)). Where an image name would stand below, a placeholder stands instead.
-
-Start a container (example, analogously for other runtimes): put the outbox on a durable volume, pass the paperless address and token file, pass the scanner address only if it differs from `192.168.18.33`:
+Prerequisites see above. Pull the image and start it — `nightly` runs the development state; releases carry versions (`1.2.0`, plus `latest` except for pre-releases):
 
 ```sh
 docker run --network=host \
@@ -59,12 +57,19 @@ docker run --network=host \
   -e UNBOUNDAIR_OUTPUT_MODULES=paperless \
   -e UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL=https://paperless.example.org \
   -e UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE=/run/secrets/paperless-token \
-  <image-placeholder>
+  -e TZ=Europe/Berlin \
+  ghcr.io/digiwomb-dev/unboundair:nightly
 ```
 
-Feed a sheet – the service scans by itself, waits briefly for further pages and drops the finished PDF into paperless-ngx (visible there and in the container log on stdout). If nothing arrives, [`docs/en/operations.md`](docs/en/operations.md) helps with operation.
+Adjust address, token file and timezone. Scanner address only on deviation from `192.168.18.33` (`UNBOUNDAIR_SCANNER_HOST`).
+
+Feed a sheet – the service scans by itself, waits briefly for further pages and drops the finished PDF into paperless-ngx (visible there and in the container log on stdout). If nothing arrives, [`docs/en/operations.md`](docs/en/operations.md) helps with operation — it also holds the complete examples (Compose file, Quadlet).
 
 Otherwise: [`docs/en/configuration.md`](docs/en/configuration.md) for every setting, [`docs/en/operations.md`](docs/en/operations.md) for real operation, [`docs/en/development.md`](docs/en/development.md) for building and testing.
+
+## Building yourself
+
+Whoever wants to change instead of run: build the image yourself — how is in [`docs/en/development.md`](docs/en/development.md).
 
 ## Guide through the documentation
 

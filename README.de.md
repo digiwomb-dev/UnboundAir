@@ -48,9 +48,7 @@ Was auf dem Host einzurichten ist – WLAN-Profil, Paketfilter, Volume, Secret �
 
 ## Schnellstart
 
-Voraussetzungen siehe oben. Das Image musst du (noch) selbst bauen – wie, steht in [`docs/de/development.md`](docs/de/development.md); wohin Images veröffentlicht werden, ist noch offen (siehe [`docs/de/operations.md`](docs/de/operations.md)). Wo unten ein Image-Name stehen müsste, steht deshalb ein Platzhalter.
-
-Container starten (Beispiel, sinngemäß auch bei anderen Runtimes): Outbox auf ein dauerhaftes Volume legen, paperless-Adresse und Token-Datei mitgeben, Scanner-Adresse nur falls sie von `192.168.18.33` abweicht:
+Voraussetzungen siehe oben. Das Image ziehen und starten — `nightly` fährt den Entwicklungsstand; Releases tragen Versionen (`1.2.0`, dazu `latest` außer bei Vorabversionen):
 
 ```sh
 docker run --network=host \
@@ -59,12 +57,19 @@ docker run --network=host \
   -e UNBOUNDAIR_OUTPUT_MODULES=paperless \
   -e UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL=https://paperless.example.org \
   -e UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE=/run/secrets/paperless-token \
-  <image-platzhalter>
+  -e TZ=Europe/Berlin \
+  ghcr.io/digiwomb-dev/unboundair:nightly
 ```
 
-Blatt einlegen – der Dienst scannt von selbst, wartet kurz auf weitere Seiten und legt das fertige PDF in paperless-ngx ab (sichtbar dort und im Container-Log auf stdout). Kommt nichts an, hilft [`docs/de/operations.md`](docs/de/operations.md) beim Betrieb weiter.
+Adresse, Token-Datei und Zeitzone anpassen. Scanner-Adresse nur bei Abweichung von `192.168.18.33` (`UNBOUNDAIR_SCANNER_HOST`).
+
+Blatt einlegen – der Dienst scannt von selbst, wartet kurz auf weitere Seiten und legt das fertige PDF in paperless-ngx ab (sichtbar dort und im Container-Log auf stdout). Kommt nichts an, hilft [`docs/de/operations.md`](docs/de/operations.md) beim Betrieb weiter — dort stehen auch die vollständigen Beispiele (Compose-Datei, Quadlet).
 
 Und sonst: [`docs/de/configuration.md`](docs/de/configuration.md) für jede Einstellung, [`docs/de/operations.md`](docs/de/operations.md) für den echten Betrieb, [`docs/de/development.md`](docs/de/development.md) zum Bauen und Testen.
+
+## Selbst bauen
+
+Wer ändern statt fahren will: Image selbst bauen — wie, steht in [`docs/de/development.md`](docs/de/development.md).
 
 ## Wegweiser durch die Dokumentation
 
