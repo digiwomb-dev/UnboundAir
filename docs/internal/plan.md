@@ -383,7 +383,7 @@ Hier stehen nur Punkte, die **eine Entscheidung** brauchen. Was sich dagegen nur
 - **Defaults** für `poll-interval`, `batch-timeout` und Leerlauf – nach Messung mit `measure` (Messgrundlagen: OF-01 bis OF-03). Bis dahin gelten die vorläufigen Defaults aus DL-01/DL-04 (3 s bzw. 20 s).
 - **Seitengrößen-Abweichung:** ob der Dienst die Abweichung ausgleicht oder die Pixelmaße unverändert übernimmt – erst nach der Messung zu entscheiden (OF-05).
 - **`normalize`:** was es genau tun soll – Kontrast strecken, Weißpunkt setzen, etwas anderes – und mit welchem Werkzeug. Bis zur Entscheidung wird SV-04 nicht gebaut. Die 1-bit-Ausgabe von SV-08 ändert nichts daran, wie `normalize` zu beurteilen wäre: Es bleibt ein optionaler, verlustbehafteter Zusatzschritt im Graustufen-/Farbpfad – offen ist nur, was es genau tun soll.
-- **Festnageln der apt-Pakete beider Images:** Archiv-Schnappschuss oder exakte Versionen — erst messen (Spike in Work order 23), dann entscheiden.
+- **Festnageln der apt-Pakete beider Images:** entschieden für exakte Versionen (Spike F in Work order 23: Schnappschuss ginge auch auf arm64, aber sechs gepinnte Pakete mit CI-06 und Golden-Tests als Netz sind der kleinere Mechanismus) — Umsetzung im Folge-Issue samt monatlicher Prüfung, die fällige Anhebungen bemerkt.
 
 ## Entschieden – nicht mehr offen
 

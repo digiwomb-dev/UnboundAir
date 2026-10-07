@@ -600,6 +600,22 @@ Die Warnung zur Sammlung `i18n` (`base directory .../i18n/ does not exist`) ist 
 
 **5. Drittparteien-Kontakt (Nachtrag aus der Datenschutzprüfung):** `grep` über `dist/` fand kein einziges `https://` in `src=`, `href=` oder `url(`. Alle geladenen Mittel (`script`, `link`, `img`) zeigen auf `/_astro/*` oder `/favicon.svg` — gleiche Herkunft. Die übrigen `https://`-Zeichenketten liegen ausschließlich in JS-Bündeln (Pagefind-Übersetzervermerke u. Ä.), kein dynamischer Import, kein `fetch` auf Fremdhosts. Die Rückfallseite bringt nichts Externes mit — sie nutzt dasselbe Layout mit denselben lokalen Mitteln.
 
+## Spike F (apt-Pinning, #249)
+
+Stand: 07.10.2026. Beide Dockerfiles pinnen ihr Basis-Image per Digest und installieren danach ohne Versionen — der Digest pinnt das Basis-Image, nicht die Paketlisten. CI-06 bemerkt, wenn beide Images auseinanderdriften; wenn beide gemeinsam driften (etwa ein libjpeg-turbo-Sicherheitsupdate, das Golden-Bytes ändert), bemerkt es niemand. Zwei Optionen standen zur Messung, nicht zum Raten.
+
+**1. Dient der Schnappschuss arm64? Ja.** `snapshot.ubuntu.com/ubuntu-ports/` gibt es nicht (404), aber darunter liegt es nicht: Der Schnappschussbaum unter `/ubuntu/<ID>/` führt `binary-arm64`-Verzeichnisse mit, gemessen am Index vom 01.10.2026 (19 MB `Packages.gz`, darin `jbig2` 0.29 und `libjpeg-turbo-progs` 2.1.5 für arm64 — dieselben Stände wie amd64). Die naheliegende URL war falsch, der Inhalt ist da.
+
+**2. Wie lange halten Schnappschüsse? Mindestens zwei Jahre** ab März 2023, laut Dienstseite, verlängerbar bei Bedarf. Für den Bau heute egal; für den Nachbau eines alten Release bedeutet es: Nach Ablauf der Frist baut nur noch, wessen `Dockerfile` einen dann noch vorhandenen Stand nennt — ein weiterer Grund, Stände zu datieren und zu wechseln, statt sie einzufrieren und zu vergessen.
+
+**3. Bleiben exakte Versionen installierbar? Ja.** Heute (07.10.2026, gemessen amd64) liegen alle vier Pakete ausschließlich in der `noble`-Tasche (`universe`), ohne Updates- oder Security-Nachfolger: `jbig2=0.29-2.1build1`, `libjpeg-turbo-progs=2.1.5-2ubuntu2`, dazu `libjpeg-turbo8=2.1.5-2ubuntu2` und `liblept5=1.82.0-3build4` — alle vier plus `libjbig2enc0t64=0.29-2.1build1` ließen sich mit `=`-Pin installieren. Die Release-Tasche ändert sich nicht mehr: Was dort steht, bleibt installierbar, auch wenn `noble-updates` später Neues bringt.
+
+**4. Der Mechanismus im Echteinsatz (amd64 gemessen):** `apt-get update --snapshot <ID>` plus `apt-get install --snapshot <ID>` installiert aus dem Schnappschuss — nach zwei Stolperstellen, die hier stehen, damit sie kein Befund werden: Ohne vorheriges Snapshot-Update heißt es „Paket nicht gefunden", und ohne `ca-certificates` (im Minimal-Image nicht enthalten, in beiden Projekt-Images vorhanden) scheitert TLS zum Schnappschuss-Host.
+
+**Entscheidung: exakte Versionen (Option 2).** Kein neuer Mechanismus, keine neue Host-Abhängigkeit bei jedem Bau (der Schnappschuss-Host muss erreichbar sein, seine Indexe sind groß), kein Einfrieren des ganzen Universums für sechs Pakete. apt prüft jedes `.deb` gegen die Checksummen des signierten Archiv-Index — eine exakte Version ist damit praktisch ein Hash-Pin, ohne separaten Hash. Der bekannte Preis: Nur was dasteht, ist gepinnt — mitgezogene Bibliotheken (libpng, libtiff, libwebp u. a.) schwimmen weiter; für die sechs versorgungsrelevanten Pakete (`jbig2`, `libjpeg-turbo-progs`, `libjpeg-turbo8`, `liblept5`, `libjbig2enc0t64` — Stand oben) genügt das, weil CI-06 die Images gegeneinander und die Golden-Tests jede ausgabewirksame Änderung fangen.
+
+**Bump-Verfahren:** Die sechs Stände stehen in beiden Dockerfiles, CI-06 bewacht ihr Auseinanderdriften. Wer fällige Anhebungen bemerkt, ist heute niemand — Dependabot deckt apt nicht ab, und der Nightly bemerkt nur Bruch, kein Zurückbleiben. Deshalb gehört zur Umsetzung eine monatliche Prüfung (installierte gegen angebotene Stände, eigener Lauf), deren Rot den Bump anstößt. Das ist Inhalt des Folge-Issues, nicht dieses Spikes.
+
 ## Spike-Ergebnisse (Zusammenfassung)
 
 - **Spike A (kotest-property auf JUnit Platform 6):** läuft. 1 Test, 0 Failures auf Platform 6.0.3 (Spring Boot 4.1.1, `junit-jupiter` 6.0.3).
@@ -607,3 +623,4 @@ Die Warnung zur Sammlung `i18n` (`base directory .../i18n/ does not exist`) ist 
 - **Spike C (jbig2enc, #140):** Gemeinsames Symbolwörterbuch bestätigt, byte-deterministisch, Version jbig2 0.29-2.1build1 / Programm meldet jbig2enc 0.28, auf zwei echten Seiten 36× kleiner als die Grau-JPEGs; -r ist tot, -s verlustbehaftet mit 0,0058 % Pixeln.
 - **Spike D (OpenPDF-Determinismus, #141):** byte-identische PDFs erreichbar; Naht ist `PdfWriter.getInfo()` (FILEID/CreationDate/ModDate/Producer); nur `/ID` variiert sonst; brotli4j wird ausgeschlossen (Default aus, native Libs); JPEG roh bestätigt via PDFBox-Raw-Stream.
 - **Spike E (Starlight-Inhaltsquelle, #227):** `docsLoader()` kennt kein `base` — Umleitung per Symlink je Sprache (vom Glob gefolgt, identischer Bau); `title:` Pflicht und genügend; Paarung über Dateinamen bestätigt; Rückfall mit Markierung hängt an `defaultLocale`; kein Drittparteien-Kontakt in `dist/`.
+- **Spike F (apt-Pinning, #249):** Schnappschuss dient auch arm64 (Index gemessen), hält mindestens zwei Jahre, Mechanismus end-to-end bewiesen — gewählt sind trotzdem exakte Versionen (kein neuer Host, Hash via signiertem Index, sechs Pakete genügen mit CI-06 und Golden-Tests als Netz); Bump per monatlicher Prüfung, siehe Folge-Issue.
