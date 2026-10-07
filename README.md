@@ -58,7 +58,8 @@ docker run --network=host \
   -e UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL=https://paperless.example.org \
   -e UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE=/run/secrets/paperless-token \
   -e TZ=Europe/Berlin \
-  ghcr.io/digiwomb-dev/unboundair:nightly
+  ghcr.io/digiwomb-dev/unboundair:nightly \
+  run
 ```
 
 Adjust address, token file and timezone. Scanner address only on deviation from `192.168.18.33` (`UNBOUNDAIR_SCANNER_HOST`).
