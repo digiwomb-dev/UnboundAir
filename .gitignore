@@ -21,3 +21,6 @@ build/
 node_modules/
 site/dist/
 site/.astro/
+
+# Python bytecode (docs translation script)
+__pycache__/
