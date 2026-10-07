@@ -28,7 +28,7 @@ That is not a matter of taste: the docs address this scanner's operator, the cod
 ## Git flow
 
 - **`main` is protected.** Direct commits are excluded, changes arrive exclusively through pull requests – including for the repository owner (`enforce_admins`).
-- **`dev` is the integration branch.** Work branches fork from `dev` and return to it through PRs; `dev` in turn goes to `main` through PRs. Direct commits to `dev` are possible, but every PR must pass the CI-01 checks — a ruleset on `dev` requires both runs (`arm64`, `amd64`) as status checks, nothing more.
+- **`dev` is the integration branch.** Work branches fork from `dev` and return to it through PRs; `dev` in turn goes to `main` through PRs. Direct commits to `dev` are possible for the owner (ruleset bypass; local acceptance of every step stays mandatory), but every PR must pass the CI-01 checks — a ruleset on `dev` requires both runs (`arm64`, `amd64`) as status checks, nothing more.
 - Required reviews are set to zero. The PR's value lies in the summary and the diff in one place, not in the checkmark.
 
 The reasoning is in [`docs/internal/entscheidungen.md`](docs/internal/entscheidungen.md) (German only).

@@ -28,7 +28,7 @@ Das ist kein Stilgeschmack: Die Doku richtet sich an den Betreiber dieses Scanne
 ## Git-Ablauf
 
 - **`main` ist geschützt.** Direkte Commits sind ausgeschlossen, Änderungen kommen ausschließlich über Pull Requests – das gilt auch für den Inhaber des Repositorys (`enforce_admins`).
-- **`dev` ist der Integrations-Branch.** Arbeits-Branches zweigen von `dev` ab und gehen per PR dorthin zurück; `dev` wiederum geht per PR nach `main`. Direkte Commits auf `dev` sind möglich, aber jeder PR muss die CI-01-Prüfungen bestehen — ein Regelsatz auf `dev` verlangt beide Läufe (`arm64`, `amd64`) als Status-Checks, sonst nichts.
+- **`dev` ist der Integrations-Branch.** Arbeits-Branches zweigen von `dev` ab und gehen per PR dorthin zurück; `dev` wiederum geht per PR nach `main`. Direkte Commits auf `dev` sind für den Inhaber möglich (Regelsatz-Umgehung; die lokale Abnahme jedes Schritts bleibt Pflicht), aber jeder PR muss die CI-01-Prüfungen bestehen — ein Regelsatz auf `dev` verlangt beide Läufe (`arm64`, `amd64`) als Status-Checks, sonst nichts.
 - Pflicht-Reviews sind auf null gesetzt. Der Gewinn des PR liegt hier an der Zusammenfassung und am Diff an einer Stelle, nicht am Häkchen.
 
 Die Begründung dazu steht in [`docs/internal/entscheidungen.md`](docs/internal/entscheidungen.md).
