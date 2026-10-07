@@ -44,12 +44,12 @@ jobs:
         working-directory: site
         run: npm ci --ignore-scripts
       - name: Inject imprint from secrets (#234, DS-02)
-        # The legal notice carries placeholders instead of personal data:
+        # The legal notice carries a placeholder instead of personal data:
         # {{IMPRINT_BLOCK}} (full provider block: name, c/o address, e-mail,
-        # second fast contact route — Markdown, multiline) and {{DONATE_URL}}
-        # (plain-text donation link target). Both arrive here from repository
-        # secrets and never touch the repository; substituted with Python so
-        # multiline blocks and special characters survive intact.
+        # second fast contact route — Markdown, multiline). It arrives here
+        # from a repository secret and never touches the repository;
+        # substituted with Python so multiline blocks and special characters
+        # survive intact.
         # Fork pull requests get no secrets, so the substitution and the
         # assertion below are both skipped there — with comment, not
         # silently: their builds never deploy (see the deploy job), so a
@@ -57,19 +57,16 @@ jobs:
         if: github.event.pull_request.head.repo.fork != 'true'
         env:
           IMPRINT_BLOCK: ${{ secrets.IMPRINT_BLOCK }}
-          DONATE_URL: ${{ secrets.DONATE_URL }}
         run: |
           python3 - <<EOF
           import os, sys
-          block, url = os.environ["IMPRINT_BLOCK"], os.environ["DONATE_URL"]
+          block = os.environ["IMPRINT_BLOCK"]
           # A published placeholder is worse than a missing page.
           if not block.strip(): sys.exit("IMPRINT_BLOCK is empty")
-          if not url.strip(): sys.exit("DONATE_URL is empty")
           for page in ("docs/de/legal-notice.md", "docs/en/legal-notice.md",
                        "docs/de/privacy.md", "docs/en/privacy.md"):
               text = open(page, encoding="utf-8").read()
               text = text.replace("{{IMPRINT_BLOCK}}", block.strip())
-              text = text.replace("{{DONATE_URL}}", url.strip())
               open(page, "w", encoding="utf-8").write(text)
           EOF
       - name: Build the site
@@ -77,12 +74,11 @@ jobs:
         run: npm run build
       - name: Assert no imprint placeholders remain
         # Skipped on fork pull requests together with the substitution above;
-        # see the comment there. Covers the provider block and the donation
-        # target (#234); the check script (#233) watches third-party contact,
-        # not placeholders.
+        # see the comment there. Covers the provider block; the check
+        # script (#233) watches third-party contact, not placeholders.
         if: github.event.pull_request.head.repo.fork != 'true'
         run: |
-          if grep -rn -E "IMPRINT_BLOCK|DONATE_URL" site/dist/ | grep "{{"; then
+          if grep -rn "IMPRINT_BLOCK" site/dist/ | grep "{{"; then
             echo "imprint placeholders reached the output" >&2
             exit 1
           fi

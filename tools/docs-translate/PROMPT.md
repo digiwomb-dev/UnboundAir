@@ -31,8 +31,7 @@ The following pass through byte-identical — character for character:
   `SECURITY.de.md` becomes `SECURITY.md`)
 - frontmatter: the `title:` key stays, only its text is translated; a `head:`
   block (e.g. the `noindex` marker) is reproduced byte-identical
-- raw HTML anchors and `{{TOKENS}}` (e.g. `{{IMPRINT_BLOCK}}`,
-  `{{DONATE_URL}}`): reproduce byte-identical, never translate, never rewrap
+- raw HTML anchors and `{{TOKENS}}` (e.g. `{{IMPRINT_BLOCK}}`): reproduce byte-identical, never translate, never rewrap
 
 Keep the document structure: same headings in the same order (translated
 text), same paragraphs, same lists, same tables. Do not add introductions,

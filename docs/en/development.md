@@ -2,7 +2,7 @@
 title: Development
 ---
 
-<!-- translated from docs/de/development.md @ 113593c9186f9a1b1ae2a2f780998d3d206d204f -->
+<!-- translated from docs/de/development.md @ 0e4da4e375801bd3a11fac702e2c02249dec4537 -->
 
 # Development
 

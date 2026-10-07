@@ -112,6 +112,3 @@ UnboundAir steht unter der Apache License 2.0 – siehe [`LICENSE`](LICENSE).
 
 Zur Herkunft des Protokollwissens: s400w ist CC0-lizenziert, übernommen wurde daraus nur Protokollwissen, kein Code. AirScan ist als Quelle genannt. Im Repository liegt kein Hersteller-Code: keine Mustek-Binärdateien, keine Installer.
 
-## Spenden
-
-UnboundAir nimmt Spenden entgegen — Einzelheiten stehen im [Impressum](docs/de/legal-notice.md).
