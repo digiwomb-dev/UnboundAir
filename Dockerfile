@@ -23,8 +23,11 @@ FROM eclipse-temurin:26-jre-noble@sha256:44ea8920aed64bdc43b5a6eaab0a6b40503f176
 # installing by the wrong name fails the build.
 RUN apt-get -o APT::Sandbox::User=root update \
     && apt-get -o APT::Sandbox::User=root install --no-install-recommends --yes \
-        libjpeg-turbo-progs \
-        jbig2 \
+        libjpeg-turbo-progs=2.1.5-2ubuntu2 \
+        libjpeg-turbo8=2.1.5-2ubuntu2 \
+        libjbig2enc0t64=0.29-2.1build1 \
+        jbig2=0.29-2.1build1 \
+        liblept5=1.82.0-3build4 \
     && rm -rf /var/lib/apt/lists/*
 
 # Do not run as root: the outbox is a mounted volume, and a root-owned
