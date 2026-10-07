@@ -2,7 +2,6 @@
 title: Scanner-Protokoll
 ---
 
-# Scanner-Protokoll
 
 Fachliche Grundlage für den Scanner-Client (SC-01 bis SC-08). Diese Datei beschreibt, **wie mit dem Gerät gesprochen wird**: Verbindung, Befehle, Antworten, Scan-Ablauf und Zeitverhalten. **[Gerät]**
 

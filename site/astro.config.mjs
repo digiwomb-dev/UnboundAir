@@ -8,6 +8,8 @@ export default defineConfig({
   // If hosting ever moves to a host root (custom domain, organisation pages
   // repository), this line goes away together with the subpath in `site`.
   base: '/UnboundAir/',
+  // Landing page: default locale first (English is the main language).
+  redirects: { '/': '/UnboundAir/en/operations/' },
   // Consciously off (condition 7 in #229): no speculative requests of any
   // kind until the DS-01 gate (#233) watches every deploy.
   prefetch: false,

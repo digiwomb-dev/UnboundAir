@@ -2,7 +2,6 @@
 title: Ausgabe-Module
 ---
 
-# Ausgabe-Module
 
 Wie ein fertiges Dokument vom Dienst zu den Ausgabe-Modulen kommt (AU-02, AU-03, AU-04). Diese Datei beschreibt die allgemeine Schnittstelle und die Kette; was die einzelnen Einstellungen bedeuten, steht in `configuration.md`. v1 bringt genau ein Modul mit, paperless-ngx — dessen Besonderheiten beschreibt der Abschnitt „Das Modul paperless-ngx" weiter unten.
 

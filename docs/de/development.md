@@ -2,7 +2,6 @@
 title: Entwicklung
 ---
 
-# Entwicklung
 
 Wie man `UnboundAir` baut und testet. Gearbeitet wird ausschließlich im Dev Container – auf dem Rechner selbst muss außer einer Container-Runtime und dem Dev-Container-Tooling nichts installiert sein, insbesondere kein JDK und kein Gradle.
 
