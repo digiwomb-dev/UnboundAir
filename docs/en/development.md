@@ -2,7 +2,7 @@
 title: Development
 ---
 
-<!-- translated from docs/de/development.md @ e766871c0e8b920fc88c75a6ea0190e88d096b7f -->
+<!-- translated from docs/de/development.md @ 4d51b9bd5860349e1adb6b8bd9c6fc07e1f00f99 -->
 
 
 How to build and test `UnboundAir`. All work happens in the dev container — the machine itself needs nothing installed beyond a container runtime and dev-container tooling, in particular no JDK and no Gradle.
@@ -41,12 +41,12 @@ The `devcontainer` CLI can mount the shared git directory (`--mount-git-worktree
 
 The first start builds the image, which takes a few minutes. The output looks partly frozen while it does, because the container runtime's progress display arrives buffered. `--log-level debug` shows each step individually instead.
 
-Then check that the environment is right:
+Then check that the environment is right — expected are Temurin 26, a libjpeg-turbo version and a jbig2enc version (the last writes to stderr at exit 0):
 
 ```bash
-java -version      # erwartet: Temurin, Version 26
-jpegtran -version  # erwartet: eine libjpeg-turbo-Version
-jbig2 -V           # erwartet: eine jbig2enc-Version; schreibt auf stderr, Exit 0
+java -version
+jpegtran -version
+jbig2 -V
 ```
 
 All three must answer. `jpegtran` is no formality: cropping and grayscale conversion run exclusively through it, and without the program the corresponding tests fail. The same holds for `jbig2`: the 1-bit encoding of the `bw` mode (SV-08) runs exclusively through it, and without the program `Jbig2EncTest`, `PdfBuilderJbig2Test` and `PdfBwGoldenTest` fail.
@@ -64,13 +64,13 @@ That is inconsequential: the message comes from a metadata query of the CLI, not
 
 ## Building and testing
 
-Run everything in the dev container:
+Run everything in the dev container — in order: compile, linter and tests; tests only; linter only; fix formatting issues automatically:
 
 ```bash
-./gradlew build           # kompilieren, Linter, Tests
-./gradlew test            # nur Tests
-./gradlew spotlessCheck   # nur Linter
-./gradlew spotlessApply   # Formatierungsmängel automatisch beheben
+./gradlew build
+./gradlew test
+./gradlew spotlessCheck
+./gradlew spotlessApply
 ```
 
 `spotlessCheck` hangs off the `check` task and runs automatically with `build`. `spotlessApply` changes files — use deliberately, not on the side.
@@ -88,7 +88,7 @@ Whoever builds for the first time still needs a network connection: the wrapper 
 Beyond the ordinary tests there is a mutation run: it changes the production code minimally in many places and checks whether the tests notice. That exposes weak assertions a pure line coverage does not show. The layer is described in `docs/internal/teststrategie.md` under "Mutation".
 
 ```bash
-./gradlew pitest          # Mutationslauf über die Kern-Pakete
+./gradlew pitest
 ```
 
 Four things to know beforehand:
@@ -195,7 +195,7 @@ Build locally (Node stays confined to `site/` — Gradle, dev container and runt
 ```bash
 cd site
 npm ci --ignore-scripts
-npm run build   # Ergebnis in site/dist/
+npm run build
 ```
 
 The DS-01 gate runs locally with `npm run check` against `site/dist/`. Without the `IMPRINT_BLOCK` secret (set only in CI, never in the repository) the imprint assertion fails — like on fork PRs, whose build never deploys.

@@ -24,7 +24,7 @@ import java.nio.file.Path
  *
  * **What the test expects the page to look like.** Both examples live as
  * fenced code blocks in the operations page, and the block that belongs to
- * a file carries `# Datei: <name>` as its first content line
+ * a file carries `# file: <name>` as its first content line
  * (`compose.yaml`, `unboundair.env`, `unboundair.container`). The test
  * finds the examples by those markers — keep them when editing the page,
  * or the guard fails in a way that looks unrelated to the edit. Shell
@@ -174,19 +174,19 @@ class DeploymentExampleTest {
                 operations,
                 """
                 ```yaml
-                # Datei: compose.yaml
+                # file: compose.yaml
                 services:
                   unboundair:
                     image: docker.io/library/unboundair:nightly
                 ```
                 ```ini
-                # Datei: unboundair.env
+                # file: unboundair.env
                 UNBOUNDAIR_OUTPUT_MODULES=paperless
                 UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL=https://paperless.example.org
                 UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE=/run/secrets/paperless-token
                 ```
                 ```ini
-                # Datei: unboundair.container
+                # file: unboundair.container
                 Image=docker.io/library/unboundair:nightly
                 Environment=UNBOUNDAIR_OUTPUT_MODULES=paperless
                 Environment=UNBOUNDAIR_OUTPUT_PAPERLESS_BASEURL=https://paperless.example.org
@@ -269,7 +269,7 @@ class DeploymentExampleTest {
                     val name =
                         current
                             .firstOrNull()
-                            ?.removePrefix("# Datei:")
+                            ?.removePrefix("# file:")
                             ?.trim()
                             ?.split(" ")
                             ?.firstOrNull()
@@ -389,24 +389,24 @@ class DeploymentExampleTest {
         // No shared indentation here on purpose: trimIndent strips only the
         // common indent, and interpolated key lines start at column 0, so a
         // heredoc would leave every static line indented and break the
-        // `# Datei:` first-line convention the extraction relies on.
+        // `# file:` first-line convention the extraction relies on.
         val lines =
             mutableListOf(
                 "```yaml",
-                "# Datei: compose.yaml",
+                "# file: compose.yaml",
                 "services:",
                 "  unboundair:",
                 "    image: ghcr.io/digiwomb-dev/unboundair:nightly",
                 "```",
                 "```ini",
-                "# Datei: unboundair.env",
+                "# file: unboundair.env",
             )
         lines += composeKeys
         lines +=
             listOf(
                 "```",
                 "```ini",
-                "# Datei: unboundair.container",
+                "# file: unboundair.container",
                 "Image=ghcr.io/digiwomb-dev/unboundair:nightly",
             )
         lines += quadletKeys.map { "Environment=$it=value" }
