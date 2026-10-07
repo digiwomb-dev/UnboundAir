@@ -90,6 +90,20 @@ Der Schutz gilt **auch für Administratoren** (`enforce_admins`), und das ist de
 
 `dev` bleibt ungeschützt, weil der Agent dort nach jedem abgenommenen Schritt committet. Ein PR je Schritt stünde gegen die kleinen Schritte aus `AGENTS.md`.
 
+## Pipeline und Deployment: GitHub Actions, nativ, nachvollziehbar (07.10.2026, CI-01 bis CI-08, DP-01)
+
+**Entscheidung: GitHub Actions als System; Tests bei jedem PR im Dev-Container-Image auf nativen Runnern beider Architekturen; Nightly mit Container-Veröffentlichung; Tag auf `main` erzeugt unveränderliches Release mit dem getesteten Jar; Image-Name `ghcr.io/digiwomb-dev/unboundair`; Werkzeugketten-Vergleich; Jar-Reproduzierbarkeit; Dependabot mit Abklingzeit; Deployment-Beispiel in beiden Formaten.**
+
+**Warum GHCR statt Docker Hub.** Kein neues Konto, kein neues Secret (das Token stellt Actions bereit), kein zweiter zu pflegender Ort neben der Quelle. Docker Hub brächte Reichweite, die dieses Projekt nicht braucht, zum Preis einer weiteren Anmeldestelle mit eigenen Regeln.
+
+**Warum nativ statt QEMU.** Unter QEMU kann ein Bau grün werden, während das Echte scheitert — und emulierte Bauten sind langsam genug, dass man sie bald nicht mehr fährt. Das gilt für Tests (CI-01-Matrix) wie für Images (CI-03 mit vollem CT-01-Satz). Bequem wäre der Cross-Bau; er bewiese gerade nicht, was zu beweisen ist.
+
+**Warum ohne `v`.** `1.2.0` ist SemVer, `v1.2.0` ist Gewohnheit mit Ausnahmen in jedem Werkzeug. Ein Präfix kostet eine Umrechnung an jeder Stelle, die Tag und Version vergleicht (CI-04 gegen `build.gradle.kts`) — und jede Umrechnung ist eine Stelle, an der `v1.2.0` gegen `1.2.0` still vorbeiläuft.
+
+**Warum beide Deployment-Formate.** Compose kennt fast jeder, Quadlet passt auf einen systemd-Host ohne Daemon — und beide sind verschieden genug, dass eines zu beschreiben und das andere als Übung zu lassen niemandem hilft. Der Ziel-Host selbst bleibt Sache des Betreibers und steht deshalb nicht im Plan.
+
+**Der Rest der Tabelle, kurz begründet:** Tests laufen im Dev-Container-Image (dort ist die Kette gepinnt, und `pitest.yml` beweist das Muster); PR **und** Nightly (der PR prüft Änderungen, die Nacht prüft die Welt — Basis-Image, gewanderte Abhängigkeiten); Nightly veröffentlicht (sonst gäbe es kein fahrbares Image des Entwicklungsstands); veröffentlicht wird, was getestet wurde (ein zweiter Bau wäre ein zweiter, ungeprüfter Stand); die Version lebt in `build.gradle.kts` (eine Wahrheit, der Tag wiederholt sie); amd64 fährt die volle Suite (nur sie vergleicht Werkzeugausgaben mit Golden-Dateien); Releases sind unveränderlich mit Bescheinigung (ein Release, das sich nachträglich ändert, ist keines); Dependabot mit Abklingzeit (Pins altern sonst nur, Sicherheit eingeschlossen).
+
 ## Der Mutationslauf läuft auf Abruf in CI, im Dev-Container-Image (TE-04)
 
 **Entscheidung: Der volle PIT-Lauf ist zusätzlich als GitHub-Actions-Workflow verfügbar (`workflow_dispatch`, nur von Hand) und führt `./gradlew pitest` im Dev-Container-Image aus.**

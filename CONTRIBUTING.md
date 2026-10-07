@@ -54,7 +54,7 @@ Every issue is in English and carries its GitHub issue type plus exactly one `ki
 
 On top:
 
-- **The scope is required** and names the package: `config`, `scanner`, `image`, `processing`, `output`, `outbox`, `paperless`, `service`, `batch`, `cli`, `pdf`, `logging`, `app`, `test`.
+- **The scope is required** and names the package: `config`, `scanner`, `image`, `processing`, `output`, `outbox`, `paperless`, `service`, `batch`, `cli`, `pdf`, `logging`, `app`, `test` — plus `ci`, `docs`, `repo` and `site` for everything that is no package.
 - **For `test(…)` the scope slot takes the test layer** from [`docs/internal/teststrategie.md`](docs/internal/teststrategie.md) (German only), never the package – and the same layer additionally as a label. The package is in the file path anyway.
 - **No `T<n>` numbers in titles.** The order in the milestone stands as `Work order: <n>` in the issue.
 - **A parent issue** goes only to whoever has sub-issues, and carries no layer label.

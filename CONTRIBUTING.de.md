@@ -54,7 +54,7 @@ Jedes Issue ist auf Englisch und trägt seinen GitHub-Issue-Typ plus genau ein `
 
 Dazu:
 
-- **Der Scope ist Pflicht** und benennt das Paket: `config`, `scanner`, `image`, `processing`, `output`, `outbox`, `paperless`, `service`, `batch`, `cli`, `pdf`, `logging`, `app`, `test`.
+- **Der Scope ist Pflicht** und benennt das Paket: `config`, `scanner`, `image`, `processing`, `output`, `outbox`, `paperless`, `service`, `batch`, `cli`, `pdf`, `logging`, `app`, `test` — sowie `ci`, `docs`, `repo` und `site` für alles, was kein Paket ist.
 - **Bei `test(…)` steht an der Stelle des Scopes die Testschicht** aus [`docs/internal/teststrategie.md`](docs/internal/teststrategie.md), nie das Paket – und dieselbe Schicht zusätzlich als Label. Das Paket steht ohnehin im Dateipfad.
 - **Keine `T<n>`-Nummern im Titel.** Die Reihenfolge im Meilenstein steht als `Work order: <n>` im Issue.
 - **Ein Eltern-Issue** bekommt nur, wer Sub-Issues hat, und trägt kein Schicht-Label.
