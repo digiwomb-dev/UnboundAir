@@ -122,6 +122,22 @@ Vier Punkte dazu:
 
 Die Neueinmessung der Schwelle (TE-04) gehört damit in CI, nicht auf den Entwicklungsrechner. Die gemessenen Zahlen wandern von dort nach `docs/internal/entscheidungen.md` – mit Datum und Commit, wie bisher.
 
+## Kontinuierliche Integration
+
+Was die Automatik tut – und was sie von dir erwartet. Einzelheiten stehen in den Workflow-Dateien selbst; diese Datei beschreibt nur, womit du rechnen musst.
+
+**Bei jedem Pull Request gegen `dev`** (`.github/workflows/test.yml`) läuft der volle `./gradlew build` – Suite plus Linter – **im Dev-Container-Image**, auf beiden Architekturen (`linux/arm64` nativ, `linux/amd64` nativ). Grün auf beiden ist Pflicht für die Zusammenführung (Regelsatz auf `dev`). Der Checkout holt die volle Historie (`fetch-depth: 0`): Der Übersetzungswächter vergleicht Commit-Stände, und ohne Historie hielte er jede Übersetzung für aktuell — wer den Workflow als Vorlage nimmt, lässt das stehen.
+
+**Beide Architekturen fahren die volle Suite**, weil auf beiden entwickelt wird: Grün heißt auf beiden Maschinen dasselbe. Die Golden-Dateien sind gegen die Binärprogramme beider Architekturen geprüft.
+
+**Nachts auf `dev`** (`.github/workflows/nightly.yml`) läuft dieselbe Suite plus der Image-Bau beider Architekturen; was dabei geprüft wurde, landet in `ghcr.io/digiwomb-dev/unboundair` — `:nightly` als Multi-Architektur-Index, dazu `:nightly-arm64` und `:nightly-amd64`. Nie `latest`, nie eine Version. Ob die Nacht grün war, zeigt das Badge in `README.md`.
+
+**Image-Bau und -Prüfung** (`.github/workflows/image.yml`) bauen beide Images und fahren darin den CT-01-Satz (`jpegtran` da, `jbig2` da, `status` erreicht den Fake-Scanner) — nativ je Architektur, nie unter Emulation: Unter QEMU kann ein Bau grün werden, während das Echte scheitert.
+
+**Ein Release schneiden** (`.github/workflows/release.yml`), in dieser Reihenfolge: `version` in `build.gradle.kts` per Pull Request auf `dev` anheben; `dev` nach `main` zusammenführen; dieses Commit auf `main` mit exakt dieser Version taggen — strikt SemVer, ohne `v` (`1.2.0`, nicht `v1.2.0`). Ein falscher Tag, ein vom Build abweichender Tag oder ein Tag abseits von `main` scheitert laut mit Begründung; der schlechte Tag wird von Hand gelöscht, nicht vom Workflow. Das Release entsteht als Entwurf mit allen Anhängen und wird zuletzt öffentlich — danach ist es unveränderlich. `0.y.z` und Vorabversionen tragen das Vorab-Kennzeichen.
+
+**Lokal bleibt alles fahrbar:** Der Mutationslauf startet weiter auf Abruf, und die Wächter laufen vor dem Pushen — Übersetzung und Deployment-Beispiel in `./gradlew test`, das Drittparteien-Tor per `npm run check` gegen `site/dist/`.
+
 ## Laufzeit-Image bauen
 
 Das Laufzeit-Image steht in `Dockerfile` im Repository-Stamm. Gebaut wird es aus dem Repository heraus – vorher das Jar erzeugen, weil das Dockerfile `build/libs/unboundair.jar` hineinkopiert (kein Gradle im Image-Build):
