@@ -9,9 +9,15 @@ Was schiefgehen kann, woran man es erkennt und was dann zu tun ist (DO-20). Jede
 
 ## Wie ein gesunder Lauf aussieht
 
-**Beim Start schreibt der Dienst nichts.** Kein Banner, keine „Started in 0.4 seconds"-Zeile — die Startmeldungen des Frameworks sind ausdrücklich abgeschaltet, weil sie bei einem Kommandozeilen-Werkzeug die eigentliche Antwort vom Bildschirm schieben (KL-02). Ein stilles Log direkt nach dem Start ist also kein Zeichen, dass etwas klemmt.
+**Beim Start kommt genau eine Zeile — die des Dienstes selbst:**
 
-Auch danach ist **Stille normal**: Der Dienst fragt den Scanner alle drei Sekunden nach seinem Status und schreibt davon nichts, weil eine Zeile pro Abfrage das Log unlesbar machen würde. Geschrieben wird nur bei einem Zustandswechsel (DL-02).
+```
+WARN  [UnboundAirApplication] service started
+```
+
+Dass sie `WARN` trägt, ist kein Alarm, sondern die Senke: Die Meldungen der Befehle laufen alle über einen gemeinsamen Kanal (SV-02), und der schreibt auf dieser Stufe. Was dagegen fehlt, ist Absicht — kein Banner, keine „Started in 0.4 seconds"-Zeile: Die Startmeldungen des Frameworks sind abgeschaltet, weil sie bei einem Kommandozeilen-Werkzeug die eigentliche Antwort vom Bildschirm schieben (KL-02). Bleibt es nach dieser einen Zeile still, klemmt also nichts.
+
+Danach ist **Stille normal**: Der Dienst fragt den Scanner alle drei Sekunden nach seinem Status und schreibt davon nichts, weil eine Zeile pro Abfrage das Log unlesbar machen würde. Geschrieben wird nur bei einem Zustandswechsel (DL-02).
 
 Pro gescannter Seite kommt eine Zeile mit Scan-Dauer, Übertragungsdauer, Größe und den Maßen in Millimetern nach dem Zuschnitt:
 
