@@ -33,7 +33,7 @@ Status: scanready
 Firmware: NB0a.032
 ```
 
-Das ist der erste Befehl bei jedem Verdacht, der Scanner sei nicht erreichbar: Er braucht nichts außer der Netzwerkverbindung, verändert nichts und beantwortet die Frage, die alle anderen Befehle voraussetzen. Antwortet er mit einem Fehler statt mit einem Status, ist das Problem im Netz und nicht in der Konfiguration — weiter im Abschnitt „Netzwerk" in [`operations.md`](operations.md).
+Das ist der erste Befehl bei jedem Verdacht, der Scanner sei nicht erreichbar: Er braucht nichts außer der Netzwerkverbindung, verändert nichts und beantwortet die Frage, die alle anderen Befehle voraussetzen. Antwortet er mit einem Fehler statt mit einem Status, ist das Problem im Netz und nicht in der Konfiguration — weiter in [`troubleshooting.md`](troubleshooting.md).
 
 Status und Firmware werden über **zwei** Verbindungen geholt, nicht über eine: Eine Verbindung pro Vorgang ist die Regel aus SC-02, und das Gerät verträgt kein Bündeln.
 
