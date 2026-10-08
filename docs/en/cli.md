@@ -2,7 +2,7 @@
 title: Command line
 ---
 
-<!-- translated from docs/de/cli.md @ 6366896f79672ef934dbfc69a8f8558eaaa7de2b -->
+<!-- translated from docs/de/cli.md @ a27ae76e44dc58757fd4184f8fdb421a8fca75e7 -->
 
 
 The five subcommands of `UnboundAir` and the options they accept (DO-19, requirements BE-01 to BE-05). This file describes what a command **does** — whether it touches the scanner, what it writes, when it is finished. Which setting carries which default is in [`configuration.md`](configuration.md) and only there.
@@ -35,7 +35,7 @@ Status: scanready
 Firmware: NB0a.032
 ```
 
-This is the first command for any suspicion that the scanner is unreachable: it needs nothing but the network connection, changes nothing, and answers the question every other command takes for granted. If it answers with an error instead of a status, the problem is in the network and not in the configuration — continue in the "Network" section of [`operations.md`](operations.md).
+This is the first command for any suspicion that the scanner is unreachable: it needs nothing but the network connection, changes nothing, and answers the question every other command takes for granted. If it answers with an error instead of a status, the problem is in the network and not in the configuration — continue in [`troubleshooting.md`](troubleshooting.md).
 
 Status and firmware are fetched over **two** connections, not one: one connection per operation is the rule from SC-02, and the device does not tolerate bundling.
 
