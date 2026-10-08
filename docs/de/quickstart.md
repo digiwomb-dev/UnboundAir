@@ -47,7 +47,7 @@ docker run --network=host \
 
 Jetzt ist nichts weiter zu tun: Der Dienst fragt den Scanner alle drei Sekunden nach seinem Status, bemerkt das eingelegte Blatt und scannt von selbst. Kein Knopfdruck, keine Hersteller-Software.
 
-**Zwischen den Seiten ist das Log still** — das ist richtig so. Beim Start steht dort eine Zeile `service started`, danach kommt pro gescannter Seite genau eine:
+**Zwischen den Seiten ist das Log still** — das ist richtig so. Beim Start stehen dort zwei Zeilen, `service started` und `scanner is reachable again` (das „again" steht auch beim ersten Start da, siehe [`troubleshooting.md`](troubleshooting.md)), danach kommt pro gescannter Seite genau eine:
 
 ```
 INFO  [ScanLoop] page 1 scanned in 8123 ms, transferred in 2311 ms, 1048576 bytes, 206.9 x 291.3 mm

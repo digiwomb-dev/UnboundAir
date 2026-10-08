@@ -9,13 +9,18 @@ Was schiefgehen kann, woran man es erkennt und was dann zu tun ist (DO-20). Jede
 
 ## Wie ein gesunder Lauf aussieht
 
-**Beim Start kommt genau eine Zeile — die des Dienstes selbst:**
+**Beim Start kommen zwei Zeilen:**
 
 ```
 WARN  [UnboundAirApplication] service started
+INFO  [ScanLoop] scanner is reachable again
 ```
 
-Dass sie `WARN` trägt, ist kein Alarm, sondern die Senke: Die Meldungen der Befehle laufen alle über einen gemeinsamen Kanal (SV-02), und der schreibt auf dieser Stufe. Was dagegen fehlt, ist Absicht — kein Banner, keine „Started in 0.4 seconds"-Zeile: Die Startmeldungen des Frameworks sind abgeschaltet, weil sie bei einem Kommandozeilen-Werkzeug die eigentliche Antwort vom Bildschirm schieben (KL-02). Bleibt es nach dieser einen Zeile still, klemmt also nichts.
+Dass die erste `WARN` trägt, ist kein Alarm, sondern die Senke: Die Meldungen der Befehle laufen alle über einen gemeinsamen Kanal (SV-02), und der schreibt auf dieser Stufe.
+
+**Die zweite Zeile sagt „again", obwohl nichts vorausging** — auch beim allerersten Start. Das ist kein Hinweis auf einen verpassten Ausfall: Die erste Beobachtung gilt immer als Zustandswechsel, damit ein Dienst, der gegen ein ausgeschaltetes Gerät startet, das sofort sagt statt zu schweigen (DL-02). Ist der Scanner beim Start aus, steht hier entsprechend `scanner is offline, slowing down to PT10S`.
+
+Was dagegen fehlt, ist Absicht — kein Banner, keine „Started in 0.4 seconds"-Zeile: Die Startmeldungen des Frameworks sind abgeschaltet, weil sie bei einem Kommandozeilen-Werkzeug die eigentliche Antwort vom Bildschirm schieben (KL-02). Bleibt es nach diesen zwei Zeilen still, klemmt also nichts.
 
 Danach ist **Stille normal**: Der Dienst fragt den Scanner alle drei Sekunden nach seinem Status und schreibt davon nichts, weil eine Zeile pro Abfrage das Log unlesbar machen würde. Geschrieben wird nur bei einem Zustandswechsel (DL-02).
 
