@@ -50,7 +50,7 @@ Ist das Dokument fertig und abgeliefert, folgt `document … delivered to the ou
 2. Teilt der Container das Netz des Hosts? Mit Bridge-Netzwerk startet der Container und findet das Gerät nie — Abschnitt 2 in [`operations.md`](operations.md).
 3. Antwortet das Gerät überhaupt? [`cli.md`](cli.md) beschreibt `status`, den Befehl, der nichts tut außer zu fragen.
 
-**Ungemessen und hier offen gesagt:** Ob eine Statusabfrage das Gerät wach hält oder ob es sich nach fünf Minuten trotzdem abschaltet, ist nicht gemessen — OF-01 in [`../internal/offene-fragen.md`](../internal/offene-fragen.md). Geht das Gerät nach einiger Ruhe offline, ist das also womöglich gar kein Fehler, sondern genau dieses Verhalten.
+**Noch nicht systematisch gemessen, und hier offen gesagt:** Bei einem laufenden Dienst blieb das Gerät über die fünf Minuten hinaus erreichbar — der 3-Sekunden-Statustakt hält es also offenbar wach. Das ist eine Beobachtung am Gerät, kein Messlauf: OF-01 in [`../internal/offene-fragen.md`](../internal/offene-fragen.md) bleibt darum als `beobachtet` geführt, nicht als geklärt. Geht das Gerät nach einiger Ruhe trotzdem offline, ist das also womöglich gar kein Fehler.
 
 ## Eine Einstellung wirkt nicht
 
@@ -116,7 +116,9 @@ Das sind **zwei verschiedene Dinge**, und sie sehen im Ergebnis ähnlich aus.
 
 **Beobachtung:** Nach einer Pause im Stapel ist das Dokument plötzlich fertig, und die danach eingelegten Blätter landen in einem neuen.
 
-**Ursache:** Das Gerät schaltet sich nach etwa fünf Minuten ohne Aktion ab. Für den Dienst ist das ein **regulärer Auslöser**, den Batch zu schließen, und kein Fehler (DL-04): Offline heißt „der Vorgang ist zu Ende", also wird das PDF gebaut und übergeben.
+**Ursache:** Das Gerät ist offline gegangen. Für den Dienst ist das ein **regulärer Auslöser**, den Batch zu schließen, und kein Fehler (DL-04): Offline heißt „der Vorgang ist zu Ende", also wird das PDF gebaut und übergeben.
+
+**Warum es offline ging, ist nicht in jedem Fall klar.** Laut Handbuch schaltet sich das Gerät nach etwa fünf Minuten ohne Aktion ab. Ob der 3-Sekunden-Statustakt des Dienstes als „Aktion" gilt und das verhindert, ist **nicht systematisch gemessen** — OF-01 in [`../internal/offene-fragen.md`](../internal/offene-fragen.md). Bei einem laufenden Dienst wurde das Gerät über fünf Minuten hinaus wach gehalten; verlässt sich darauf aber niemand, denn die naheliegendere Ursache ist meist die einfachere: Das Gerät war von Hand ausgeschaltet, der Akku leer, oder das WLAN weg.
 
 **Abhilfe:** keine nötig — das Dokument ist vollständig. Sollen mehr Seiten in ein Dokument, müssen sie innerhalb des Zeitfensters eingelegt werden (`unboundair.batch-timeout`, Default 20 Sekunden, siehe [`configuration.md`](configuration.md)).
 

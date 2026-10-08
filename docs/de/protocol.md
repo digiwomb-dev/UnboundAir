@@ -82,7 +82,7 @@ Bei älterer Firmware bleibt der Scanner bei 300 dpi; der Aufrufer wird gewarnt 
 
 ## Polling
 
-Die Mustek-App fragt den Status nicht periodisch per TCP ab, sondern nur bei Aktionen. **[App/s400w]** AirScan fragt ca. alle 8 s ab. **[App/s400w]** Wie sich häufigeres Polling am Gerät auswirkt, ist unbekannt. **[offen]** Offene Punkte dazu — ob Polling das Auto-Off verhindert (OF-01), ob 3-s-Takt `devbusy` auslöst (OF-02) — stehen in `docs/internal/offene-fragen.md` und werden mit `measure` geklärt. **[offen]**
+Die Mustek-App fragt den Status nicht periodisch per TCP ab, sondern nur bei Aktionen. **[App/s400w]** AirScan fragt ca. alle 8 s ab. **[App/s400w]** Wie sich häufigeres Polling am Gerät auswirkt, ist nur teilweise bekannt: Ein 3-Sekunden-Takt hält das Gerät offenbar wach, über die Auto-Off-Grenze hinaus **[Gerät]**, aber systematisch gemessen ist das nicht (OF-01). Ob derselbe Takt `devbusy` auslöst, ist unbekannt (OF-02). **[offen]** Beides steht in `docs/internal/offene-fragen.md` und wird mit `measure` geklärt. **[offen]**
 
 ## Abgrenzung
 

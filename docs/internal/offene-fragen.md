@@ -41,13 +41,17 @@ Default sind 10 Minuten Laufzeit und ein Abfrage-Abstand von 3 Sekunden. Der Lau
 
 ## OF-01 Hält Status-Polling den Scanner wach?
 
-**Status:** offen · **Herkunft:** [Handbuch] für das Auto-Off, Rest unbekannt
+**Status:** beobachtet · **Herkunft:** [Gerät] für das Wachhalten, [Handbuch] für das Auto-Off
 
-Das Gerät schaltet sich laut Handbuch nach 5 Minuten ohne Aktion ab. Unklar ist, ob eine TCP-Statusabfrage als „Aktion" zählt. Davon hängt ab, ob ein Dauerbetrieb überhaupt sinnvoll ist oder ob der Nutzer den Scanner ohnehin regelmäßig neu einschaltet.
+Das Gerät schaltet sich laut Handbuch nach 5 Minuten ohne Aktion ab. Unklar war, ob eine TCP-Statusabfrage als „Aktion" zählt. Davon hängt ab, ob ein Dauerbetrieb überhaupt sinnvoll ist oder ob der Nutzer den Scanner ohnehin regelmäßig neu einschaltet.
 
-**So gebaut:** `poll-interval` konfigurierbar, vorläufiger Default 3 s (DL-01). Offline ist ein regulärer Zustand, kein Fehler (DL-02, DL-04).
+**Beobachtung am Gerät (08.10.2026) [Gerät]:** Der Dienst lief deutlich länger als fünf Minuten und das Gerät blieb erreichbar — der 3-Sekunden-Statustakt hält den Scanner also offenbar **wach**. Damit ist Dauerbetrieb der plausible Normalfall, nicht die Ausnahme.
 
-**Klärt:** `measure` – protokolliert den Zeitpunkt, ab dem das Gerät nicht mehr erreichbar ist, und den Abstand zur letzten Aktivität. **Gebaut (Meilenstein 3):** Die Zusammenfassung meldet beides in der Zeile `went offline: … after … of quiet (OF-01)`. Ist die Ruhezeit dort nahe fünf Minuten, obwohl durchgehend abgefragt wurde, hält das Polling das Gerät **nicht** wach.
+**Warum das `beobachtet` ist und nicht `geklärt`:** Die Beobachtung stammt aus einem laufenden Dienst, nicht aus einem `measure`-Lauf. Es gibt dazu keine Zusammenfassungszeile und keine Zahl — nur die Feststellung, dass kein Abschalten eintrat. Für `geklärt` fehlt die Zeile `went offline: no (OF-01)` aus einem `measure`-Lauf mit protokollierter Laufzeit. Offen bleibt außerdem, ob ein *größerer* Abstand als 3 s auch noch wach hält; davon hängt der endgültige Default ab.
+
+**So gebaut:** `poll-interval` konfigurierbar, vorläufiger Default 3 s (DL-01). Offline ist ein regulärer Zustand, kein Fehler (DL-02, DL-04). Die Beobachtung bestätigt diese Bauweise, ändert sie aber nicht: Offline bleibt ein regulärer Zustand, weil der Nutzer das Gerät jederzeit ausschalten kann.
+
+**Klärt:** `measure` – protokolliert den Zeitpunkt, ab dem das Gerät nicht mehr erreichbar ist, und den Abstand zur letzten Aktivität. **Gebaut (Meilenstein 3):** Die Zusammenfassung meldet beides in der Zeile `went offline: … after … of quiet (OF-01)`. Ist die Ruhezeit dort nahe fünf Minuten, obwohl durchgehend abgefragt wurde, hält das Polling das Gerät **nicht** wach. Nach der Beobachtung oben ist `went offline: no (OF-01)` das erwartete Ergebnis — der Lauf bestätigt oder widerlegt sie.
 
 **Zweistufig:** Nach der Messung ist noch zu entscheiden, welcher Default daraus wird – siehe „Defaults" in den offenen Entscheidungen des Plans.
 
