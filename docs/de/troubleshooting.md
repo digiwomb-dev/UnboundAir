@@ -32,7 +32,7 @@ INFO  [ScanLoop] page 1 scanned in 8123 ms, transferred in 2311 ms, 1048576 byte
 
 Zwei Dinge daran sind Absicht. **Kein Zeitstempel und keine PID** — journald und jede Container-Runtime stempeln jede Zeile ohnehin, doppelt wäre nur breiter. Und die **Millimeter tragen eine Dezimalstelle**, weil sie aus Pixel ÷ DPI entstehen, ohne Umrechnung auf ein Normformat (SV-05).
 
-**Die Zahlen oben sind ein echtes A4-Blatt** — gemessen, nicht gerechnet: 206,9 × 291,3 statt 210 × 297. Gescannte Seiten fallen kleiner aus als das eingelegte Papier, und warum, ist offen — OF-05 in [`../internal/offene-fragen.md`](../internal/offene-fragen.md). Wer hier Normmaße erwartet, sucht einen Fehler, den es nicht gibt.
+**Die Millimeter oben sind an einem echten A4-Blatt gemessen, nicht gerechnet:** 206,9 × 291,3 statt 210 × 297. Dauern und Dateigröße in der Beispielzeile sind dagegen plausible Platzhalter — wie lange ein Scan dauert, ist noch nicht systematisch gemessen (OF-03). Gescannte Seiten fallen kleiner aus als das eingelegte Papier, und warum, ist offen — OF-05 in [`../internal/offene-fragen.md`](../internal/offene-fragen.md). Wer hier Normmaße erwartet, sucht einen Fehler, den es nicht gibt.
 
 Ist das Dokument fertig und abgeliefert, folgt `document … delivered to the output modules`, beim paperless-Modul zusätzlich `paperless-ngx accepted the document; consumption task …` mit der Task-ID aus der Antwort (AU-05).
 

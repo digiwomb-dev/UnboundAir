@@ -95,11 +95,13 @@ Gelten für die Befehle, bei denen sie Sinn haben; die übrigen ignorieren sie.
 | `--out DATEI` | Name mit Zeitstempel | Zieldatei für `scan`. |
 | `--color-mode gray\|color\|bw` | `gray` | Farbmodus für `scan` und `run` (SV-03, SV-08). |
 | `--bw-threshold N` | `128` | Helligkeitsschwelle für `bw`, gültig `1..255` (SV-08). |
-| `--keep-raw` | aus | Legt bei `scan` und `run` zusätzlich das Rohbild ab (SV-06). |
+| `--keep-raw` | aus | Legt bei `scan` zusätzlich das Rohbild ab (SV-06) — **nur dort**, siehe unten. |
 | `--minutes N` | `10` | Dauer eines `measure`-Laufs. |
 | `--poll-seconds N` | `3` | Abfrageabstand während `measure`. |
 
 **Ein Flag gewinnt über die Einstellung, die Einstellung über die Gerätekonstante.** Das gilt für `--host` und `--port` genauso wie für `--dpi`, `--color-mode`, `--bw-threshold` und `--keep-raw`: Wird das Flag nicht genannt, zählt die Einstellung aus [`configuration.md`](configuration.md), und erst wenn auch die fehlt, der eingebaute Default. Diese Reihenfolge ist der Grund, warum `run` in einem Container überhaupt eine andere Adresse erreichen kann als die eingebaute — ein Flag kann dort niemand tippen.
+
+**`--keep-raw` wirkt nur bei `scan`.** Der Wert wird für `run` zwar eingelesen, dort aber von niemandem ausgewertet: Der Dienst legt jede Seite in einem temporären Verzeichnis ab und löscht es nach der Verarbeitung, Rohbild inklusive. Wer ein Rohbild zum Vergleich braucht, nimmt also `scan --keep-raw` und nicht den laufenden Dienst. Das ist heute Verhalten des Codes und keine zugesicherte Eigenschaft — hier steht es, damit niemand das Flag an `run` setzt und auf Dateien wartet, die nicht kommen.
 
 `--minutes` und `--poll-seconds` fallen aus dieser Regel heraus: Sie haben keine Entsprechung unter `unboundair.*`, weil sie einen einzelnen Messlauf steuern und nicht den Betrieb. Dass `--poll-seconds` denselben Vorgabewert wie `unboundair.poll-interval` trägt, ist Absicht — `measure` soll das Verhalten messen, das der Dienst zeigen wird.
 

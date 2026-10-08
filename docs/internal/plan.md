@@ -337,6 +337,7 @@ Die folgenden fünf Anforderungen gehören zu **Meilenstein 6** und damit nicht 
   | `CONTRIBUTING.md` | `CONTRIBUTING.md` | `CONTRIBUTING.de.md` |
   | `SECURITY.md` | `SECURITY.md` | `SECURITY.de.md` |
   | `docs/internal/plan.md`, `entscheidungen.md`, `offene-fragen.md`, `teststrategie.md` | — | `docs/internal/…` |
+  | — (neu mit DO-08) | — | `docs/internal/README.md` |
 
   Die Tabelle ist die **vollständige** Liste der Dateien unter `docs/` – wer eine Seite hinzufügt, trägt sie hier ein, sonst behauptet der Plan etwas Falsches über seinen eigenen Inhalt. Die mit DO-17 bis DO-20 und DS-02 ergänzten Zeilen entstehen neu und haben darum keine heutige Entsprechung; die drei Festlegungen unten gelten für sie unverändert.
 

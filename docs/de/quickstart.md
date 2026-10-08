@@ -61,7 +61,7 @@ Nach der letzten Seite wartet der Dienst **20 Sekunden** auf ein weiteres Blatt.
 
 ```
 INFO  [PaperlessModule] paperless-ngx accepted the document; consumption task 6f2a1c74-9b3e-4d58-9c21-7a5e0f3b8d44
-INFO  [OutboxRunner] document 1758545700123 delivered to the output modules
+INFO  [OutboxRunner] document 1790080500000 delivered to the output modules
 ```
 
 Danach steht das Dokument in paperless, als `scan-20260922-143500.pdf`. Die `consumption task` ist paperless' eigene Verarbeitung — die läuft dort noch kurz weiter. Die lange Zahl ist die Kennung in der Outbox; sie ist der Startzeitpunkt des Dokuments in Millisekunden und taucht nur im Log und im Dateisystem auf.
