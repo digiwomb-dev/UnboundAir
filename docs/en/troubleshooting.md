@@ -2,7 +2,7 @@
 title: Troubleshooting
 ---
 
-<!-- translated from docs/de/troubleshooting.md @ 03638614c833bec39dcc2693800b1b7eb1b4bc64 -->
+<!-- translated from docs/de/troubleshooting.md @ 9cf6a4603f5307092e0f439dca53648114eb99a3 -->
 
 
 What can go wrong, how to recognise it and what to do then (DO-20). Every entry names an **observation**, its **cause** and the **remedy**.
@@ -34,7 +34,7 @@ INFO  [ScanLoop] page 1 scanned in 8123 ms, transferred in 2311 ms, 1048576 byte
 
 Two things about it are deliberate. **No timestamp and no PID** — journald and every container runtime stamp each line anyway, and doing it twice would only be wider. And the **millimetres carry one decimal**, because they come from pixels ÷ DPI, with no conversion to a standard format (SV-05).
 
-**The numbers above are a real A4 sheet** — measured, not calculated: 206.9 × 291.3 instead of 210 × 297. Scanned pages come out smaller than the paper that was fed, and why is open — OF-05 in [`../internal/offene-fragen.md`](../internal/offene-fragen.md) (German only). Anyone expecting nominal dimensions here is looking for a defect that does not exist.
+**The millimetres above are measured on a real A4 sheet, not calculated:** 206.9 × 291.3 instead of 210 × 297. The durations and the file size in the example line, by contrast, are plausible placeholders — how long a scan takes has not been measured systematically yet (OF-03). Scanned pages come out smaller than the paper that was fed, and why is open — OF-05 in [`../internal/offene-fragen.md`](../internal/offene-fragen.md) (German only). Anyone expecting nominal dimensions here is looking for a defect that does not exist.
 
 Once the document is finished and delivered, `document … delivered to the output modules` follows, and with the paperless module additionally `paperless-ngx accepted the document; consumption task …` with the task ID from the response (AU-05).
 

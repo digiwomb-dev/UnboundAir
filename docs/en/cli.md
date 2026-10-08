@@ -2,7 +2,7 @@
 title: Command line
 ---
 
-<!-- translated from docs/de/cli.md @ a27ae76e44dc58757fd4184f8fdb421a8fca75e7 -->
+<!-- translated from docs/de/cli.md @ 9cf6a4603f5307092e0f439dca53648114eb99a3 -->
 
 
 The five subcommands of `UnboundAir` and the options they accept (DO-19, requirements BE-01 to BE-05). This file describes what a command **does** — whether it touches the scanner, what it writes, when it is finished. Which setting carries which default is in [`configuration.md`](configuration.md) and only there.
@@ -97,11 +97,13 @@ They apply to the commands where they make sense; the others ignore them.
 | `--out FILE` | name with timestamp | Target file for `scan`. |
 | `--color-mode gray\|color\|bw` | `gray` | Color mode for `scan` and `run` (SV-03, SV-08). |
 | `--bw-threshold N` | `128` | Luma threshold for `bw`, valid `1..255` (SV-08). |
-| `--keep-raw` | off | Also stores the raw image for `scan` and `run` (SV-06). |
+| `--keep-raw` | off | Also stores the raw image for `scan` (SV-06) — **only there**, see below. |
 | `--minutes N` | `10` | Duration of a `measure` run. |
 | `--poll-seconds N` | `3` | Poll interval during `measure`. |
 
 **A flag wins over the setting, the setting over the device constant.** This holds for `--host` and `--port` just as for `--dpi`, `--color-mode`, `--bw-threshold` and `--keep-raw`: if the flag is not named, the setting from [`configuration.md`](configuration.md) counts, and only when that is absent too, the built-in default. This order is the reason `run` in a container can reach an address other than the built-in one at all — nobody can type a flag there.
+
+**`--keep-raw` only takes effect for `scan`.** The value is read for `run` as well, but nothing there evaluates it: the service puts every page into a temporary directory and deletes it after processing, raw image included. So anyone needing a raw image for comparison uses `scan --keep-raw`, not the running service. That is what the code does today, not a guaranteed property — it is stated here so nobody sets the flag on `run` and waits for files that never come.
 
 `--minutes` and `--poll-seconds` fall outside this rule: they have no counterpart under `unboundair.*`, because they steer a single measuring run and not operation. That `--poll-seconds` carries the same default value as `unboundair.poll-interval` is deliberate — `measure` is meant to measure the behaviour the service will show.
 
