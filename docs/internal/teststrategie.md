@@ -131,7 +131,14 @@ Ergänzend zu den Schichten, als eigene Datei je Konzern:
 
 Das ist die bekannte Form des Lochs, nicht ein Grund, dem Wächter zu misstrauen: Er hält genau die Zusage, die seine Dokumentation macht. **Ausdrücklich nicht die Folgerung:** den Prüfer um einen Absatz- oder Zitatvergleich zu erweitern. Das verbäte einem Übersetzer, einen Satz zu teilen oder zwei zusammenzuziehen — normale Übersetzungsarbeit —, und machte den Wächter aus dem falschen Grund rot. Diese Lücke schließt die Durchsicht durch einen Menschen, die DO-14 ohnehin zur Pflicht macht; der Zeilenvergleich oben ist das billigste Werkzeug, um sie zu lenken.
 
-Nicht alle Wächter laufen in der Suite — und das steht hier, damit es nicht wie ein Versehen aussieht: **Drittparteien-Kontakt** (`site/tools/check-third-party.mjs`, DS-01) prüft in CI das gebaute `site/dist/`, weil es ein gebautes Artefakt braucht, das nur `astro build` erzeugt. Ein Kotlin-Test müsste dafür die Node-Werkzeugkette aufrufen oder ein meist abwesendes Verzeichnis prüfen und lautlos nichts finden — und `./gradlew build` darf Node ausdrücklich nicht verlangen (`docs/internal/entscheidungen.md`). Darum wohnt die Prüfung neben dem, was sie prüft, mit dem Deploy als Tor statt als Schicht.
+Nicht alle Wächter laufen in der Suite — und das steht hier, damit es nicht wie ein Versehen aussieht. Zwei Tore prüfen in CI das gebaute `site/dist/`, weil sie ein gebautes Artefakt brauchen, das nur `astro build` erzeugt:
+
+- **Drittparteien-Kontakt** (`site/tools/check-third-party.mjs`, DS-01): kein Ding, das der Browser lädt, kommt von einem fremden Host.
+- **Überlebende Markdown-Links** (`site/tools/check-md-links.mjs`, DS-03): kein `href` im gebauten Stand endet auf `.md`, außer den gewollten Verweisen ins eigene Repository (`…/edit/dev/…` vom Bearbeiten-Link, `…/blob/dev/…` vom Umschreiben). Erlaubt wird über das Präfix, nicht über „enthält github.com" — ein Link auf die Markdown-Datei eines fremden Repositorys bleibt damit ein Befund.
+
+Ein Kotlin-Test müsste dafür die Node-Werkzeugkette aufrufen oder ein meist abwesendes Verzeichnis prüfen und lautlos nichts finden — und `./gradlew build` darf Node ausdrücklich nicht verlangen (`docs/internal/entscheidungen.md`). Darum wohnen die Prüfungen neben dem, was sie prüfen, mit dem Deploy als Tor statt als Schicht.
+
+**Die beiden Linkprüfungen ersetzen sich nicht.** `RepositoryHygieneTest` beweist, dass ein relativer Verweis **auf eine Datei zeigt**, die es gibt; das gehört in die Suite, weil es das Repository liest und im Testlauf scheitert. Das Tor beweist, dass **keiner davon unverändert auf der Seite landet**, wo er sich gegen die Seitenadresse auflöst und 404 ergibt. Ein Verweis kann im Repository auflösen und auf der Seite trotzdem tot sein — genau dieser Fall war der Defekt, für den DS-03 entstand. Was das Tor seinerseits nicht sieht, steht in seinem Kopfkommentar: ob die erzeugte Adresse auf eine existierende Seite zeigt, und ob sie in die richtige Sprache zeigt. Das Erste leistet der Test in der Suite, das Zweite die Durchsicht.
 
 ## Was fehlt und warum
 

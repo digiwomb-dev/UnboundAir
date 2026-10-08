@@ -1,6 +1,8 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import sitemap from '@astrojs/sitemap';
+import { satteri } from '@astrojs/markdown-satteri';
+import { rewriteMdLinks } from './src/plugins/rewrite-md-links.mjs';
 
 export default defineConfig({
   site: 'https://digiwomb-dev.github.io/UnboundAir/',
@@ -19,6 +21,20 @@ export default defineConfig({
   // Consciously off (condition 7 in #229): no speculative requests of any
   // kind until the DS-01 gate (#233) watches every deploy.
   prefetch: false,
+  // DS-03: the texts keep relative `.md` links, because the DO-15
+  // link-target rule forbids per-locale absolute URLs and GitHub readers
+  // need the relative form. The build makes them work — reasoning and the
+  // three cases are in src/plugins/rewrite-md-links.mjs.
+  //
+  // Named explicitly as `processor: satteri(...)` rather than through
+  // `markdown.remarkPlugins`: that option runs on the unified processor,
+  // which Astro 7 no longer installs (Sätteri is the default). Using it
+  // would mean adding @astrojs/markdown-remark to run the pipeline a second
+  // way. Sätteri is already the processor this site builds with — passing
+  // it a plugin keeps one pipeline.
+  markdown: {
+    processor: satteri({ mdastPlugins: [rewriteMdLinks] }),
+  },
   integrations: [
     starlight({
       title: 'UnboundAir',
