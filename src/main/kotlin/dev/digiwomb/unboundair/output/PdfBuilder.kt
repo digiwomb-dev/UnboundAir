@@ -43,7 +43,7 @@ data class PdfPage(
 /**
  * Assembles processed pages into a multi-page PDF (AU-01, SV-05).
  *
- * Two guardrails from `docs/plan.md` are realised here, and both are the reason
+ * Two guardrails from `docs/internal/plan.md` are realised here, and both are the reason
  * this class is deliberately small:
  *
  * - **Never recompress.** The JPEGs go in exactly as they arrive, through
@@ -60,7 +60,7 @@ data class PdfPage(
  *   here.
  *
  * **The clock is injected** so the golden-master tests can pin it
- * (`docs/entscheidungen.md`, "PDF-Metadaten-Determinismus"). `CreationDate`
+ * (`docs/internal/entscheidungen.md`, "PDF-Metadaten-Determinismus"). `CreationDate`
  * otherwise varies per run and no two PDFs of the same input would be
  * byte-identical. In production the clock is the real one and the timestamps
  * are genuine.

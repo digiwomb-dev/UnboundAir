@@ -8,7 +8,7 @@ package dev.digiwomb.unboundair.output
  * implementing this interface and being listed in `unboundair.output.modules`,
  * without any change to the core (AU-03). Which modules are active is evaluated at
  * runtime from that list; no annotation decides, which keeps the code compatible
- * with a GraalVM native image (`docs/plan.md`, "Module per Laufzeit-Auswahl").
+ * with a GraalVM native image (`docs/internal/plan.md`, "Module per Laufzeit-Auswahl").
  *
  * This is a plain Kotlin interface on purpose: no Spring stereotype, no injected
  * properties. A module takes its settings through its constructor, the same way

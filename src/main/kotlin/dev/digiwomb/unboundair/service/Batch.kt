@@ -41,7 +41,7 @@ import java.time.Instant
  *
  * Every timestamp comes from the injected [clock] -- never `Instant.now()`. That
  * is what lets a test pin the clock and step it deliberately instead of sleeping,
- * and it is also what makes the PDF reproducible (see `docs/entscheidungen.md`).
+ * and it is also what makes the PDF reproducible (see `docs/internal/entscheidungen.md`).
  *
  * ## Thread safety
  *

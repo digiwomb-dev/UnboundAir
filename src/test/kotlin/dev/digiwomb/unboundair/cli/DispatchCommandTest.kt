@@ -73,7 +73,7 @@ class DispatchCommandTest {
      * contains no paper, so the crop finds none and must carry the page through
      * uncropped: the command still succeeds (exit code 0) and the output file is a
      * byte-for-byte copy of the input, while the log carries the warning. This is the
-     * SV-02 acceptance from docs/plan.md -- a dark test image stays uncropped and the
+     * SV-02 acceptance from docs/internal/plan.md -- a dark test image stays uncropped and the
      * log carries a warning -- proved through the real sink, end to end.
      */
     @Test

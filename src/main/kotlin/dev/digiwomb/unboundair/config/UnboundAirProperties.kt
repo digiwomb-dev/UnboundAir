@@ -9,7 +9,7 @@ import java.time.temporal.ChronoUnit
  * Central place for all configuration defaults (KL-01).
  *
  * This class is the single source of truth for default values; the documented
- * reference for humans lives in `docs/konfiguration.md` (DO-09). Both must stay
+ * reference for humans lives in `docs/de/configuration.md` (DO-09). Both must stay
  * in step: a setting that exists here and nowhere else is undocumented, and a
  * setting documented there but missing here does not exist.
  *
@@ -116,7 +116,7 @@ data class UnboundAirProperties(
      * nothing here is validated beyond its type -- an unreachable base URL or a missing
      * token surfaces when the settings are built, with a message that names the cause.
      *
-     * `title` and `created` deliberately have no settings. docs/plan.md fixes that we do
+     * `title` and `created` deliberately have no settings. docs/internal/plan.md fixes that we do
      * not send them, so paperless derives both from the file name itself; a knob here
      * would invite someone to switch that decision on without reading why it was made.
      *

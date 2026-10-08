@@ -16,7 +16,7 @@ import java.time.Duration
  *
  * 1. **Every setting resolves to its documented default.** The defaults live in
  *    exactly one place ([UnboundAirProperties]) and are mirrored for humans in
- *    `docs/konfiguration.md` (DO-09). If someone changes a default in the code
+ *    `docs/de/configuration.md` (DO-09). If someone changes a default in the code
  *    without touching the docs, this test is the tripwire.
  * 2. **An environment variable overrides a default.** This is the actual
  *    acceptance criterion of KL-01, and the mapping rule is easy to get wrong:

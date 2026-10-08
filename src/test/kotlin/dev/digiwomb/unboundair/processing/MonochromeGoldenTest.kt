@@ -44,7 +44,7 @@ import java.security.MessageDigest
  * container issue #143.
  *
  * Why byte equality (never recompress): the plan never re-compresses an
- * image (fixed decision from docs/plan.md) — the crop and the grayscale
+ * image (fixed decision from docs/internal/plan.md) — the crop and the grayscale
  * transform the stored DCT coefficients without touching their values, and
  * the threshold packs the resulting luma deterministically, so "visually
  * identical" is not a criterion the code is held to; only bit-identical

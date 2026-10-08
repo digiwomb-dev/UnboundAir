@@ -151,7 +151,7 @@ class RunCommandShutdownTest {
                     .isEqualTo(1)
 
                 // SV-05 on the persisted bytes, read back with PDFBox — the independent checker
-                // (docs/plan.md): the sheet is the A4 fixture, 2464 px wide at 300 dpi.
+                // (docs/internal/plan.md): the sheet is the A4 fixture, 2464 px wide at 300 dpi.
                 assertThat(pdf.getPage(0).mediaBox.width)
                     .`as`("SV-05: page size is pixels / dpi * 72 pt, taken from the real scan")
                     .isCloseTo(2464f / 300f * 72f, within(TOLERANCE_POINTS))

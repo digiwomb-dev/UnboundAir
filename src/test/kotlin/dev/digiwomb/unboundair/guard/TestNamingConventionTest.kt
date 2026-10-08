@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test
 /**
  * Convention guard ("Konventionstest" of the Wächter layer in docs/internal/teststrategie.md):
  * every test class in `dev.digiwomb.unboundair` must be traceable back to a requirement
- * from docs/plan.md.
+ * from docs/internal/plan.md.
  *
  * A class is a "test class" if its simple name ends with `Test` or `Tests`, or if it is
  * annotated with `@Nested` (JUnit test groups). A test class is compliant if either holds:
@@ -45,7 +45,7 @@ import org.junit.jupiter.api.Test
 @Tag("guard")
 class TestNamingConventionTest {
     /**
-     * Requirement IDs as used in docs/plan.md: two to four uppercase letters, a dash, two
+     * Requirement IDs as used in docs/internal/plan.md: two to four uppercase letters, a dash, two
      * digits. The match is partial because the ID sits at the start of a backtick name.
      */
     private val requirementId = Regex("[A-Z]{2,4}-\\d{2}")
@@ -136,7 +136,7 @@ class TestNamingConventionTest {
     }
 
     /**
-     * The guard classes themselves verify conventions, not requirements from docs/plan.md, so
+     * The guard classes themselves verify conventions, not requirements from docs/internal/plan.md, so
      * they carry no requirement ID. The exemption is bound to the package rather than to an
      * annotation, so it cannot be claimed from anywhere else in the test tree.
      */

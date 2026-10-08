@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 /**
  * Property tests for the property-name to environment-variable mapping (KL-01).
  *
- * The rule from `docs/plan.md` is short but easy to get wrong in exactly one
+ * The rule from `docs/internal/plan.md` is short but easy to get wrong in exactly one
  * place: **every dot becomes an underscore, and every hyphen is dropped with no
  * replacement.** The tempting mistake is to turn a hyphen into an underscore
  * too, which yields `UNBOUNDAIR_POLL_INTERVAL` -- a variable Spring will not
@@ -36,7 +36,7 @@ class PropertyNameMappingPropertyTest {
      * in production code on purpose: production never performs this conversion --
      * Spring does -- so a production helper would be dead code that only existed
      * to be tested. What must be pinned is the *rule*, because the documentation
-     * in `docs/konfiguration.md` (DO-09) states it and operators rely on it.
+     * in `docs/de/configuration.md` (DO-09) states it and operators rely on it.
      */
     private fun toEnvironmentVariable(property: String): String = property.replace(".", "_").replace("-", "").uppercase()
 

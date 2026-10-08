@@ -28,7 +28,7 @@ import kotlin.concurrent.thread
  * prevents it.
  *
  * The numbers this command reports exist to answer OF-01 to OF-04 in
- * `docs/offene-fragen.md`. The test therefore checks that the report *names*
+ * `docs/internal/offene-fragen.md`. The test therefore checks that the report *names*
  * those questions, so the output stays traceable to what it was built for.
  *
  * Offline (DC-03): a loopback TCP server and committed fixtures.
@@ -155,7 +155,7 @@ class MeasureCommandIntegrationTest {
 
     /**
      * The report is the command's answer, printed for a human to copy into
-     * `docs/hardware.md`. It names the open questions so the numbers stay
+     * `docs/de/hardware.md`. It names the open questions so the numbers stay
      * traceable to what they were collected for.
      */
     @Test
@@ -186,7 +186,7 @@ class MeasureCommandIntegrationTest {
             switchOff.join(JOIN_MILLIS)
 
             assertThat(text)
-                .`as`("the summary must be readable and traceable to the questions of docs/offene-fragen.md")
+                .`as`("the summary must be readable and traceable to the questions of docs/internal/offene-fragen.md")
                 .contains("pages scanned:")
                 .contains("devbusy answers:")
                 .contains("OF-01")

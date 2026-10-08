@@ -20,7 +20,7 @@ import kotlin.concurrent.thread
  * What a measuring run observed (BE-04).
  *
  * The fields exist to answer specific open questions from
- * `docs/offene-fragen.md`, not because they were easy to collect:
+ * `docs/internal/offene-fragen.md`, not because they were easy to collect:
  *
  * - [pages], [gaps] answer **OF-03** (how long does a scan take, how much time
  *   passes between two sheets) -- the numbers the final `batch-timeout` default
@@ -68,7 +68,7 @@ data class MeasureReport(
      *
      * Plain text on stdout rather than log lines: this is the *result* of the
      * command, the thing the operator reads off the screen and copies into
-     * `docs/hardware.md`. Every line names the open question it answers, so the
+     * `docs/de/hardware.md`. Every line names the open question it answers, so the
      * numbers can be traced back without the command's documentation at hand.
      */
     fun format(): String {
@@ -124,7 +124,7 @@ data class MeasureReport(
  * The measuring run (BE-04): scan automatically, hand nothing to an output
  * module, and report what the device did.
  *
- * `measure` exists because most of `docs/offene-fragen.md` cannot be answered
+ * `measure` exists because most of `docs/internal/offene-fragen.md` cannot be answered
  * by reasoning -- only by watching the real device. It drives the same
  * [ScanLoop] the service uses rather than a copy of it, so the numbers describe
  * the behaviour that will actually ship. The observation happens through
