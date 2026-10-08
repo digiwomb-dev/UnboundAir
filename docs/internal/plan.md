@@ -269,11 +269,13 @@ Die Doku teilt sich dabei in drei Stufen mit unterschiedlicher Sprachpflicht:
 
 | Stufe | Dateien | Sprache |
 |---|---|---|
-| **Produktdoku** | `operations`, `configuration`, `development`, `output-modules`, `protocol`, `hardware` in `docs/`, dazu `README`, `CONTRIBUTING`, `SECURITY` in der Wurzel | Deutsch **und** Englisch, auf der Doku-Seite |
+| **Produktdoku** | `index`, `quickstart`, `operations`, `output-modules`, `troubleshooting`, `configuration`, `cli`, `protocol`, `hardware`, `development` in `docs/`, dazu `README`, `CONTRIBUTING`, `SECURITY` in der Wurzel | Deutsch **und** Englisch, auf der Doku-Seite |
 | **Arbeitsdokumente, Tür offen** | `teststrategie.md`, `offene-fragen.md` | nur Deutsch, Links darauf tragen `(German only)`; Übersetzung später möglich |
 | **Arbeitsdokumente, nie übersetzt** | `plan.md`, `entscheidungen.md` | nur Deutsch |
 
 Die Trennung ist gemessen, nicht geschätzt (Stand 05.10.2026): Die vier Arbeitsdokumente tragen **152 KB bei 61 Commits**, die neun Produktdateien **78 KB bei 46 Commits**. `plan.md` allein hat 29 Commits – mehr als alle sechs Produktdateien in `docs/` zusammen.
+
+Die Produktstufe ist am 08.10.2026 um vier Seiten gewachsen – `index`, `quickstart`, `cli` und `troubleshooting` aus DO-17 bis DO-20. Sie gehören zur Produktdoku und sind damit zweisprachig; die gemessenen Zahlen oben bleiben als Messung vom 05.10.2026 stehen, statt mit jeder neuen Seite nachgerechnet zu werden. Die beiden Rechtsseiten aus DS-02 (`legal-notice`, `privacy`) sind ebenfalls zweisprachig, stehen aber in keiner Navigation und werden hier nicht mitgezählt.
 
 **Zu den Dateinamen unten:** DO-01 bis DO-11 nennen die Dateien unter ihren heutigen, deutschen Namen – so sind sie entstanden, und so heißen sie bis Meilenstein 6. Die Umbenennung samt Zuordnung alt → neu steht in DO-12; ab dort gelten die englischen Namen. Die Anforderungen selbst bleiben im Wortlaut unberührt, es ändert sich nur, wo ihr Ergebnis liegt.
 
@@ -300,8 +302,12 @@ Die Trennung ist gemessen, nicht geschätzt (Stand 05.10.2026): Die vier Arbeits
   *Abnahme:* Jede feste Entscheidung aus diesem Plan steht mit Begründung drin.
 - **DO-07** `offene-fragen.md` – aus dem Wissensstand, wird mit Messwerten fortgeschrieben. Die Datei entsteht **bereits in Meilenstein 1** und wird danach laufend fortgeschrieben, weil die Leitplanke „Nichts am Protokoll erfinden – Offenes gehört in `docs/internal/offene-fragen.md`" ab der ersten Codezeile gilt.
   *Abnahme:* Alle offenen Punkte aus dem Wissensstand sind mit Status aufgeführt.
-- **DO-08** `README.md` im Wurzelverzeichnis – Einstieg und Wegweiser. Entsteht **bereits in Meilenstein 1**, damit von Anfang an erkennbar ist, welche Datei wofür da ist; in Meilenstein 5 kommt der Schnellstart dazu.
-  *Abnahme:* Erklärt, was `UnboundAir` ist, nennt den Aufbaustand und verweist auf jede Datei in `docs/` mit einem Satz, wofür sie da ist. Ab Meilenstein 5 zusätzlich: Schnellstart.
+- **DO-08** `README.md` im Wurzelverzeichnis – der Einstieg ins **Repository**. Entsteht **bereits in Meilenstein 1**, damit von Anfang an erkennbar ist, welche Datei wofür da ist; in Meilenstein 5 kommt der Schnellstart dazu.
+
+  **Verengt am 08.10.2026, mit DO-17.** Bis dahin verlangte die Abnahme einen Verweis „auf jede Datei in `docs/` mit einem Satz, wofür sie da ist" – eine Tabelle mit dreizehn Zeilen, die bei jeder neuen Seite mitwachsen muss. Mit einer Doku-Seite, die ihre eigene Einstiegsseite und eine gruppierte Navigation hat, gibt es diesen Wegweiser zweimal: einmal als Tabelle, die veraltet, und einmal als Navigation, die aus den Dateien selbst entsteht. Zwei Navigationen driften, und nur eine davon sieht der Leser, der sie braucht. Die erschöpfende Liste zieht deshalb auf die Seite; die README beantwortet „was ist dieser Code" und nennt den Weg zur Seite.
+
+  Die Rollen danach: Die **README** ist der Einstieg fürs Repository (was es ist, Aufbaustand, Schnellstart, Weg zur Doku-Seite und zu `CONTRIBUTING.md`). Die **Seiten-Startseite** aus DO-17 ist der Einstieg fürs Projekt (was es tut, für wen, wohin als Erstes). Zwei Leser, zwei erste Seiten – derselbe Text an beiden Stellen hieße, einer von beiden ist im falschen Ton geschrieben.
+  *Abnahme:* Erklärt, was `UnboundAir` ist, nennt den Aufbaustand und verweist auf die Doku-Seite als Ort der Produktdoku, auf `CONTRIBUTING.md` für Beiträge und auf `docs/internal/` für Auftrag und Logbuch (`(German only)`). Ab Meilenstein 5 zusätzlich: Schnellstart. Eine Tabelle über alle Dateien in `docs/` ist ausdrücklich nicht mehr verlangt.
 - **DO-09** `konfiguration.md` – die vollständige Referenz aller Einstellungen: Property-Name, Umgebungsvariable, Default, Bedeutung. Entsteht in **Meilenstein 3** zusammen mit den Properties selbst, weil KL-01 „jede Einstellung mit ihrem Default in der Doku" verlangt und `betrieb.md` (DO-03) erst in Meilenstein 5 kommt. `betrieb.md` verweist später hierher, statt die Tabelle zu doppeln.
   *Abnahme:* Jede Einstellung, die der Code kennt, steht mit Default und Umgebungsvariable in der Tabelle – und umgekehrt beschreibt die Tabelle keine Einstellung, die es nicht gibt.
 - **DO-10** `CONTRIBUTING.md` im Wurzelverzeichnis – die Regeln für Beiträge: Sprachregel, Conventional Commits, Git-Ablauf (`dev` → `main`, nur über Pull Requests), die Issue-Konvention samt Tabelle und die Leitplanken in Kurzfassung. Entsteht in **Meilenstein 5**. Die Regeln stehen bisher in `AGENTS.md`, die zwei Dinge mischt: Projektregeln, die für jeden gelten, und die Mechanik einer Arbeitssitzung. Wer von Hand beiträgt, braucht nur das Erste.
@@ -322,10 +328,17 @@ Die folgenden fünf Anforderungen gehören zu **Meilenstein 6** und damit nicht 
   | `docs/ausgabe-module.md` | `docs/en/output-modules.md` | `docs/de/output-modules.md` |
   | `docs/protokoll.md` | `docs/en/protocol.md` | `docs/de/protocol.md` |
   | `docs/hardware.md` | `docs/en/hardware.md` | `docs/de/hardware.md` |
+  | — (neu mit DO-17) | `docs/en/index.md` | `docs/de/index.md` |
+  | — (neu mit DO-18) | `docs/en/quickstart.md` | `docs/de/quickstart.md` |
+  | — (neu mit DO-19) | `docs/en/cli.md` | `docs/de/cli.md` |
+  | — (neu mit DO-20) | `docs/en/troubleshooting.md` | `docs/de/troubleshooting.md` |
+  | — (neu mit DS-02) | `docs/en/legal-notice.md`, `privacy.md` | `docs/de/legal-notice.md`, `privacy.md` |
   | `README.md` | `README.md` | `README.de.md` |
   | `CONTRIBUTING.md` | `CONTRIBUTING.md` | `CONTRIBUTING.de.md` |
   | `SECURITY.md` | `SECURITY.md` | `SECURITY.de.md` |
   | `docs/internal/plan.md`, `entscheidungen.md`, `offene-fragen.md`, `teststrategie.md` | — | `docs/internal/…` |
+
+  Die Tabelle ist die **vollständige** Liste der Dateien unter `docs/` – wer eine Seite hinzufügt, trägt sie hier ein, sonst behauptet der Plan etwas Falsches über seinen eigenen Inhalt. Die mit DO-17 bis DO-20 und DS-02 ergänzten Zeilen entstehen neu und haben darum keine heutige Entsprechung; die drei Festlegungen unten gelten für sie unverändert.
 
   Drei Festlegungen mit Begründung: **Ordner statt Suffix** in `docs/`, weil eine dritte Sprache dann keinen Umbau kostet. **Englische Dateinamen auch im deutschen Ordner**, weil Starlight Übersetzungen über den Dateinamen paart – zwei Namen für dieselbe Seite würde diese Paarung brechen. **Die Wurzeldateien bleiben in der Wurzel**, weil GitHub `CONTRIBUTING.md` und `SECURITY.md` nur dort auswertet; ein Umzug nach `docs/en/` nähme den Beitragshinweis und den Sicherheits-Meldeweg aus der Oberfläche.
 
@@ -344,6 +357,42 @@ Die folgenden fünf Anforderungen gehören zu **Meilenstein 6** und damit nicht 
 - **DO-16** Englische Erstfassung der neun Produktdateien, geprüft und freigegeben.
   *Abnahme:* Wer nur Englisch liest, kommt von `README.md` zu Schnellstart, Konfigurationsreferenz und Betrieb, ohne auf einen deutschen Text zu stoßen; wo ein Verweis auf ein Arbeitsdokument unvermeidlich ist, steht `(German only)` am Link.
 
+Die folgenden vier Anforderungen gehören zu **Meilenstein 7** und entstanden am 08.10.2026. Sie ordnen die fertige Doku zu einer Seite, die man betreten kann: Der Inhalt stand, seine Organisation nicht.
+
+- **DO-17** Die Doku-Seite bekommt eine **eigene Startseite je Sprache** (`docs/de/index.md`, `docs/en/index.md`) mit Starlights `template: splash` und einem `hero`: was UnboundAir ist, für wen, welcher Aufbaustand, und drei Handlungen (Schnellstart, Betrieb, Repository). Bis dahin leitete `/` auf `/en/operations/` um – wer das Projekt aufrief, landete in nftables-Regeln und NetworkManager-Profilen. Die Umleitungen für `/de/` und `/en/` entfallen, weil es an diesen Adressen nun Seiten gibt.
+
+  Die Navigation wird eine **ausdrückliche `sidebar`** in `astro.config.mjs` mit vier Gruppen, Beschriftungen je Sprache über `translations`:
+
+  | Reihenfolge | Englisch | Deutsch | Seiten |
+  |---|---|---|---|
+  | 1 | Start | Start | `index`, `quickstart` |
+  | 2 | Guides | Anleitungen | `operations`, `output-modules`, `troubleshooting` |
+  | 3 | Reference | Referenz | `configuration`, `cli`, `protocol`, `hardware` |
+  | 4 | Contributing | Mitmachen | `development` |
+
+  **Gruppen statt Ordner, und das ist keine Bequemlichkeit:** Starlight paart Übersetzungen über den Dateinamen (DO-12), `docs/de/` und `docs/en/` bleiben deshalb flach. Die Gruppierung ist eine Darstellungsentscheidung und gehört in die Darstellungsschicht. Vorher sortierte Starlight alphabetisch – der Leser traf `configuration` vor `operations` und `development` vor beidem, ohne Hinweis darauf, dass das eine eine Referenz und das andere eine Anleitung ist.
+
+  **Die Handlungen des `hero` stehen im Frontmatter,** nicht im Text. Das ist tragend, nicht kosmetisch: Der Linkziel-Vergleich aus DO-15 verlangt gleiche Ziele in beiden Sprachfassungen, eine deutsche Seite mit `/UnboundAir/de/quickstart/` und eine englische mit `/UnboundAir/en/quickstart/` wäre also von Bauart rot. Frontmatter sieht der Wächter nicht, dort darf jede Sprache auf ihre eigenen Seiten zeigen.
+
+  `legal-notice` und `privacy` bleiben aus jeder Navigation heraus (`sidebar.hidden` aus DS-02) und hängen an der Fußzeile.
+  *Abnahme:* Die Wurzel der Seite und beide Sprachwurzeln zeigen eine Startseite, keine Betriebsseite; die Navigation zeigt die vier Gruppen oben in dieser Reihenfolge, unter `/de/` mit deutschen Beschriftungen; `legal-notice` und `privacy` stehen in keiner Navigation; `docs/de/index.md` und `docs/en/index.md` paaren wie jede andere Datei.
+- **DO-18** `quickstart.md` – von nichts zum ersten PDF in paperless, so kurz wie ehrlich möglich: Image holen, der eine Startbefehl mit den vier Werten, die geändert werden müssen, Blatt einlegen, Dokument sehen. Am Ende wird übergeben – an `operations` für den echten Betrieb, an `configuration` für jede Einstellung, an `troubleshooting`, wenn nichts ankommt, an `cli` für die übrigen Befehle.
+
+  **Abgrenzung zu `operations`:** Der Schnellstart bringt **einen** Weg zum Laufen und ignoriert alles andere. `operations` ist der Host: WLAN-Profil, Paketfilter, Volume, Secrets, Beenden, Update. Der Schnellstart wiederholt davon nichts, er nennt die eine Voraussetzung, die zuerst beißt – das WLAN zum Scanner hält der Host, nicht der Container – und verlinkt weiter. Die Deployment-Beispiele bleiben in `operations`, wo DP-01 sie hat und ein Wächter sie bewacht.
+
+  **Abgrenzung zu `configuration`:** keine Einstellungstabelle, auch keine kleine. Die vier Umgebungsvariablen stehen im Startbefehl und sonst nirgends; eine zweite Tabelle driftet, und keine Prüfung bewacht eine Kopie.
+  *Abnahme:* Wer Gerät, Container-Runtime und paperless-Token hat, bekommt allein mit dieser Seite ein Dokument in paperless; die Seite enthält keine Einstellungstabelle und kein zweites Deployment-Beispiel; sie nennt die Host-WLAN-Voraussetzung und die Bindestrich-Falle aus KL-01.
+- **DO-19** `cli.md` – die fünf Unterbefehle (`status`, `scan`, `crop`, `measure`, `run` – BE-01 bis BE-05) und die globalen Optionen, jede mit ihrem Default und ihrem Zweck. Bis dahin stand das allein als `USAGE`-Zeichenkette im Code: Wer wissen wollte, dass `crop` keinen Scanner braucht oder `measure` bewusst nichts an ein Ausgabe-Modul schickt, musste das Jar starten.
+
+  Die Seite beschreibt **Verhalten, nicht Hilfetext**. Je Befehl: ob er den Scanner anfasst, was er schreibt, welche Anforderung er umsetzt. Ein wörtlicher Abzug von `USAGE` wäre eine zweite Kopie, die nichts bewacht.
+  *Abnahme:* Jeder Befehl und jede Option aus `USAGE` steht mit Default auf der Seite; je Befehl steht, ob er einen Scanner braucht und welche BE-Anforderung er umsetzt; kein Befehl steht dort, den der Code nicht annimmt; die Seite enthält keine Kopie der Einstellungstabelle.
+- **DO-20** `troubleshooting.md` – ein Ort für die Fehlerbilder, die dieses Projekt tatsächlich erzeugt, je mit Beobachtung, Ursache und Abhilfe. Vorher endete `operations` mit einem Satz, der auf seinen eigenen Netzwerk-Abschnitt zurückverwies, und alles Weitere stand in der Datei, die es zufällig erwähnte: die Bindestrich-Falle in `configuration`, die Token-Auflösung in `configuration`, die Plausibilitätsprüfung in den Anforderungen, die Selbstabschaltung im Plan.
+
+  Gesammelt wird, was schon belegt ist, nicht erfunden: Scanner wird nie gefunden (Host nicht im Scanner-WLAN oder Bridge statt Host-Netz); Einstellung wirkt nicht (KL-01); Dienst startet nicht (Token-Auflösung); Dokumente stauen sich (paperless nicht erreichbar, Outbox wiederholt mit Backoff nach AU-04); `bw` scheitert (`jbig2` fehlt); Seite nicht oder falsch zugeschnitten (SV-01 zweiter Fall gegen die Plausibilitätsprüfung aus SV-02); Scanner schaltet mitten im Stapel ab (Selbstabschaltung ist ein regulärer Batch-Auslöser nach DL-04, kein Fehler); Seite fehlt im Dokument (DL-05 verwirft sie protokolliert).
+
+  **Keine erfundene Geräteeigenschaft.** Wo eine Ursache an einen Punkt aus `offene-fragen.md` rührt (OF-01 bis OF-03, OF-10), sagt die Seite, dass es ungemessen ist, und verlinkt dorthin – in der englischen Fassung mit `(German only)`. Und sie verspricht keine Diagnose, die es nicht gibt: In v1 gibt es keinen Health-Endpunkt und keine Web-UI, das Log auf stdout ist das Instrument.
+  *Abnahme:* Jeder Eintrag nennt eine erkennbare Beobachtung, ihre Ursache und die Abhilfe; jeder Eintrag ist auf eine Anforderungs-ID, eine Logzeile, die der Dienst wirklich schreibt, oder eine dokumentierte Geräteeigenschaft zurückführbar; kein Eintrag behauptet Geräteverhalten, das `docs/internal/offene-fragen.md` als ungemessen führt.
+
 **Werkzeug-Konfiguration gehört nicht ins Repository.** Was die lokale Arbeitsumgebung einrichtet – Editor-, Assistenz- oder sonstige Werkzeugeinstellungen – wird nicht mitgeliefert: Es sagt nichts über UnboundAir, und wer das Projekt von Hand baut, trägt es ohne Nutzen mit. `AGENTS.md` bleibt als werkzeugneutrale Konvention zur Arbeitsweise; die Projektregeln selbst stehen nach DO-10 in `CONTRIBUTING.md`.
 
 ### Seitengarantien (DS)
@@ -352,6 +401,18 @@ Die folgenden fünf Anforderungen gehören zu **Meilenstein 6** und damit nicht 
   *Abnahme:* Die Prüfung läuft in `docs.yml` vor dem Deploy, und der Deploy-Job hängt von ihr ab; ein gepflanzter Fremdverweis, eine externe Schrift in `@font-face` und ein entferntes `ASTRO_TELEMETRY_DISABLED` machen den Bau jeweils rot; derselbe Lauf geht lokal gegen `site/dist/`; was die Prüfung nicht findet, steht in ihrem Kopfkommentar.
 - **DS-02** Impressum und Datenschutzerklärung, je auf Deutsch und Englisch, mit Fußzeilenverweis von jeder Seite. Das Impressum trägt die Anbieterkennzeichnung mit vollem §-5-Umfang (Name, Adresse, E-Mail, zweiter schneller Kontaktweg — die Spendenroute über `FUNDING.yml` schaltet § 5 DDG ein; Seiten-Links dorthin gibt es keine), als Platzhalter im Repository und aus einem Secret eingesetzt; die Datenschutzerklärung nennt Hoster mit IP-Protokollierung, Rechtsgrundlage mit Abwägung, Drittlandübermittlung, beide `localStorage`-Schlüssel und die Betroffenenrechte. Kein Cookie-Banner (keine Cookies), kein Disclaimer, keine `robots.txt` (wirkungslos unterhalb eines Host-Roots).
   *Abnahme:* Beide Seiten bestehen in beiden Sprachen und hängen an der Fußzeile jeder Seite; Name und Adresse stehen nirgends im Repository oder seiner Historie; fehlendes Secret lässt den Bau scheitern statt einen Platzhalter zu veröffentlichen; das Impressum trägt `noindex, nofollow, noarchive, nosnippet`, fehlt in `sitemap.xml` und bleibt binnen zwei Klicks erreichbar; `docs/entscheidungen.md` hält Messung, offene Punkte und die Auslöserliste fest.
+- **DS-03** Ein relativer Markdown-Link funktioniert an **beiden** Orten, an denen er gelesen wird: im Repository auf GitHub und auf der veröffentlichten Seite. Bis zum 08.10.2026 funktionierte er an einem – der gebaute Stand trug `href="configuration.md"` sechsmal und `href="../../CONTRIBUTING.md"` zweimal, auf GitHub richtig, auf der Seite 404. Starlight schreibt solche Ziele nicht um.
+
+  **Umgeschrieben wird beim Bau, nicht im Text.** Die Texte behalten relative `.md`-Links, weil der Linkziel-Vergleich aus DO-15 gleiche Ziele in beiden Sprachfassungen verlangt: Sprachabsolute Adressen (`/UnboundAir/de/…` gegen `/UnboundAir/en/…`) wären von Bauart rot. Und weil ein Leser im Repository sie braucht – GitHub stellt relative `.md`-Links von sich aus dar, eine absolute Seitenadresse schickte ihn ins Netz, um die Datei neben der offenen zu lesen. Der Bau ist der einzige Ort, der weiß, welcher der beiden Leser gerade bedient wird.
+
+  Drei Fälle, hier entschieden und nicht der Umsetzung überlassen:
+
+  1. **Nachbarseite derselben Sprache** (`configuration.md` in `docs/de/operations.md`) → die Seitenadresse dieser Sprache unterhalb der Pfadbasis. Die Sprache kommt aus der verarbeiteten Datei, derselbe Quelltext ergibt also in `docs/de/` einen deutschen und in `docs/en/` einen englischen Link.
+  2. **Ziel außerhalb des veröffentlichten Baums** (`../../CONTRIBUTING.de.md`, `../internal/plan.md`) → die GitHub-Blob-Adresse auf `dev`. `docs/internal/` ist nach DO-13 bewusst keine Inhaltsquelle und die Wurzeldateien gehören nicht zur Sammlung – es gibt also keine Seitenadresse. Den Leser ins Repository zu schicken ist die ehrliche Antwort; ein toter Link ist keine.
+  3. **Anker bleiben erhalten** (`andere.md#abschnitt` behält `#abschnitt`), weil Überschriften-Anker aus übersetztem Text entstehen und das Fragment zur Zielseite gehört, nicht zu uns.
+
+  Absolute `https://`-Verweise bleiben unangetastet, und ob ein Ziel existiert, prüft weiter der Link-Checker aus DO-15 gegen das Dateisystem – das ist der bessere Ort, weil er im Testlauf scheitert und nicht erst im Seitenbau.
+  *Abnahme:* Der gebaute Stand enthält kein `href`, das auf `.md` endet, außer den gewollten „diese Seite bearbeiten"-Verweisen ins Repository; ein Nachbar-Link landet auf dieser Seite in derselben Sprache; ein Link auf `CONTRIBUTING` oder nach `docs/internal/` landet im Repository; ein Link mit Anker behält ihn; die Quelltexte behalten ihre relativen Links und beide Doku-Wächter bleiben grün.
 
 ## Arbeit wird in GitHub getrackt
 
@@ -420,14 +481,14 @@ Der Auftrag ist fertig, wenn alles hier stimmt – vorher nicht:
 4. **Dienst:** `run` gegen Fake-Scanner und Mock-paperless: 3 Seiten → 1 PDF mit 3 Seiten in korrekter Größe, ans paperless-Modul übergeben und hochgeladen. Scanner offline schließt den Batch. Outbox-Retry funktioniert nach Neustart.
 5. **Zuschnitt:** Das Kuvert-Testbild wird verlustfrei auf ca. 1216 × 2494 px zugeschnitten (Luma identisch); das A4-Testbild ohne schwarzen Rand bleibt unverändert (bytegleich).
 6. **Container:** Image baut für `arm64` (amd64 später), `jpegtran` und `jbig2` sind darin verfügbar, `status` läuft im Container gegen den Fake-Scanner – geprüft auf dem GitHub-Actions-`arm64`-Runner (siehe CT-01).
-7. **Doku:** alle Dateien in `docs/` vollständig auf Deutsch, `betrieb.md` beschreibt den Container-Betrieb, README mit Schnellstart (DO-08), `CONTRIBUTING.md` mit den Regeln für Beiträge (DO-10) und `SECURITY.md` mit dem Meldeweg (DO-11). Die englische Fassung und die Doku-Seite (DO-12 bis DO-16) gehören zu Meilenstein 6 und sind für v1 **nicht** verlangt.
+7. **Doku:** alle Dateien in `docs/` vollständig auf Deutsch, `betrieb.md` beschreibt den Container-Betrieb, README mit Schnellstart (DO-08), `CONTRIBUTING.md` mit den Regeln für Beiträge (DO-10) und `SECURITY.md` mit dem Meldeweg (DO-11). Die englische Fassung und die Doku-Seite (DO-12 bis DO-16) gehören zu Meilenstein 6, ihre Gliederung (DO-17 bis DO-20, DS-03) zu Meilenstein 7 – beides ist für v1 **nicht** verlangt.
 8. **Repository:** trägt keine eigene Werkzeug-Konfiguration; jeder relative Link in der Doku zeigt auf eine Datei, die es gibt.
 9. **Git:** alles in kleinen Commits nach Conventional Commits.
 10. **Anforderungen:** Für jede ID oben ist das Abnahmekriterium erfüllt – ausgenommen die unter „Bewusst noch nicht erledigt" aufgeführten.
 
-**Bewusst noch nicht erledigt:** Web-UI, Drehen und Geraderücken, **SV-04 (`normalize`)**, weitere Ausgabe-Module, Native Image. CI (CI-01 bis CI-08), Deployment-Beispiel (DP-01) und mehrsprachige Doku-Seite (DO-12 bis DO-16, DS-01, DS-02) gehören zu Meilenstein 6.
+**Bewusst noch nicht erledigt:** Web-UI, Drehen und Geraderücken, **SV-04 (`normalize`)**, weitere Ausgabe-Module, Native Image. CI (CI-01 bis CI-08), Deployment-Beispiel (DP-01) und mehrsprachige Doku-Seite (DO-12 bis DO-16, DS-01, DS-02) gehören zu Meilenstein 6, die Gliederung dieser Seite (DO-17 bis DO-20, DS-03) zu Meilenstein 7.
 
-**Umfang von v1:** Die Meilensteine 1 bis 5. Meilenstein 6 gehört ausdrücklich nicht dazu – er umfasst das Deployment-Beispiel (DP-01), die restliche CI (CI-01 bis CI-08) und die mehrsprachige Doku-Seite (DO-12 bis DO-16, DS-01, DS-02).
+**Umfang von v1:** Die Meilensteine 1 bis 5. Meilenstein 6 gehört ausdrücklich nicht dazu – er umfasst das Deployment-Beispiel (DP-01), die restliche CI (CI-01 bis CI-08) und die mehrsprachige Doku-Seite (DO-12 bis DO-16, DS-01, DS-02). Meilenstein 7 ebenso nicht – er gliedert die Doku-Seite zu einem begehbaren Ganzen (DO-17 bis DO-20, DS-03).
 
 ## Übergabe
 
