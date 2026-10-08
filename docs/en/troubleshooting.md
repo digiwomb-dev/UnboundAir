@@ -2,7 +2,7 @@
 title: Troubleshooting
 ---
 
-<!-- translated from docs/de/troubleshooting.md @ 7778b4a8869530cd4dd79c9d39c9f7ea84c00719 -->
+<!-- translated from docs/de/troubleshooting.md @ 03638614c833bec39dcc2693800b1b7eb1b4bc64 -->
 
 
 What can go wrong, how to recognise it and what to do then (DO-20). Every entry names an **observation**, its **cause** and the **remedy**.
@@ -11,13 +11,18 @@ What can go wrong, how to recognise it and what to do then (DO-20). Every entry 
 
 ## What a healthy run looks like
 
-**On start exactly one line arrives — the service's own:**
+**On start two lines arrive:**
 
 ```
 WARN  [UnboundAirApplication] service started
+INFO  [ScanLoop] scanner is reachable again
 ```
 
-That it carries `WARN` is not an alarm but the sink: the messages of all commands run through one shared channel (SV-02), and that channel writes at this level. What is missing, by contrast, is deliberate — no banner, no "Started in 0.4 seconds" line: the framework's startup messages are switched off, because on a command line tool they push the actual answer off the screen (KL-02). So if it stays quiet after this one line, nothing is stuck.
+That the first carries `WARN` is not an alarm but the sink: the messages of all commands run through one shared channel (SV-02), and that channel writes at this level.
+
+**The second line says "again" although nothing preceded it** — even on the very first start. This is no hint of a missed outage: the first observation always counts as a state change, so that a service starting against a switched-off device says so at once instead of staying silent (DL-02). If the scanner is off at start, the line reads `scanner is offline, slowing down to PT10S` accordingly.
+
+What is missing, by contrast, is deliberate — no banner, no "Started in 0.4 seconds" line: the framework's startup messages are switched off, because on a command line tool they push the actual answer off the screen (KL-02). So if it stays quiet after these two lines, nothing is stuck.
 
 Silence is **normal** afterwards: the service asks the scanner for its status every three seconds and writes nothing about it, because one line per request would make the log unreadable. Something is written only on a state change (DL-02).
 
