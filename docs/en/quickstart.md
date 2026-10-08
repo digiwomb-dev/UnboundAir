@@ -2,7 +2,7 @@
 title: Quickstart
 ---
 
-<!-- translated from docs/de/quickstart.md @ 3eb172a2740c510c3bf4b14389ae0d209a72318d -->
+<!-- translated from docs/de/quickstart.md @ 7778b4a8869530cd4dd79c9d39c9f7ea84c00719 -->
 
 
 From nothing to the first PDF in paperless-ngx (DO-18). This page gets **one** path working — not clean continuous operation. What belongs to real operation is in [`operations.md`](operations.md), and the end of this page says when to read on there.
@@ -49,7 +49,7 @@ docker run --network=host \
 
 Now there is nothing more to do: the service asks the scanner for its status every three seconds, notices the fed sheet and scans by itself. No button press, no manufacturer software.
 
-**On start and between pages the log is silent** — and that is correct. For each scanned page exactly one line arrives:
+**Between pages the log is silent** — and that is correct. On start there is one `service started` line, after which exactly one line arrives per scanned page:
 
 ```
 INFO  [ScanLoop] page 1 scanned in 8123 ms, transferred in 2311 ms, 1048576 bytes, 206.9 x 291.3 mm
