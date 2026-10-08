@@ -2,7 +2,7 @@
 title: Troubleshooting
 ---
 
-<!-- translated from docs/de/troubleshooting.md @ 9cf6a4603f5307092e0f439dca53648114eb99a3 -->
+<!-- translated from docs/de/troubleshooting.md @ 5f6d93a71836affe9415004a8828463762a3c3cb -->
 
 
 What can go wrong, how to recognise it and what to do then (DO-20). Every entry names an **observation**, its **cause** and the **remedy**.
@@ -52,7 +52,7 @@ Once the document is finished and delivered, `document … delivered to the outp
 2. Is the container sharing the host's network? With a bridge network the container starts and never finds the device — section 2 in [`operations.md`](operations.md).
 3. Does the device answer at all? [`cli.md`](cli.md) describes `status`, the command that does nothing but ask.
 
-**Unmeasured, and said plainly here:** whether a status request keeps the device awake or whether it switches off after five minutes regardless is not measured — OF-01 in [`../internal/offene-fragen.md`](../internal/offene-fragen.md) (German only). So if the device goes offline after a period of quiet, that may be no fault at all but exactly this behaviour.
+**Not measured systematically yet, and said plainly here:** with a running service the device stayed reachable past the five minutes — so the 3-second status poll apparently does keep it awake. That is an observation at the device, not a measurement run: OF-01 in [`../internal/offene-fragen.md`](../internal/offene-fragen.md) (German only) therefore stays recorded as `beobachtet`, not as settled. So if the device does go offline after a period of quiet, that may be no fault at all.
 
 ## A setting has no effect
 
@@ -118,7 +118,9 @@ These are **two different things**, and they look similar in the result.
 
 **Observation:** after a pause in the stack the document is suddenly finished, and the sheets fed afterwards land in a new one.
 
-**Cause:** the device switches off after about five minutes without action. For the service this is a **regular trigger** to close the batch, and not a fault (DL-04): offline means "the operation is over", so the PDF is built and handed over.
+**Cause:** the device went offline. For the service this is a **regular trigger** to close the batch, and not a fault (DL-04): offline means "the operation is over", so the PDF is built and handed over.
+
+**Why it went offline is not clear in every case.** According to the manual the device switches off after about five minutes without action. Whether the service's 3-second status poll counts as "action" and prevents that is **not measured systematically** — OF-01 in [`../internal/offene-fragen.md`](../internal/offene-fragen.md) (German only). With a running service the device was kept awake past the five minutes; nobody should rely on that, though, because the more obvious cause is usually the simpler one: the device was switched off by hand, the battery was flat, or the Wi-Fi was gone.
 
 **Remedy:** none needed — the document is complete. If more pages are to go into one document, they must be fed within the batch timeout window (`unboundair.batch-timeout`, default 20 seconds, see [`configuration.md`](configuration.md)).
 

@@ -2,7 +2,7 @@
 title: Configuration
 ---
 
-<!-- translated from docs/de/configuration.md @ e766871c0e8b920fc88c75a6ea0190e88d096b7f -->
+<!-- translated from docs/de/configuration.md @ 5f6d93a71836affe9415004a8828463762a3c3cb -->
 
 
 Every `UnboundAir` setting with default and environment variable (DO-09, requirement KL-01). This file is the reference: what the code knows is in here — and what is in here exists in the code.
@@ -42,7 +42,7 @@ Time settings take a bare number as **seconds** (`20` means 20 seconds) or a val
 | `unboundair.batch-timeout` | `UNBOUNDAIR_BATCHTIMEOUT` | `20` (seconds) | How long to wait for another page after the last one before closing the document (DL-04). |
 | `unboundair.idle-minutes` | `UNBOUNDAIR_IDLEMINUTES` | *(unset)* | After how many minutes without a page to poll more slowly (DL-06). Without a value nothing changes — that is the as-shipped state. |
 
-> **These four values are preliminary.** They are estimated, not measured. The `measure` command produces the numbers the final defaults are derived from; until then OF-01 through OF-03 stay open in `docs/internal/offene-fragen.md`. Whoever runs the service today and observes better behaviour should adjust the values — that is what makes them configurable.
+> **These four values are preliminary.** They are estimated, not measured. The `measure` command produces the numbers the final defaults are derived from; until then OF-02 and OF-03 stay open in `docs/internal/offene-fragen.md`, and OF-01 is recorded as `beobachtet`. For the poll interval there is already an indication: at 3 seconds the device stayed reachable past the auto-off limit. Whether a longer interval manages the same — and would therefore allow a gentler default — is unmeasured. Whoever runs the service today and observes better behaviour should adjust the values — that is what makes them configurable.
 
 ### Scanner
 

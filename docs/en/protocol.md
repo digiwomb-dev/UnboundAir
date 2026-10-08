@@ -2,7 +2,7 @@
 title: Scanner Protocol
 ---
 
-<!-- translated from docs/de/protocol.md @ e766871c0e8b920fc88c75a6ea0190e88d096b7f -->
+<!-- translated from docs/de/protocol.md @ 5f6d93a71836affe9415004a8828463762a3c3cb -->
 
 
 Technical basis for the scanner client (SC-01 through SC-08). This file describes **how to talk to the device**: connection, commands, answers, scan flow and timing. **[Device]**
@@ -84,7 +84,7 @@ With older firmware the scanner stays at 300 dpi; the caller is warned and learn
 
 ## Polling
 
-The Mustek app does not poll the status periodically over TCP but only on actions. **[App/s400w]** AirScan polls roughly every 8 s. **[App/s400w]** How more frequent polling affects the device is unknown. **[open]** Open points on this — whether polling prevents auto-off (OF-01), whether a 3 s rhythm triggers `devbusy` (OF-02) — are in `docs/internal/offene-fragen.md` and will be settled with `measure`. **[open]**
+The Mustek app does not poll the status periodically over TCP but only on actions. **[App/s400w]** AirScan polls roughly every 8 s. **[App/s400w]** How more frequent polling affects the device is only partly known: a 3-second rhythm apparently keeps the device awake, past the auto-off limit **[Device]**, but this is not measured systematically (OF-01). Whether the same rhythm triggers `devbusy` is unknown (OF-02). **[open]** Both are in `docs/internal/offene-fragen.md` and will be settled with `measure`. **[open]**
 
 ## Scope
 
