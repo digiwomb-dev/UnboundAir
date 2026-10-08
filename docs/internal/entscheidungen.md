@@ -286,7 +286,7 @@ Das ist keine Eigenheit von PIT, sondern die Folge von `org.gradle.jvmargs=-Xmx2
 - `output.outbox` — 56 % (40/72). Line Coverage 88 %, Mutation Coverage 56 %: Der Code wird ausgeführt, aber zu wenig behauptet. Betrifft die Wiederholungslogik, also genau den Pfad, der entscheidet, ob ein Dokument erneut zugestellt oder verworfen wird.
 - `output.paperless` — 58 % (29/50). Dasselbe Muster: 85 % Line Coverage bei 58 % Mutation Coverage.
 
-Diese drei sind der Inhalt von Issue [#138](https://github.com/digiwomb-dev/UnboundAir/issues/138) in Meilenstein 5. Die Klassen-Zahlen dazu stehen im HTML-Report; sie sind hier bewusst nicht abgeschrieben, solange das Issue sie nicht einzeln aufgreift.
+Diese drei waren der Inhalt von Issue [#138](https://github.com/digiwomb-dev/UnboundAir/issues/138) in Meilenstein 5. **Erledigt ist davon eines:** Der Lauf zu Meilenstein 5 (oben) hebt `output.paperless` auf 84 %, lässt `service` bei 63 % und `output.outbox` bei 57 %. Die beiden offenen führt [#279](https://github.com/digiwomb-dev/UnboundAir/issues/279) weiter, jetzt mit den Klassen-Zahlen `Outbox.kt` 56 % und `ScanLoop.kt` 53 % als Ziel.
 
 **Schwächste Klassen nach dem Lauf zu Meilenstein 3** (Stand 28.09.2026, beim Lauf zu Meilenstein 4 nicht erneut je Klasse erhoben):
 
