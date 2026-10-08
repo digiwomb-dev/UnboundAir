@@ -173,7 +173,7 @@ Entscheidung des Auftraggebers (siehe `docs/internal/plan.md`, DC-03).
 
 **Verworfene Alternativen.** `mutflow` (1.4.0) und `MutKt` (0.3.3) wurden nur als Fallback evaluiert und nicht gebaut: PIT genügt, beide sind deutlich jünger (MutKt: 1 Stern, gegründet Juni 2026) und brächten ein eigenes Compiler-/Laufzeitmodell mit, das `build` tangieren würde — unnötiges Risiko, solange PIT trägt. Bleiben beide als Rückfallweg notiert, falls PIT mit künftigen JUnit-/Kotlin-Versionen bricht.
 
-## Mutations-Schwelle: 66 %, gemessen statt gewählt
+## Mutations-Schwelle: 71 %, gemessen statt gewählt
 
 **Erster vollständiger Lauf** über alle drei Kern-Pakete (25.09.2026, Commit `4cd877f`, Dev Container, JDK 26.0.2): `./gradlew pitest`, Dauer **23 min 5 s**, 11 Klassen, 386 Mutationen.
 
@@ -227,7 +227,38 @@ Für diesen Teil des Rückgangs gibt TE-04 keine Deckung. Er steht hier, weil er
 
 **Nebenbefund `scanner`: 107/148 → 105/148.** Gleicher Nenner, zwei getötete Mutanten weniger, bei unverändertem Produktionscode — Meilenstein 4 hat in `scanner` nur den Fake-Scanner angefasst (`acceptThread.join` in `goOffline`). Vermutlich starben die beiden Mutanten zuvor an einem Timeout, das der sauber abräumende Fake nicht mehr auslöst; ein `TIMED_OUT` zählt bei PIT als getötet. Nachgewiesen ist das nicht, und bei 2 von 695 Mutationen wurde dafür kein eigener Lauf aufgewendet. Festgehalten, damit die Abweichung beim nächsten Lauf nicht als neu gilt.
 
-**Entscheidung: `mutationThreshold = 66`** — erneut exakt der gemessene Gesamtwert. Die Regel „gesenkt wird sie nicht stillschweigend" ist damit nicht gebrochen, sondern angewendet: Die Senkung steht hier mit Datum, Commit, Ursache und Gegenmaßnahme. Die Alternative, die Schwelle bei 71 zu belassen, hätte `./gradlew pitest` dauerhaft rot gelassen — ein rotes Werkzeug, an das man sich gewöhnt, warnt nicht mehr. Gegenmaßnahme ist Issue [#138](https://github.com/digiwomb-dev/UnboundAir/issues/138) in Meilenstein 5, das `output.outbox`, `output.paperless` und `service` auf das Niveau der übrigen Pakete hebt; danach wird die Schwelle wieder angehoben.
+**Entscheidung: `mutationThreshold = 66`** — erneut exakt der gemessene Gesamtwert. Die Regel „gesenkt wird sie nicht stillschweigend" ist damit nicht gebrochen, sondern angewendet: Die Senkung steht hier mit Datum, Commit, Ursache und Gegenmaßnahme. Die Alternative, die Schwelle bei 71 zu belassen, hätte `./gradlew pitest` dauerhaft rot gelassen — ein rotes Werkzeug, an das man sich gewöhnt, warnt nicht mehr. Gegenmaßnahme ist Issue [#138](https://github.com/digiwomb-dev/UnboundAir/issues/138) in Meilenstein 5, das `output.outbox`, `output.paperless` und `service` auf das Niveau der übrigen Pakete hebt; danach wird die Schwelle wieder angehoben. Abgelöst durch den Lauf zu Meilenstein 5.
+
+**Einmessungslauf Meilenstein 5** (05.10.2026, Commit `c17b97a`, GitHub-Actions-Lauf [37345770845](https://github.com/digiwomb-dev/UnboundAir/actions/runs/37345770845), Dev-Container-Image, Temurin 26.0.2+10): der Lauf nach den sieben Schärfungs-Issues von [#138](https://github.com/digiwomb-dev/UnboundAir/issues/138). Dauer **4 h 5 min 9 s**, 29 Klassen, 914 Mutationen:
+
+| Paket | Klassen | Line Coverage | Mutation Coverage | Test Strength |
+|---|---|---|---|---|
+| `image` | 6 | 83 % (323/388) | **75 %** (208/279) | 76 % (208/274) |
+| `output` | 3 | 97 % (149/153) | **80 %** (67/84) | 85 % (67/79) |
+| `output.outbox` | 3 | 89 % (131/147) | **57 %** (43/75) | 61 % (43/71) |
+| `output.paperless` | 2 | 95 % (83/87) | **84 %** (47/56) | 84 % (47/56) |
+| `processing` | 6 | 92 % (108/118) | **73 %** (61/84) | 79 % (61/77) |
+| `scanner` | 3 | 89 % (169/189) | **72 %** (106/148) | 75 % (106/141) |
+| `service` | 6 | 93 % (303/326) | **63 %** (119/188) | 75 % (119/159) |
+| **gesamt** | **29** | **90 %** (1266/1408) | **71 %** (651/914) | **76 %** (651/857) |
+
+**Der Gesamtwert steigt von 66 % auf 71 %.** Die Schwelle geht mit nach oben — das ist die Richtung, für die TE-04 gedacht ist.
+
+**Die Messgrundlage ist dieselbe wie zuletzt, nicht breiter.** Der Nenner wächst von 695 auf 914 Mutationen, aber kein Paket kommt hinzu. Die 695 stammen von `d6c63de`, also von *vor* `cdad6a4` (JBIG2 und OpenPDF, 1-Bit-Weg); die 29 Klassen mit `Jbig2Enc`, `BitmapInfo` und `MonochromeStep` waren zum Zeitpunkt der 66-%-Festlegung schon im Baum und in der Baseline von [#218](https://github.com/digiwomb-dev/UnboundAir/issues/218) mit 894 Mutationen / 591 getötet = 66 % notiert. Gegen **diese** Baseline gemessen ist der Zuwachs 651 statt 591 getötete Mutanten bei nahezu gleichem Nenner — der Anstieg kommt aus den Tests, nicht aus einem Nennerwechsel.
+
+**Die drei Zielpakete, gegen die Zahlen vom 04.10.:**
+
+| Paket | vorher | **jetzt** | Ziel ≈ 70 % |
+|---|---|---|---|
+| `output.paperless` | 58 % (29/50) | **84 %** (47/56) | erreicht |
+| `service` | 51 % (70/137) | **63 %** (119/188) | **nicht erreicht** |
+| `output.outbox` | 56 % (40/72) | **57 %** (43/75) | **nicht erreicht** |
+
+**Zwei der drei Pakete verfehlen das Ziel des Eltern-Issues, und das bleibt offen stehen.** `output.paperless` hat den Sprung gemacht. `service` hat deutlich gewonnen, liegt aber noch sieben Punkte darunter; die Last trägt dort `ScanLoop.kt` mit **53 % (36/68)**, während `Batch.kt` auf 69 % und `OutputPipeline.kt` auf 70 % stehen. `output.outbox` hat sich um **einen Punkt** bewegt (40/72 → 43/75) — die drei zusätzlich getöteten Mutanten gehen fast vollständig auf drei zusätzliche Mutationen im Nenner zurück, also hat [#211](https://github.com/digiwomb-dev/UnboundAir/issues/211) dort an der Mutationsabdeckung praktisch nichts verändert. Die Schwachstelle ist `Outbox.kt` mit **56 % (40/71)** bei 91 % Line Coverage: der Code läuft in Tests, es wird zu wenig über ihn behauptet. Das ist genau das Muster, das #138 beheben sollte, und es ist in `output.outbox` nicht behoben.
+
+Die verbliebene Lücke ist darum als eigenes Issue weitergeführt und **nicht** mit #138 abgehakt. Ein geschlossenes Issue, dessen Abnahmekriterium die Messung widerlegt, wäre eine falsche Angabe über den eigenen Stand.
+
+**Entscheidung: `mutationThreshold = 71`** — wieder exakt der gemessene Gesamtwert, nach derselben Regel wie die drei Läufe davor. Der Boden steht damit auf dem Stand, den die Tests heute halten; fällt die Assertion-Qualität später zurück, wird `./gradlew pitest` rot statt still.
 
 Bewusst **nicht** gesetzt sind `coverageThreshold` und `testStrengthThreshold`: Eine Schwelle, die scharf ist, genügt; drei parallele Schwellen machen jeden Rückgang zu einer Fehlersuche über drei Kennzahlen.
 
