@@ -8,6 +8,8 @@ Kein Knopfdruck, keine Hersteller-Software, keine Windows-Anwendung. Kotlin und 
 
 > **Im Aufbau – v1 ist noch nicht fertig.** Ein Überblick steht unten unter [„Stand"](#stand); woran gerade gearbeitet wird, zeigen die [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) und [Issues](https://github.com/digiwomb-dev/UnboundAir/issues) – dort steht es aus erster Hand, statt hier zu veralten.
 
+**Die Dokumentation steht als Seite bereit: <https://digiwomb-dev.github.io/UnboundAir/>** – deutsch und englisch, durchsuchbar. Diese Datei beantwortet „was ist dieser Code"; alles zum Benutzen wohnt dort.
+
 ## Was es können soll
 
 1. Scanner einschalten, der Rechner verbindet sich mit dessen WLAN.
@@ -72,25 +74,14 @@ Und sonst: [`docs/de/configuration.md`](docs/de/configuration.md) für jede Eins
 
 Wer ändern statt fahren will: Image selbst bauen — wie, steht in [`docs/de/development.md`](docs/de/development.md).
 
-## Wegweiser durch die Dokumentation
+## Wo was steht
 
-Die Doku ist auf Deutsch. Je nachdem, was du vorhast:
+- **[Dokumentation](https://digiwomb-dev.github.io/UnboundAir/)** – Schnellstart, Betrieb, alle Einstellungen, Befehle, Protokoll, Fehlersuche. Der Ort für alles, was das Produkt betrifft, in beiden Sprachen.
+- **[`CONTRIBUTING.md`](CONTRIBUTING.md)** – mitarbeiten: Sprache, Commits, Git-Ablauf, Issue-Konvention.
+- **[`SECURITY.md`](SECURITY.md)** – eine Sicherheitslücke melden: der private Meldeweg und der Umgang mit Token.
+- **[`docs/internal/`](docs/internal/)** – Auftrag, Entscheidungs-Logbuch, offene Gerätefragen, Teststrategie. Die Arbeitsunterlagen des Projekts, nur auf Deutsch und nicht Teil der Seite.
 
-| Du willst … | Lies |
-|---|---|
-| wissen, was gebaut wird und warum | [`docs/internal/plan.md`](docs/internal/plan.md) – Auftrag, feste Entscheidungen, alle Anforderungen mit IDs und Abnahmekriterien |
-| den aktuellen Stand sehen | [GitHub-Issues](https://github.com/digiwomb-dev/UnboundAir/issues) und [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) – offene Aufgaben, was in Arbeit und was erledigt ist |
-| selbst bauen und testen | [`docs/de/development.md`](docs/de/development.md) – Dev Container, Build, Testlauf |
-| eine Einstellung nachschlagen | [`docs/de/configuration.md`](docs/de/configuration.md) – jede Einstellung mit Default, Umgebungsvariable und Bedeutung |
-| ein Ausgabe-Modul verstehen oder schreiben | [`docs/de/output-modules.md`](docs/de/output-modules.md) – die Modul-Schnittstelle, die Kette über die Outbox, das paperless-Modul und die Anleitung für ein eigenes Modul |
-| wissen, wie getestet wird | [`docs/internal/teststrategie.md`](docs/internal/teststrategie.md) – die acht Testschichten, die Werkzeuge je Schicht und die Gründe dafür |
-| wissen, warum etwas so entschieden wurde | [`docs/internal/entscheidungen.md`](docs/internal/entscheidungen.md) – Begründungen zu den festen Entscheidungen, inklusive der gemessenen Zahlen |
-| wissen, was am Gerät noch unklar ist | [`docs/internal/offene-fragen.md`](docs/internal/offene-fragen.md) – offene Punkte mit Status, Herkunft und dem Umgang damit im Code |
-| wissen, was der Scanner über die Leitung schickt | [`docs/de/protocol.md`](docs/de/protocol.md) – das TCP-Protokoll auf Port 23: Nachrichten, Abläufe, was gemessen und was noch offen ist |
-| wissen, was die Hardware kann und was nicht | [`docs/de/hardware.md`](docs/de/hardware.md) – Gerät, WLAN-Verhalten, gemessene Scan-Eigenschaften |
-| den Dienst als Container betreiben | [`docs/de/operations.md`](docs/de/operations.md) – Host-Voraussetzungen, Netzwerk, Volume, Secrets, Beenden, Logs |
-| am Projekt mitarbeiten | [`CONTRIBUTING.md`](CONTRIBUTING.md) – Sprache, Commits, Git-Ablauf, Issue-Konvention, Leitplanken |
-| eine Sicherheitslücke melden | [`SECURITY.md`](SECURITY.md) – der private Meldeweg, Token-Umgang, Geltungsbereich |
+Die Quelltexte der Doku liegen unter `docs/de/` und `docs/en/` – gelesen werden sie besser auf der Seite, dort stimmen die Querverweise und die Suche.
 
 ## Warum es das gibt
 
