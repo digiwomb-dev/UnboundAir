@@ -97,7 +97,7 @@ dependencies {
 
     // Architecture guard (Wächter). The junit6 artifact carries JUnit Platform 6
     // support, introduced in ArchUnit 1.5.0.
-    testImplementation("com.tngtech.archunit:archunit-junit6:1.5.0")
+    testImplementation("com.tngtech.archunit:archunit-junit6:1.5.1")
 }
 
 spotless {
