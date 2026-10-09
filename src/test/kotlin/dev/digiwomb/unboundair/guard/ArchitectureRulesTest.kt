@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * Architecture guard ("Wächter" layer of docs/internal/teststrategie.md): enforces the structural
- * decisions of docs/plan.md as executable rules, so an architectural regression turns
+ * decisions of docs/internal/plan.md as executable rules, so an architectural regression turns
  * the build red instead of rotting silently.
  *
  * The rules:
@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test
  *    modules are active is decided at runtime from the `unboundair.output.modules`
  *    property; Spring's `@ConditionalOn*` annotations are not supported in GraalVM
  *    Native Images, so the code must not contain them at all (fixed decision in
- *    docs/plan.md). The check covers both classes and methods, because
+ *    docs/internal/plan.md). The check covers both classes and methods, because
  *    `@ConditionalOnProperty` commonly sits on a `@Bean` method rather than a class.
  *
  * 2. **Layered package dependencies.** `config`, `scanner` and `image` are leaves,
@@ -123,7 +123,7 @@ class ArchitectureRulesTest {
         }
 
     /**
-     * The planned layering of docs/plan.md. Two adaptations to ArchUnit 1.5.0, both
+     * The planned layering of docs/internal/plan.md. Two adaptations to ArchUnit 1.5.0, both
      * verified empirically against the current code base, neither of which weakens a
      * constraint:
      *
@@ -185,7 +185,7 @@ class ArchitectureRulesTest {
             .because(
                 "the core must stay decoupled from the CLI adapter, the layers must only " +
                     "talk downwards, and a later web UI must be able to dock onto the " +
-                    "service layer without rewiring the core (docs/plan.md)",
+                    "service layer without rewiring the core (docs/internal/plan.md)",
             )
 
     /**
@@ -245,7 +245,7 @@ class ArchitectureRulesTest {
     /**
      * The core packages stay plain Kotlin, free of Spring.
      *
-     * This is the executable form of the layering decision in docs/plan.md: the core
+     * This is the executable form of the layering decision in docs/internal/plan.md: the core
      * takes its values through constructor parameters (the `PageSettings` pattern) and
      * must stay constructible without an application context, which is what makes it
      * unit-testable and keeps the GraalVM native image option open.
@@ -259,7 +259,7 @@ class ArchitectureRulesTest {
      * `cli` and `service` are deliberately **not** covered: the composition root and the
      * service layer are where Spring legitimately lives.
      *
-     * `output.paperless` is the one named exception inside the core (docs/plan.md, "Der
+     * `output.paperless` is the one named exception inside the core (docs/internal/plan.md, "Der
      * Kern bleibt frei von Spring"): it may use the Spring `RestClient` and the
      * `spring-web` types for multipart and headers, because uploading is the single
      * point in v1 where a core package talks outward and using the Spring
@@ -293,7 +293,7 @@ class ArchitectureRulesTest {
             .resideInAPackage("org.springframework..")
             .because(
                 "the core must stay constructible without an application context, so it can be " +
-                    "unit-tested and later compiled to a native image (docs/plan.md)",
+                    "unit-tested and later compiled to a native image (docs/internal/plan.md)",
             ).check(mainClasses)
     }
 
@@ -301,7 +301,7 @@ class ArchitectureRulesTest {
      * The named exception stays narrow: `output.paperless` may speak HTTP, nothing more.
      *
      * The rule above exempts the whole package, which is the only way to express the
-     * decision in docs/plan.md -- but an exemption written by package is an open door
+     * decision in docs/internal/plan.md -- but an exemption written by package is an open door
      * for everything else Spring offers. The plan names what remains forbidden there:
      * stereotypes and an injected `UnboundAirProperties`. Stereotypes are already
      * covered for all of `output..` by the AU-03 rule; this rule adds the second half,
@@ -322,7 +322,7 @@ class ArchitectureRulesTest {
             .resideInAPackage("dev.digiwomb.unboundair.config..")
             .because(
                 "the Spring exception for this package covers the HTTP client only; the settings " +
-                    "arrive as constructor values from the composition root (docs/plan.md)",
+                    "arrive as constructor values from the composition root (docs/internal/plan.md)",
             ).check(classes)
     }
 

@@ -8,6 +8,8 @@ No button presses, no manufacturer software, no Windows application. Kotlin and 
 
 > **Under construction – v1 is not finished yet.** An overview is below under ["Status"](#status); what is being worked on right now is in the [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) and [Issues](https://github.com/digiwomb-dev/UnboundAir/issues) – first-hand, instead of going stale here.
 
+**The documentation is available as a site: <https://digiwomb-dev.github.io/UnboundAir/>** – English and German, searchable. This file answers "what is this code"; everything about using it lives there.
+
 ## What it should do
 
 1. Switch the scanner on, the machine joins its WLAN.
@@ -72,25 +74,14 @@ Otherwise: [`docs/en/configuration.md`](docs/en/configuration.md) for every sett
 
 Whoever wants to change instead of run: build the image yourself — how is in [`docs/en/development.md`](docs/en/development.md).
 
-## Guide through the documentation
+## Where to find what
 
-The docs are in English and German. Depending on what you are up to:
+- **[Documentation](https://digiwomb-dev.github.io/UnboundAir/)** – quick start, operation, every setting, commands, protocol, troubleshooting. The place for everything about the product, in both languages.
+- **[`CONTRIBUTING.md`](CONTRIBUTING.md)** – contributing: language, commits, git flow, issue convention.
+- **[`SECURITY.md`](SECURITY.md)** – reporting a security hole: the private route and how tokens are handled.
+- **[`docs/internal/`](docs/internal/)** (German only) – mission, decision logbook, open device questions, test strategy. The project's working documents, not part of the site.
 
-| You want to … | Read |
-|---|---|
-| know what gets built and why | [`docs/internal/plan.md`](docs/internal/plan.md) (German only) – mission, firm decisions, all requirements with IDs and acceptance criteria |
-| see the current state | [GitHub issues](https://github.com/digiwomb-dev/UnboundAir/issues) and [Milestones](https://github.com/digiwomb-dev/UnboundAir/milestones) – open tasks, what is in progress and what is done |
-| build and test yourself | [`docs/en/development.md`](docs/en/development.md) – dev container, build, test run |
-| look up a setting | [`docs/en/configuration.md`](docs/en/configuration.md) – every setting with default, environment variable and meaning |
-| understand or write an output module | [`docs/en/output-modules.md`](docs/en/output-modules.md) – the module interface, the chain through the outbox, the paperless module and the guide for a module of your own |
-| know how testing works | [`docs/internal/teststrategie.md`](docs/internal/teststrategie.md) (German only) – the eight test layers, the tools per layer and the reasons |
-| know why something was decided so | [`docs/internal/entscheidungen.md`](docs/internal/entscheidungen.md) (German only) – reasons for the firm decisions, including the measured numbers |
-| know what is still unclear about the device | [`docs/internal/offene-fragen.md`](docs/internal/offene-fragen.md) (German only) – open points with status, provenance and how the code deals with them |
-| know what the scanner sends over the wire | [`docs/en/protocol.md`](docs/en/protocol.md) – the TCP protocol on port 23: messages, flows, what was measured and what is still open |
-| know what the hardware can and cannot do | [`docs/en/hardware.md`](docs/en/hardware.md) – device, WLAN behaviour, measured scan properties |
-| run the service as a container | [`docs/en/operations.md`](docs/en/operations.md) – host prerequisites, network, volume, secrets, shutdown, logs |
-| contribute to the project | [`CONTRIBUTING.md`](CONTRIBUTING.md) – language, commits, git flow, issue convention, guardrails |
-| report a security hole | [`SECURITY.md`](SECURITY.md) – the private reporting route, token handling, scope |
+The documentation sources live under `docs/de/` and `docs/en/` – they are better read on the site, where the cross-references and the search work.
 
 ## Why it exists
 

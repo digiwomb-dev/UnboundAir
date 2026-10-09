@@ -10,7 +10,7 @@ import java.time.ZoneId
  * The document type of the module interface: the PDF plus its metadata -- how many
  * pages it holds, and when it started and finished. These are the same four values
  * `service.ScannedDocument` carries; the batch's sink maps that type onto this one,
- * because per the layer table `output` may not see `service` (`docs/plan.md`,
+ * because per the layer table `output` may not see `service` (`docs/internal/plan.md`,
  * "Dokument-Typ der Modul-Schnittstelle"). A few lines of mapping is the cheaper price.
  *
  * The metadata travels beside the file rather than being parsed back out of the PDF:
@@ -41,7 +41,7 @@ data class OutputDocument(
  * start of the first page in the given time zone.
  *
  * Local time, not UTC, is deliberate: the name is for people, and `TZ` controls
- * the zone in the container (`docs/plan.md`, "Dateiname und paperless-Felder").
+ * the zone in the container (`docs/internal/plan.md`, "Dateiname und paperless-Felder").
  *
  * The function lives in `output` rather than in the batch because from this
  * milestone on two places build the name: the batch, for the working PDF, and the

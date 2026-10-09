@@ -22,7 +22,7 @@ import java.time.ZoneOffset
  * failure would do:
  *
  * 1. **Every embedded JPEG is byte-identical to its input.** This is the
- *    "never recompress" guardrail of `docs/plan.md`, and it is the one thing a
+ *    "never recompress" guardrail of `docs/internal/plan.md`, and it is the one thing a
  *    casual reading of the code cannot confirm: `JPEGFactory.createFromImage`
  *    and `createFromByteArray` differ by one word and by whether the image
  *    survives intact. The test extracts the raw stream back out of the finished

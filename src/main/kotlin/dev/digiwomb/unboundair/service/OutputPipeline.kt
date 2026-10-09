@@ -41,7 +41,7 @@ import java.time.ZoneId
  *    the outbox what is due -- until that issue says otherwise.
  * 5. The [OutputPipeline.sink] maps a finished [ScannedDocument] onto an [OutputDocument] field by field and hands it
  *    to [Outbox.accept]. The mapping is a few lines of copying rather than a shared type because `output` may not see
- *    `service` (docs/plan.md, "Dokument-Typ der Modul-Schnittstelle").
+ *    `service` (docs/internal/plan.md, "Dokument-Typ der Modul-Schnittstelle").
  *
  * @param properties the bound configuration; only `output.*`, `outbox.path` and `poll-interval` are read here.
  * @param clock the time source for the outbox (due dates, backoff); injected so tests control it.

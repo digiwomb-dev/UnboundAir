@@ -232,20 +232,18 @@ pitest {
     timestampedReports.set(false)
     timeoutConstInMillis.set(60000)
 
-    // Floor, not a target. 66 % is exactly what the re-measurement run over all
-    // seven core packages measured (458/695 killed, 04.10.2026); pinning it
-    // here makes a later drop in assertion quality fail the task instead of
-    // passing unnoticed. Milestone 4 added `output.outbox` and
-    // `output.paperless`, changing the measurement basis as permitted by TE-04.
-    // This is the first run that lowered the floor, from 71 %. Only part of
-    // that is the wider basis: measured over the five packages of milestone 3
-    // alone the score still fell, from 70.7 % to 67.9 % (389/573), because
-    // `service` took on two undertested classes. Leaving the threshold at 71
-    // would have made `pitest` permanently red, and a tool that is always red
-    // stops warning. The drop is written up with both causes and its
-    // countermeasure in docs/internal/entscheidungen.md; raising it again is milestone-5
-    // issue #138.
+    // Floor, not a target. 71 % is exactly what the re-measurement run over all
+    // seven core packages measured (651/914 killed, 05.10.2026, commit c17b97a);
+    // pinning it here makes a later drop in assertion quality fail the task
+    // instead of passing unnoticed. The run raises the floor back from 66 % on
+    // the same measurement basis -- no package was added, so the gain comes from
+    // the sharpening sub-issues of #138 and not from a changed denominator.
+    // Two of the three target packages still miss the ~70 % the parent issue
+    // aims for: `service` 63 % (weakest: ScanLoop.kt at 53 %) and
+    // `output.outbox` 57 % (Outbox.kt at 56 % with 91 % line coverage -- the
+    // code runs, too little is asserted). That gap is tracked separately; it is
+    // deliberately not closed along with #138.
     // Raise this number when the score improves; never lower it silently.
     // Per-package numbers and the weak spots are in docs/internal/entscheidungen.md.
-    mutationThreshold.set(66)
+    mutationThreshold.set(71)
 }

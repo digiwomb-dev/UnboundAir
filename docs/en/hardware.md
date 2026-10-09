@@ -2,7 +2,7 @@
 title: Hardware
 ---
 
-<!-- translated from docs/de/hardware.md @ e766871c0e8b920fc88c75a6ea0190e88d096b7f -->
+<!-- translated from docs/de/hardware.md @ 5f6d93a71836affe9415004a8828463762a3c3cb -->
 
 
 The device itself: what the scanner physically can do, which values were measured on it and which quirks it shows. Its counterpart is `docs/de/protocol.md`: that file tells **how** to talk to the device (commands, flow, answer formats); here stands **what** is talked to. Where the two touch, they reference instead of repeating.
@@ -37,7 +37,7 @@ Without these markers it would be unrecognisable which values were measured and 
 
 - Power on: hold the POWER button approx. 3 s, then wait approx. 20 s until the LED blinks blue **[Manual]**.
 - Permanently blue LED means: a client is connected **[Manual]**.
-- Auto-off: without action the device switches off after 5 minutes **[Manual]**. Whether a running status poll counts as "action" and prevents switch-off is **not** measured **[open]** — see OF-01 in `docs/internal/offene-fragen.md`.
+- Auto-off: without action the device switches off after 5 minutes **[Manual]**. A running status poll on a 3-second rhythm apparently keeps it awake: a service ran past the five minutes and the device stayed reachable **[Device]**. This is not measured systematically yet, and which interval it still holds for is unknown **[open]** — see OF-01 in `docs/internal/offene-fragen.md`.
 - Low-battery behaviour: the `battlow` answer is known from the app but was never triggered on the device **[App/s400w]**. Whether the device still scans then, whether it sends the message once or permanently and whether a running scan aborts is **not** measured **[open]** — see OF-10 in `docs/internal/offene-fragen.md`.
 
 ## Scan properties and image data
@@ -68,7 +68,7 @@ The `measure` command (BE-04) measures exactly these gaps on the real device. Un
 
 | Quantity | State today | Fills later | Question |
 |---|---|---|---|
-| Does status polling keep the scanner awake? | unknown **[open]** (auto-off 5 min **[Manual]**) | `went offline: … after … of quiet` | OF-01 |
+| Does status polling keep the scanner awake? | at 3 s apparently yes **[Device]**, not measured systematically **[open]** (auto-off 5 min **[Manual]**) | `went offline: … after … of quiet` | OF-01 |
 | `devbusy` frequency at 3 s rhythm | unknown **[open]** (answer known **[App/s400w]**) | `devbusy answers: …` | OF-02 |
 | Scan duration per page and gap between two pages | unknown **[open]** (only file size approx. 0.9 MB **[Device]**) | `gaps between pages` (mean, min, max) plus duration per page in the page log line | OF-03 |
 | Page size deviation (cutting, compression or DPI error?) | observed, cause unknown **[Scan]** | remeasure with ruler and reference | OF-05 |

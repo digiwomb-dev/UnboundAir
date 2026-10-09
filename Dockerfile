@@ -10,7 +10,7 @@
 # add a platform-specific suffix or a platform-specific download URL here.
 #
 # Ubuntu Noble variant, because it ships a package manager - jpegtran and
-# jbig2 have to come from somewhere (docs/plan.md, "Artefakte"). jbig2
+# jbig2 have to come from somewhere (docs/internal/plan.md, "Artefakte"). jbig2
 # lives in Ubuntu universe (package `jbig2`, source package `jbig2enc`), so
 # the base image must have universe enabled. Pinned by digest so the runtime
 # image is reproducible; the tag alone would silently move.

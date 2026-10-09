@@ -62,7 +62,7 @@ data class OutboxEntry(
  * @param root the outbox directory, created if absent; one sub-directory per document.
  * @param clock the time source for [due] and the backoff; injected so tests control it.
  * @param backoffInitial the delay after the **first** failed attempt. A constructor parameter rather than a setting: it tunes a
- *   per-instance algorithm, so the `PageSettings` pattern does not apply and `docs/konfiguration.md` must not grow a knob nobody turns.
+ *   per-instance algorithm, so the `PageSettings` pattern does not apply and `docs/de/configuration.md` must not grow a knob nobody turns.
  * @param backoffFactor how much each failed attempt multiplies the next delay by.
  * @param backoffCap the maximum delay; attempts are unbounded (AU-04), the delay only grows towards this cap.
  * @param warn where recoverable trouble goes, as a string; tests assert on it.

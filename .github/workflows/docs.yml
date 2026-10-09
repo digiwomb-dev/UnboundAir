@@ -87,10 +87,11 @@ jobs:
         with:
           path: site/dist
 
-  # DS-01 gate (#233): re-checks every production change to the published
-  # pages before they may deploy. Runs on the artifact, not on a rebuild, so
-  # the check sees exactly what the deploy would publish. The deploy job
-  # depends on this check instead of running beside it.
+  # Gates on the built output (#233 DS-01, #273 DS-03): they re-check every
+  # production change to the published pages before they may deploy. Both run
+  # on the artifact, not on a rebuild, so they see exactly what the deploy
+  # would publish. The deploy job depends on this job instead of running
+  # beside it.
   check:
     needs: build
     runs-on: ubuntu-latest
@@ -114,12 +115,18 @@ jobs:
         # Runnable locally too: build the site, then run
         # `node site/tools/check-third-party.mjs site/dist`.
         run: node site/tools/check-third-party.mjs gate-dist
+      - name: Check that no relative Markdown link survived (DS-03)
+        # The companion is RepositoryHygieneTest, which proves a relative
+        # link resolves to a file in the repository. This proves none of
+        # them reached the site, where it would 404. Locally:
+        # `cd site && npm run build && npm run check` runs both gates.
+        run: node site/tools/check-md-links.mjs gate-dist
 
-  # The DS-01 gate (#233) sits between build and deploy: the deploy job
-  # depends on it, not merely runs beside it. Flipping the Pages source to
-  # "GitHub Actions" in the repository settings waits until this gate is
-  # green: building without deploying is fine, publishing without the gate
-  # is what the gate prevents.
+  # The gates (#233 DS-01, #273 DS-03) sit between build and deploy: the
+  # deploy job depends on them, not merely runs beside them. Flipping the
+  # Pages source to "GitHub Actions" in the repository settings waits until
+  # they are green: building without deploying is fine, publishing without
+  # the gates is what they prevent.
   deploy:
     # No deploy from a pull request: only the default branch carries values
     # worth publishing, and fork builds must never publish.

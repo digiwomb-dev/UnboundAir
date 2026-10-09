@@ -31,7 +31,7 @@ import kotlin.concurrent.thread
  *
  * KL-02 names four values that must appear for every scanned page: **scan
  * duration, transfer duration, size, and the dimensions in mm after cropping**.
- * The acceptance criterion in `docs/plan.md` is exactly that the log entry of
+ * The acceptance criterion in `docs/internal/plan.md` is exactly that the log entry of
  * one page carries all four.
  *
  * The test drives the real thing end to end -- a real TCP connection to the

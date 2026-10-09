@@ -24,7 +24,7 @@ import java.security.MessageDigest
  * byte-equal to the golden file.
  *
  * Why byte equality: the plan never re-compresses an image (fixed decision
- * from docs/plan.md) — both steps must transform the stored DCT coefficients
+ * from docs/internal/plan.md) — both steps must transform the stored DCT coefficients
  * without touching their values, so "visually identical" is not a criterion
  * the code is held to; only bit-identical output is. Byte-exact comparison
  * against a recorded output guards against silent regressions where

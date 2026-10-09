@@ -7,8 +7,6 @@ title: Operations
 
 The service runs as a container (DO-03). This file describes what the host and the container must provide for that — independent of any particular container runtime. Commands below are examples, each marked as such.
 
-> **Status note:** Images land in `ghcr.io/digiwomb-dev/unboundair`. Nightly builds carry `nightly` (multi-architecture index over both platforms), plus per architecture `nightly-arm64` and `nightly-amd64` — never `latest` and never a version number, so nobody mistakes a nightly build for a release. Releases carry strict SemVer without `v` (`1.2.0`, not `v1.2.0`); the tag equals `version` in `build.gradle.kts` and sits on `main`. A concrete deployment example arrives with DP-01 (work order 16); where an image name would stand below, a placeholder stands until then.
-
 ## 1. Host prerequisites: scanner WLAN, NetworkManager, nftables
 
 The host — not the container — keeps the WLAN connection to the scanner. The scanner opens its own WLAN; the host joins it, and the container shares the host's connection (see "Network").

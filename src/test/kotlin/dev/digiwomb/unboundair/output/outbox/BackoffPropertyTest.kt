@@ -286,7 +286,7 @@ class BackoffPropertyTest {
         /** Fixed seed, so that every run generates the same cases (determinism). */
         const val SEED = 4711L
 
-        /** The outbox defaults from `docs/plan.md` (AU-04): start 30 s, factor 2, cap 1 h. */
+        /** The outbox defaults from `docs/internal/plan.md` (AU-04): start 30 s, factor 2, cap 1 h. */
         val INITIAL_DEFAULT: Duration = Duration.ofSeconds(30)
 
         val CAP_DEFAULT: Duration = Duration.ofHours(1)

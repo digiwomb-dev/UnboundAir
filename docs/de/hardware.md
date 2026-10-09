@@ -35,7 +35,7 @@ Ohne diese Markierungen wäre nicht erkennbar, welche Werte gemessen und welche 
 
 - Einschalten: POWER-Taste ca. 3 s halten, danach ca. 20 s warten, bis die LED blau blinkt **[Handbuch]**.
 - LED dauerhaft blau bedeutet: Ein Client ist verbunden **[Handbuch]**.
-- Auto-Off: Ohne Aktion schaltet sich das Gerät nach 5 Minuten ab **[Handbuch]**. Ob eine laufende Statusabfrage als „Aktion" zählt und das Abschalten verhindert, ist **nicht** gemessen **[offen]** — siehe OF-01 in `docs/internal/offene-fragen.md`.
+- Auto-Off: Ohne Aktion schaltet sich das Gerät nach 5 Minuten ab **[Handbuch]**. Eine laufende Statusabfrage im 3-Sekunden-Takt hält es dabei offenbar wach: Ein Dienst lief über die fünf Minuten hinaus und das Gerät blieb erreichbar **[Gerät]**. Systematisch gemessen ist das noch nicht, und für welchen Abstand es noch gilt, ist unbekannt **[offen]** — siehe OF-01 in `docs/internal/offene-fragen.md`.
 - Verhalten bei niedrigem Akkustand: Die Antwort `battlow` ist aus der App bekannt, wurde am Gerät aber nie ausgelöst **[App/s400w]**. Ob das Gerät dann noch scannt, ob es die Meldung einmal oder dauerhaft sendet und ob ein laufender Scan abbricht, ist **nicht** gemessen **[offen]** — siehe OF-10 in `docs/internal/offene-fragen.md`.
 
 ## Scaneigenschaften und Bilddaten
@@ -66,7 +66,7 @@ Der Befehl `measure` (BE-04) misst genau diese Lücken am echten Gerät. Bis zur
 
 | Größe | Stand heute | Füllt später | Frage |
 |---|---|---|---|
-| Hält Status-Polling den Scanner wach? | unbekannt **[offen]** (Auto-Off 5 min **[Handbuch]**) | `went offline: … after … of quiet` | OF-01 |
+| Hält Status-Polling den Scanner wach? | bei 3 s offenbar ja **[Gerät]**, nicht systematisch gemessen **[offen]** (Auto-Off 5 min **[Handbuch]**) | `went offline: … after … of quiet` | OF-01 |
 | `devbusy`-Häufigkeit bei 3-s-Takt | unbekannt **[offen]** (Antwort bekannt **[App/s400w]**) | `devbusy answers: …` | OF-02 |
 | Scan-Dauer pro Seite und Abstand zwischen zwei Seiten | unbekannt **[offen]** (nur Dateigröße ca. 0,9 MB **[Gerät]**) | `gaps between pages` (Mittel, Min, Max) plus Dauer je Seite in der Seiten-Logzeile | OF-03 |
 | Seitengrößen-Abweichung (Abschneiden, Stauchen oder DPI-Fehler?) | beobachtet, Ursache unbekannt **[Scan]** | Nachmessen mit Lineal und Referenzmaß | OF-05 |

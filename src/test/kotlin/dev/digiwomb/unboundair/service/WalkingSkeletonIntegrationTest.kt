@@ -28,7 +28,7 @@ import kotlin.concurrent.thread
  * The walking skeleton: three sheets go in, one three-page PDF comes out
  * (DL-03, DL-04, AU-01, SV-05).
  *
- * This is point 4 of "Ergebnis" in `docs/plan.md` minus paperless, and it is
+ * This is point 4 of "Ergebnis" in `docs/internal/plan.md` minus paperless, and it is
  * the test that says milestone 3 actually holds together. Every other test in
  * this milestone checks one part in isolation; this one runs the whole chain
  * with nothing stubbed between the socket and the finished document:

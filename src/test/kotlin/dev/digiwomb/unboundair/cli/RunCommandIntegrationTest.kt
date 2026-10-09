@@ -187,7 +187,7 @@ class RunCommandIntegrationTest {
      * single interrupt could land in socket I/O and merely arm the flag, but every loop turn
      * ends in a sleeper or a client pause that throws on it, so repeated interrupts terminate
      * both threads within a bounded time. Pacing comes from Awaitility's poll interval —
-     * never from `Thread.sleep` (docs/entscheidungen.md).
+     * never from `Thread.sleep` (docs/internal/entscheidungen.md).
      *
      * The interrupt kills `scan-loop` with an *uncaught* exception (its loop has no shutdown
      * path but `stop`, which only the shutdown hook may call), and Gradle blames an uncaught
@@ -259,7 +259,7 @@ class RunCommandIntegrationTest {
 
         /**
          * What the outbox names its files (AU-04). Literals, not imports: `cli` may not
-         * reach into `output` (docs/plan.md layer table, enforced by the guard).
+         * reach into `output` (docs/internal/plan.md layer table, enforced by the guard).
          */
         const val PDF_FILE_NAME = "document.pdf"
         const val METADATA_FILE_NAME = "metadata.json"

@@ -40,7 +40,7 @@ Die Zeit-Einstellungen nehmen eine nackte Zahl als **Sekunden** (`20` heißt 20 
 | `unboundair.batch-timeout` | `UNBOUNDAIR_BATCHTIMEOUT` | `20` (Sekunden) | Wie lange nach der letzten Seite auf eine weitere gewartet wird, bevor das Dokument geschlossen wird (DL-04). |
 | `unboundair.idle-minutes` | `UNBOUNDAIR_IDLEMINUTES` | *(nicht gesetzt)* | Nach wie vielen Minuten ohne Seite langsamer abgefragt wird (DL-06). Ohne Wert ändert sich nichts – das ist der Auslieferungszustand. |
 
-> **Diese vier Werte sind vorläufig.** Sie sind geschätzt, nicht gemessen. Der Befehl `measure` liefert die Zahlen, aus denen die endgültigen Defaults abgeleitet werden; bis dahin bleiben OF-01 bis OF-03 in `docs/internal/offene-fragen.md` offen. Wer den Dienst heute betreibt und ein besseres Verhalten beobachtet, sollte die Werte anpassen – dafür sind sie konfigurierbar.
+> **Diese vier Werte sind vorläufig.** Sie sind geschätzt, nicht gemessen. Der Befehl `measure` liefert die Zahlen, aus denen die endgültigen Defaults abgeleitet werden; bis dahin bleiben OF-02 und OF-03 in `docs/internal/offene-fragen.md` offen, OF-01 steht als `beobachtet`. Zum Abfrage-Abstand gibt es bereits einen Hinweis: Bei 3 Sekunden blieb das Gerät über die Auto-Off-Grenze hinaus erreichbar. Ob ein größerer Abstand das auch schafft — und damit ein schonenderer Default möglich wäre — ist ungemessen. Wer den Dienst heute betreibt und ein besseres Verhalten beobachtet, sollte die Werte anpassen – dafür sind sie konfigurierbar.
 
 ### Scanner
 

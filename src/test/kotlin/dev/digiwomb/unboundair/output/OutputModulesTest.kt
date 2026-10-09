@@ -137,7 +137,7 @@ class OutputModulesTest {
     }
 
     /**
-     * AU-03 together with the documented default (`docs/konfiguration.md`:
+     * AU-03 together with the documented default (`docs/de/configuration.md`:
      * `unboundair.output.modules` empty means no module receives documents).
      * Both an empty list and a list of blanks are therefore valid and select
      * nothing.
