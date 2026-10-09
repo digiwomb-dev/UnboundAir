@@ -18,9 +18,16 @@
 # The `ref` inputs of the called workflows exist for exactly this.
 name: nightly
 
+# Not on the hour. GitHub queues every repository's cron centrally and drops
+# or delays runs under load, and the top of the hour is where the load is.
+# Measured here: with `0 3 * * *` the schedule fired once in two nights, and
+# that one run started at 09:56 instead of 03:00 — nearly seven hours late —
+# while the night after produced no run at all. An offset minute is no
+# guarantee (`schedule` never is), it only moves the run off the busiest
+# slot. CI-02 asks for a nightly run, not for a particular time.
 on:
   schedule:
-    - cron: '0 3 * * *'
+    - cron: '37 3 * * *'
   workflow_dispatch:
 
 # A scheduled job modifies nothing in the repository.
