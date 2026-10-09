@@ -59,8 +59,29 @@ Beide sind einstellbar, damit die Tests gegen den Fake-Scanner auf einem freien 
 | `unboundair.bw-threshold` | `UNBOUNDAIR_BWTHRESHOLD` | `128` | Helligkeits-Schwelle für `bw`, gültig `1..255`: Was dunkler als die Schwelle ist, wird schwarz. Ein **niedrigerer** Wert ergibt eine hellere Seite mit weniger zugelaufener Schrift, ein **höherer** eine dunklere, fettere. Gilt nur mit `color-mode = bw` (SV-08). |
 | `unboundair.keep-raw` | `UNBOUNDAIR_KEEPRAW` | `false` | Legt zusätzlich das unbearbeitete JPEG ab (SV-06). Zur Fehlersuche gedacht, kostet den doppelten Platz. |
 | `unboundair.dpi` | `UNBOUNDAIR_DPI` | `300` | Scan-Auflösung in DPI, 300 oder 600 (SC-07, SC-08). |
+| `unboundair.page-size` | `UNBOUNDAIR_PAGESIZE` | `off` | Ziel-Seitenformat des fertigen PDFs (SV-09). `off` behält das alte Verhalten: Die Seitenbox ist die Scangröße. Jeder andere Wert setzt die Box auf das genannte Format; der Inhalt wird unskaliert mittig hineingelegt, nie hochskaliert, nie neu komprimiert. |
 
 `bw` braucht für den PDF-Weg das Programm `jbig2` – ohne es lässt sich keine Schwarz-Weiß-Seite ins PDF übernehmen.
+
+#### Seitengröße
+
+Zulässig sind `off`, die Namen `a4`, `a5`, `a6`, `a6-landscape` (Querformat), `letter`, `legal` sowie freie Maße in ganzen Millimetern wie `210x297mm`. Groß- oder Kleinschreibung ist egal. Ein Punkt ist 1/72 Zoll, also 1 mm = 72/25,4 Punkte:
+
+| Wert | Millimeter | Punkte |
+|---|---|---|
+| `a4` | 210×297 | 595,28×841,89 |
+| `a5` | 148×210 | 419,53×595,28 |
+| `a6` | 105×148 | 297,64×419,53 |
+| `a6-landscape` | 148×105 (Querformat) | 419,53×297,64 |
+| `letter` | 215,9×279,4 (8,5×11 Zoll, zollgenau) | 612×792 |
+| `legal` | 215,9×355,6 (8,5×14 Zoll, zollgenau) | 612×1008 |
+| z. B. `210x297mm` | freie Breite×Höhe | umgerechnet wie oben |
+
+Es gibt keine automatische Drehung: Derselbe Wert ergibt immer dieselbe Box. Ein Querformat-Scan auf `a4` bleibt hochkant auf der Hochformat-Box mit weißen Rändern liegen; wer Querformat will, nimmt `a6-landscape` oder ein freies Maß wie `210x148mm`.
+
+Verhalten in beide Richtungen: Ist der Scan **kleiner** als die Box, bleibt weißer Rand – der Inhalt wird nicht gestreckt. Ist er **größer**, ragt er über die Box hinaus; was außerhalb liegt, wird **abgeschnitten, das heißt unsichtbar, nicht gelöscht**: Die Pixel bleiben in der Datei, die Seitenbox zeigt sie nur nicht. Wer sie wirklich physisch entfernen will, braucht ein anderes Werkzeug.
+
+Dass gescannte Seiten kleiner ausfallen als das Papierformat (siehe OF-05 in `docs/internal/offene-fragen.md` und die Scaneigenschaften in `docs/de/hardware.md`), ändert daran nichts: Die Box wird gesetzt wie geschrieben, nicht nachgemessen.
 
 ### Ausgabe
 
