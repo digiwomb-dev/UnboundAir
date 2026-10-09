@@ -36,6 +36,7 @@ import java.time.temporal.ChronoUnit
  * - `unboundair.output.paperless.token-file` -> `UNBOUNDAIR_OUTPUT_PAPERLESS_TOKENFILE`
  * - `unboundair.bw-threshold` -> `UNBOUNDAIR_BWTHRESHOLD`
  * - `unboundair.dpi` -> `UNBOUNDAIR_DPI`
+ * - `unboundair.page-size` -> `UNBOUNDAIR_PAGESIZE`
  *
  * @property pollInterval Poll interval for status checks (DL-01). Default 3 seconds.
  * @property offlinePollInterval Poll interval when scanner is offline (DL-02). Default 10 seconds.
@@ -45,6 +46,7 @@ import java.time.temporal.ChronoUnit
  * @property bwThreshold Luma threshold for color-mode bw, 1..255 (SV-08). Default 128.
  * @property keepRaw Keep raw JPEGs for debug (SV-06). Default false.
  * @property dpi Scan resolution in DPI, 300 or 600 (SC-07, SC-08). Default 300.
+ * @property pageSize Target page size for output sizing, plain string to keep `config` leaf. Default "off".
  * @property scanner where the scanner is reached (SC-06); see [ScannerProperties].
  * @property output which output modules are active (AU-03); see [OutputProperties].
  * @property outbox where documents are persisted before delivery (AU-04); see [OutboxProperties].
@@ -72,6 +74,13 @@ data class UnboundAirProperties(
     val bwThreshold: Int = 128,
     val keepRaw: Boolean = false,
     val dpi: Int = 300,
+    /**
+     * The `config` package is an architecture leaf and must not depend on `output`,
+     * so the value is carried as a plain string here and mapped to the `TargetPageSize`
+     * by the composition root. Accepted: `off`, `a4`, `a5`, `a6`, `a6-landscape`,
+     * `letter`, `legal`, or `<width>x<height>mm` (see `TargetPageSize`).
+     */
+    val pageSize: String = "off",
     val scanner: ScannerProperties = ScannerProperties(),
     val output: OutputProperties = OutputProperties(),
     val outbox: OutboxProperties = OutboxProperties(),
