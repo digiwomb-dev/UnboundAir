@@ -132,6 +132,24 @@ Das sind **zwei verschiedene Dinge**, und sie sehen im Ergebnis ähnlich aus.
 
 **Abhilfe:** Blatt erneut einlegen. Solange das Zeitfenster noch läuft, landet es im selben Dokument.
 
+## Die Seite ist an den Rändern abgeschnitten oder hat einen breiten weißen Rand
+
+**Beobachtung:** Der Scan ist an den Seiten beschnitten, oder er steht mit einem breiten weißen Rand auf der Seite — obwohl Vorlage und eingestelltes Format eigentlich zusammenpassen sollten.
+
+**Ursache:** Die eingestellte Seitengröße (`page-size`) passt nicht zur Vorlage. Mit einem Zielmaß wird die Seitenbox auf dieses Maß gesetzt und der Scan **unskaliert zentriert** hineingelegt — er wird weder eingepasst noch gestreckt (SV-09). Ist die Box kleiner als der Scan, ragt er über und ist dort nicht sichtbar; ist sie größer, bleibt der Rest leer.
+
+**Abhilfe:** Das passende Format einstellen, ein freies Maß in Millimetern angeben oder `off` wählen — dann gilt wieder die Scan-eigene Größe aus Pixeln und DPI (SV-05). Welche Werte `page-size` kennt, steht in [`configuration.md`](configuration.md).
+
+**Kein Fehler, sondern erwartet:** Ein A4-Scan füllt eine A4-Box nie exakt aus. Das Gerät liefert kleinere Maße als das eingelegte Papier (A4 misst etwa 206,9 × 291,3 mm statt 210 × 297 mm) — beobachtet, Ursache unbekannt, siehe OF-05 in [`../internal/offene-fragen.md`](../internal/offene-fragen.md). Ein schmaler Rand um den Scan auf einer A4-Box ist also normal und kein Defekt.
+
+## Ein quer eingelegtes Blatt steht aufrecht — oder passt gar nicht in den Einzug
+
+Das sind **zwei verschiedene Dinge**, und nur eines davon lässt sich einstellen.
+
+**Aufrecht statt quer ist Absicht.** **Beobachtung:** Ein quer eingelegtes Blatt steht aufrecht auf der Seite, mit breitem Rand oben und unten. **Ursache:** Das eingestellte Format gilt wie geschrieben — der Scan wird unskaliert zentriert hineingelegt, nie gedreht und nie eingepasst (SV-09). Drehen gehört bewusst nicht zu v1 (siehe „End-Seitengröße einstellbar" in [`../internal/entscheidungen.md`](../internal/entscheidungen.md)); im paperless-Pfad übernimmt paperless das Geraderücken per OCRmyPDF. **Abhilfe:** Eine Quer-Box ausdrücklich wählen — die Voreinstellung `a6-landscape` oder ein freies Maß wie `210x148mm` — oder `off` für die Scan-eigene Größe (SV-05).
+
+**Passt nicht durch den Einzug, hilft keine Einstellung.** **Beobachtung:** Ein breites Blatt lässt sich gar nicht erst einziehen. **Ursache:** Das ist eine Gerätegrenze, keine Einstellung: Die beobachtete Bildbreite endet bei etwa 208,6 mm (A4-Blatt, ca. 2464 px bei 300 dpi) **[Scan]** — Messwert in [`hardware.md`](hardware.md). Ein A4-Blatt quer (297 mm) reicht hardwareseitig nie bis ins PDF. **Abhilfe:** keine — was den Einzug nicht passiert, erreicht keine Einstellung. **Ehrlich gesagt:** Etwa 208,6 mm ist die beobachtete Bildbreite aus 1–2 Scans, keine vermessene Papiergrenze des Einzugs. Ob ein A5-Blatt quer (210 mm) noch durchpasst, ist ungemessen — dazu wird hier in keine Richtung etwas behauptet.
+
 ## Was diese Seite nicht beantwortet
 
 **Verhalten bei niedrigem Akkustand.** Die Antwort `battlow` ist aus der Referenz-App bekannt, am Gerät aber nie aufgetreten — OF-10 in [`../internal/offene-fragen.md`](../internal/offene-fragen.md). Ob das Gerät dann noch scannt, ob die Meldung einmal oder dauernd kommt und ob ein Scan mittendrin abbricht, ist ungemessen. Der Pfad ist gebaut und getestet (SC-05), beschrieben wird er hier nicht — was nicht gemessen ist, wird in diesem Projekt nicht behauptet.
