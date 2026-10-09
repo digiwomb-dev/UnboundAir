@@ -354,9 +354,13 @@ class PdfPageSizeTest {
      * the image bytes they place. */
     private fun contentBytes(page: PDPage): ByteArray {
         val contents = page.cosObject.getDictionaryObject(COSName.CONTENTS)
+
         fun decoded(stream: COSStream): ByteArray = stream.createInputStream().use { it.readBytes() }
         return when (contents) {
-            is COSStream -> decoded(contents)
+            is COSStream -> {
+                decoded(contents)
+            }
+
             is COSArray -> {
                 var out = byteArrayOf()
                 for (i in 0 until contents.size()) {
@@ -366,7 +370,10 @@ class PdfPageSizeTest {
                 }
                 out
             }
-            else -> throw AssertionError("expected a content stream for the page, found $contents")
+
+            else -> {
+                throw AssertionError("expected a content stream for the page, found $contents")
+            }
         }
     }
 
