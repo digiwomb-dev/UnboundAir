@@ -112,11 +112,11 @@ Unklar ist, ob der Scanner am Rand etwas abschneidet, ob der Einzug das Blatt st
 
 **Zusätzliche Beobachtung [Analyse]:** Das Testbild `din_a4_300dpi_raw.jpg` ist roh bereits 2464 × 3425 px = 208,6 × 290,0 mm. Nach Zuschnitt müsste es also *kleiner* werden als die oben genannten 206,9 × 291,3 mm – in der Höhe ist der gemessene Wert aber **größer** als das Rohbild. Mindestens eine der beiden Zahlen stammt von einem anderen Scan oder ist falsch notiert. Das ist beim Fortschreiben zu bereinigen.
 
-**So gebaut:** Seitengröße im PDF = Pixel ÷ DPI, ohne Umrechnung auf Normformate (SV-05). Maßgeblich ist die befohlene Auflösung; weicht der JPEG-Header ab, wird gewarnt statt abgebrochen.
+**So gebaut:** Seitengröße im PDF = Pixel ÷ DPI, ohne Umrechnung auf Normformate (SV-05). Maßgeblich ist die befohlene Auflösung; weicht der JPEG-Header ab, wird gewarnt statt abgebrochen. Als Opt-in legt SV-09 die Seite unskaliert zentriert in eine einstellbare Seitenbox, ohne einen Bildpixel zu verändern – das umgeht die Abweichung für die Ausgabe, ohne ihre Ursache zu klären.
 
 **Klärt:** Nachmessen mit dem Lineal am echten Gerät, zusätzlich ein Scan mit bekanntem Referenzmaß.
 
-**Zweistufig:** Steht die Ursache fest, ist zu entscheiden, ob der Dienst die Abweichung ausgleicht oder die Pixelmaße unverändert übernimmt – siehe „Seitengrößen-Abweichung" in den offenen Entscheidungen des Plans.
+**Zweistufig:** Steht die Ursache fest, ist zu entscheiden, ob der Dienst die Abweichung ausgleicht oder die Pixelmaße unverändert übernimmt – siehe „Seitengrößen-Abweichung" in den entschiedenen Punkten des Plans (SV-09).
 
 ---
 

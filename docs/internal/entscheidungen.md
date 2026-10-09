@@ -697,3 +697,13 @@ Stand: 07.10.2026. Beide Dockerfiles pinnen ihr Basis-Image per Digest und insta
 - **Spike D (OpenPDF-Determinismus, #141):** byte-identische PDFs erreichbar; Naht ist `PdfWriter.getInfo()` (FILEID/CreationDate/ModDate/Producer); nur `/ID` variiert sonst; brotli4j wird ausgeschlossen (Default aus, native Libs); JPEG roh bestätigt via PDFBox-Raw-Stream.
 - **Spike E (Starlight-Inhaltsquelle, #227):** `docsLoader()` kennt kein `base` — Umleitung per Symlink je Sprache (vom Glob gefolgt, identischer Bau); `title:` Pflicht und genügend; Paarung über Dateinamen bestätigt; Rückfall mit Markierung hängt an `defaultLocale`; kein Drittparteien-Kontakt in `dist/`.
 - **Spike F (apt-Pinning, #249):** Schnappschuss dient auch arm64 (Index gemessen), hält mindestens zwei Jahre, Mechanismus end-to-end bewiesen — gewählt sind trotzdem exakte Versionen (kein neuer Host, Hash via signiertem Index, sechs Pakete genügen mit CI-06 und Golden-Tests als Netz); Bump per monatlicher Prüfung, siehe Folge-Issue.
+
+## End-Seitengröße einstellbar, unskaliert zentriert (SV-09)
+
+**Entscheidung: Die End-Seitengröße im PDF ist einstellbar (`page-size`, Default `off`). Bei `off` gilt SV-05 (Seitengröße = Pixel ÷ DPI); mit einem Zielmaß wird die Seitenbox auf dieses Maß gesetzt und die Seite unskaliert zentriert hineingelegt. Hochskaliert wird nie, kein Bildpixel wird verändert – der JPEG-Strom bleibt bytegleich als `/DCTDecode` eingebettet, der JBIG2-Pfad aus SV-08 wird gleich behandelt. Die Seitengrößen-Abweichung aus OF-05 wird damit nicht ausgeglichen, sondern umgangen: Die Pixelmaße bleiben unverändert.**
+
+**Warum nicht Teil von `normalize` (SV-04).** `normalize` ist der eine benannte Pfad mit Neukomprimierung in der Verarbeitung, der am Bildinhalt arbeitet. Die Seitengröße ist dagegen verlustfreie Geometrie in der Ausgabe: Sie ändert keinen Pixel, nur die Seitenbox. Ein verlustfreies Merkmal in einen verlustbehafteten Schritt zu legen, würde es falsch etikettieren – und eine Neukomprimierung erzwingen, wo keine nötig ist.
+
+**Angewandtes Format gilt wie geschrieben – keine Lageautomatik.** Ein Quer-Scan auf `a4` landet aufrecht auf der A4-Box, zentriert mit weißem Rand; Querformate gibt es als `a6-landscape` oder freies Maß wie `210x148mm`. Der Grund ist das Gerät: Der S400W zieht Blatt für Blatt ein, die Bildbreite endet bei etwa 208,6 mm (siehe `docs/de/hardware.md`, Scaneigenschaften) – die Breite kann also nicht überlaufen. Eine Drehung würde aus einem passenden A6-Quer erst ein unnötiges A4-Hoch machen; die Leserichtung bleibt ohnehin offen, Drehen gehört nicht zu v1.
+
+**Kein weißes Rechteck gezeichnet.** Die unbedeckte Fläche bleibt einfach unbemalt – eine unbemalte PDF-Seite ist bereits weiß.

@@ -147,7 +147,7 @@ Jede Anforderung hat eine feste ID und ein Abnahmekriterium. IDs werden nie umnu
   *Abnahme:* Bei `gray` hat das Ergebnis genau eine Komponente (Luma) mit unveränderten Luma-Werten, bei `color` bleibt es farbig, bei `bw` entsteht die 1-bit-Seite aus SV-08.
 - **SV-04** `normalize` optional (Default aus): einziger Pfad mit Neukomprimierung, in der Doku klar als verlustbehaftet markiert.
   *Abnahme:* Ohne `normalize` ist das Ergebnis bytegleich zur `jpegtran`-Ausgabe; mit `normalize` gibt es einen eigenen Test und den Hinweis in der Doku.
-- **SV-05** Seitengröße im PDF = Pixel ÷ DPI. Keine Umrechnung auf Normformate.
+- **SV-05** Seitengröße im PDF = Pixel ÷ DPI. Keine Umrechnung auf Normformate. Wer ein Normformat will, nimmt das Opt-in aus SV-09.
   *Abnahme:* Test: Die PDF-Seite misst Pixel ÷ DPI × 72 pt (± 1 pt).
 - **SV-06** `keep-raw` (Debug): Roh-JPEGs zusätzlich ablegen.
   *Abnahme:* Test: Mit `keep-raw` liegt die Rohdatei zusätzlich vor, ohne nicht.
@@ -155,6 +155,8 @@ Jede Anforderung hat eine feste ID und ein Abnahmekriterium. IDs werden nie umnu
   *Abnahme:* Test hängt einen Dummy-Schritt in die Kette, ohne bestehende Schritte zu ändern.
 - **SV-08** `bw` wandelt die Seite in echtes 1-bit-Schwarzweiß: Luma-Schwellwert (Default 128), unter dem Schwellwert schwarz. Die Seite verlässt die Kette als PBM (P4) und erreicht das PDF als JBIG2 mit **einem** gemeinsamen Symbolwörterbuch je Dokument.
   *Abnahme:* Mit `color-mode = bw` stimmen die Pixel der Seite exakt mit dem Schwellwert überein; alle Seiten eines PDFs tragen `/JBIG2Decode` und verweisen auf denselben `/JBIG2Globals`-Strom; das bw-PDF ist deutlich kleiner als das graue desselben Dokuments.
+- **SV-09** Die End-Seitengröße im PDF ist einstellbar (`page-size`, Default `off`). Bei `off` verhält sich alles wie bisher: Seitengröße = Pixel ÷ DPI (SV-05). Mit einem Zielmaß wird die Seitenbox auf dieses Maß gesetzt und die Seite **unskaliert** zentriert hineingelegt: zu kleine Seiten bekommen einen leeren Rand, zu große ragen über die Box hinaus und sind dort nicht sichtbar. Hochskaliert wird nie, und kein Bildpixel wird verändert – der JPEG-Strom bleibt bytegleich als `/DCTDecode` eingebettet, der JBIG2-Pfad aus SV-08 wird gleich behandelt.
+  *Abnahme:* Mit `off` ist das PDF bytegleich zu den Golden-Dateien. Mit `a4` misst die Seite 595,28 × 841,89 pt (± 1 pt), die Bildmatrix sitzt zentriert, und der rohe Datenstrom ist weiter bytegleich zur Eingabedatei. Ein kleineres Blatt wird nicht vergrößert, ein größeres nicht verkleinert.
 
 ### PDF & Ausgabe-Module (AU)
 
@@ -445,7 +447,6 @@ Hier stehen nur Punkte, die **eine Entscheidung** brauchen. Was sich dagegen nur
 - **GraalVM Native Image:** später prüfen, vor allem ob ImageIO/AWT und OpenPDF darin laufen.
 - **Mehrere Ausgabe-Module gleichzeitig** (ein Dokument an mehrere Ziele) oder immer genau eins? Die Konfiguration nimmt bereits eine Komma-Liste entgegen (AU-03), damit diese Entscheidung offen bleibt; in v1 ist nur ein Wert sinnvoll.
 - **Defaults** für `poll-interval`, `batch-timeout` und Leerlauf – nach Messung mit `measure` (Messgrundlagen: OF-01 bis OF-03). Bis dahin gelten die vorläufigen Defaults aus DL-01/DL-04 (3 s bzw. 20 s). Zum `poll-interval` liegt inzwischen eine Beobachtung am Gerät vor: 3 Sekunden halten den Scanner über die Auto-Off-Grenze hinaus wach (OF-01, Status `beobachtet`). Der Default 3 s ist damit belegt tragfähig; offen bleibt, ob ein größerer Abstand dasselbe schafft und schonender wäre.
-- **Seitengrößen-Abweichung:** ob der Dienst die Abweichung ausgleicht oder die Pixelmaße unverändert übernimmt – erst nach der Messung zu entscheiden (OF-05).
 - **`normalize`:** was es genau tun soll – Kontrast strecken, Weißpunkt setzen, etwas anderes – und mit welchem Werkzeug. Bis zur Entscheidung wird SV-04 nicht gebaut. Die 1-bit-Ausgabe von SV-08 ändert nichts daran, wie `normalize` zu beurteilen wäre: Es bleibt ein optionaler, verlustbehafteter Zusatzschritt im Graustufen-/Farbpfad – offen ist nur, was es genau tun soll.
 - **Festnageln der apt-Pakete beider Images:** entschieden für exakte Versionen (Spike F in Work order 23: Schnappschuss ginge auch auf arm64, aber sechs gepinnte Pakete mit CI-06 und Golden-Tests als Netz sind der kleinere Mechanismus) — Umsetzung im Folge-Issue samt monatlicher Prüfung, die fällige Anhebungen bemerkt.
 
@@ -465,6 +466,7 @@ Punkte, die zu Projektbeginn geklärt wurden. Die Begründungen gehören nach DO
 
   Erschwerend: ktlint ist mit Kotlin 2.4 ohnehin nicht kompatibel (ktlint-Issue 3289, gemeldet von einem JetBrains-Compiler-Entwickler); der Fix existiert bisher nur in ktlint 2.0.0-ALPHA. Der Linter parst deshalb bewusst mit einem älteren Compiler als dem, mit dem übersetzt wird – für Formatierungsregeln genügt das. Siehe OF-11.
 - **DPI-Quelle (SV-05):** Maßgeblich ist die **befohlene** Auflösung (wir setzen `dpi300`/`dpi600` selbst). Der JPEG-Header wird zusätzlich gelesen; weicht er ab, wird **gewarnt, nicht abgebrochen**. Grund: Laut offener Frage 5 stimmt die physische Größe ohnehin nicht, der Header ist also nicht vertrauenswürdiger als unser eigener Befehl – eine Abweichung ist aber ein wertvoller Hinweis.
+- **Seitengrößen-Abweichung (SV-09, OF-05):** Die Abweichung wird **nicht** durch Skalierung ausgeglichen; die Pixelmaße bleiben unverändert, nur die Seitenbox ist optional ein Normformat. Begründung in `docs/internal/entscheidungen.md`.
 - **Modul-Auswahl (AU-03):** Umgebungsvariable `UNBOUNDAIR_OUTPUT_MODULES` als Komma-Liste, in v1 mit dem Wert `paperless`. Eine Liste kostet jetzt nichts und nimmt die offene Frage „mehrere Module gleichzeitig" nicht vorweg.
 - **Dokument-Typ der Modul-Schnittstelle (AU-02):** Ein eigener Typ `output.OutputDocument`; die Batch-Senke bildet `service.ScannedDocument` darauf ab. Nicht umgekehrt: `output` darf `service` nach der Schichten-Tabelle nicht sehen, und `ScannedDocument` nach `output` zu verschieben würde die CLI an die Ausgabe koppeln. Die paar Zeilen Abbildung sind der günstigere Preis.
 - **Outbox (AU-04):** Ablage unter `unboundair.outbox.path`, Default `/var/lib/unboundair/outbox`; je Dokument ein Unterordner mit `document.pdf` und `metadata.json` (Metadaten müssen mitpersistiert werden, sonst überleben sie den Neustart nicht). Backoff: Start 30 s, Faktor 2, Deckel 1 h, unbegrenzte Versuche. Nach erfolgreicher Zustellung wird der Ordner gelöscht.
