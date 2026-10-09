@@ -37,7 +37,7 @@ jobs:
       - name: Check out the tag with full history
         # Full history: the main-ancestry check below needs it, and a
         # tag checkout leaves a detached HEAD by itself.
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -95,7 +95,7 @@ jobs:
         # gh release derives the repository from the git remote: without a
         # checkout it fails with "not a git repository". Shallow is enough
         # here — nothing in this job reads history.
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Download the tested jar and the verified images
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
