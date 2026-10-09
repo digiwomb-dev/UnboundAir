@@ -15,10 +15,6 @@ on:
     branches: [dev, main]
   pull_request:
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -50,11 +46,13 @@ jobs:
         # from a repository secret and never touches the repository;
         # substituted with Python so multiline blocks and special characters
         # survive intact.
-        # Fork pull requests get no secrets, so the substitution and the
-        # assertion below are both skipped there — with comment, not
-        # silently: their builds never deploy (see the deploy job), so a
-        # placeholder cannot leak onto the published site.
-        if: github.event.pull_request.head.repo.fork != 'true'
+        # Fork pull requests get no secrets, and Dependabot runs get only
+        # Dependabot secrets, so the substitution and the assertion below are
+        # both skipped there — with comment, not silently: their builds never
+        # deploy (see the deploy job), so a placeholder cannot leak onto the
+        # published site. `fork` is a boolean and is compared with one; a
+        # comparison with the string 'true' is always unequal (#283).
+        if: github.event.pull_request.head.repo.fork != true && github.actor != 'dependabot[bot]'
         env:
           IMPRINT_BLOCK: ${{ secrets.IMPRINT_BLOCK }}
         run: |
@@ -73,10 +71,11 @@ jobs:
         working-directory: site
         run: npm run build
       - name: Assert no imprint placeholders remain
-        # Skipped on fork pull requests together with the substitution above;
-        # see the comment there. Covers the provider block; the check
-        # script (#233) watches third-party contact, not placeholders.
-        if: github.event.pull_request.head.repo.fork != 'true'
+        # Skipped on fork and Dependabot pull requests together with the
+        # substitution above; see the comment there. Covers the provider
+        # block; the check script (#233) watches third-party contact, not
+        # placeholders.
+        if: github.event.pull_request.head.repo.fork != true && github.actor != 'dependabot[bot]'
         run: |
           if grep -rn "IMPRINT_BLOCK" site/dist/ | grep "{{"; then
             echo "imprint placeholders reached the output" >&2
@@ -133,6 +132,12 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [build, check]
     runs-on: ubuntu-latest
+    # Only deploys are serialised. At workflow level the group made every
+    # pull-request build wait for — and a newer one cancel — the pending
+    # run of any other branch (#283).
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     permissions:
       pages: write
       id-token: write
