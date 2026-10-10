@@ -59,7 +59,7 @@ Beide sind einstellbar, damit die Tests gegen den Fake-Scanner auf einem freien 
 | `unboundair.bw-threshold` | `UNBOUNDAIR_BWTHRESHOLD` | `128` | Helligkeits-Schwelle für `bw`, gültig `1..255`: Was dunkler als die Schwelle ist, wird schwarz. Ein **niedrigerer** Wert ergibt eine hellere Seite mit weniger zugelaufener Schrift, ein **höherer** eine dunklere, fettere. Gilt nur mit `color-mode = bw` (SV-08). |
 | `unboundair.keep-raw` | `UNBOUNDAIR_KEEPRAW` | `false` | Legt zusätzlich das unbearbeitete JPEG ab (SV-06). Zur Fehlersuche gedacht, kostet den doppelten Platz. |
 | `unboundair.dpi` | `UNBOUNDAIR_DPI` | `300` | Scan-Auflösung in DPI, 300 oder 600 (SC-07, SC-08). |
-| `unboundair.page-size` | `UNBOUNDAIR_PAGESIZE` | `off` | Ziel-Seitenformat des fertigen PDFs (SV-09). `off` behält das alte Verhalten: Die Seitenbox ist die Scangröße. Jeder andere Wert setzt die Box auf das genannte Format; der Inhalt wird unskaliert mittig hineingelegt, nie hochskaliert, nie neu komprimiert. |
+| `unboundair.page-size` | `UNBOUNDAIR_PAGESIZE` | `off` | Ziel-Seitenformat des fertigen PDFs (SV-09). `off` behält das alte Verhalten: Die Seitenbox ist die Scangröße (SV-05). Jeder andere Wert setzt die Box auf das genannte Format; der Inhalt wird unskaliert mittig hineingelegt, nie hochskaliert, nie neu komprimiert. |
 
 `bw` braucht für den PDF-Weg das Programm `jbig2` – ohne es lässt sich keine Schwarz-Weiß-Seite ins PDF übernehmen.
 
