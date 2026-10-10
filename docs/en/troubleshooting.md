@@ -2,7 +2,7 @@
 title: Troubleshooting
 ---
 
-<!-- translated from docs/de/troubleshooting.md @ 2074ca10533d8e7e912ad43ae6bbbf5421c67db3 -->
+<!-- translated from docs/de/troubleshooting.md @ bc401b7464eac974ad10fdf34794e155cdc2c615 -->
 
 
 What can go wrong, how to recognise it and what to do then (DO-20). Every entry names an **observation**, its **cause** and the **remedy**.
