@@ -19,10 +19,13 @@ import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.io.TempDir
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.WebApplicationType
 import org.springframework.boot.builder.SpringApplicationBuilder
+import org.springframework.boot.test.system.CapturedOutput
+import org.springframework.boot.test.system.OutputCaptureExtension
 import org.springframework.context.ConfigurableApplicationContext
 import java.io.ByteArrayInputStream
 import java.nio.file.Files
@@ -249,6 +252,66 @@ class PageSizeEndToEndTest {
                 runCatching { contextRef.get()?.close() }
             }
         }
+    }
+
+    /**
+     * A mistyped page size must stop the service before it scans anything (#294):
+     * `TargetPageSize.parse` runs once in the `run` branch, before `ScanLoop` is
+     * even built, so this test needs no FakeScanner — the run command ends on its
+     * own with exit code 1 and the error names the value and the accepted forms.
+     * The same early-failure reasoning the paperless token resolution follows.
+     *
+     * The message is read from the captured console output: Spring Boot reconfigures
+     * logback while the context boots, which drops a `ListAppender` attached beforehand,
+     * so the appender route cannot see the line the boot itself writes.
+     */
+    @Test
+    @ExtendWith(OutputCaptureExtension::class)
+    fun `SV-09 an invalid page-size prevents startup with a message naming the value and the accepted forms`(
+        @TempDir tempDir: Path,
+        capturedOutput: CapturedOutput,
+    ) {
+        val contextRef = AtomicReference<ConfigurableApplicationContext>()
+        val bootFailure = AtomicReference<Throwable>()
+        val boot =
+            thread(start = true, isDaemon = true, name = BOOT_THREAD_NAME) {
+                try {
+                    contextRef.set(
+                        SpringApplicationBuilder(UnboundAirApplication::class.java)
+                            .web(WebApplicationType.NONE)
+                            .properties(
+                                "unboundair.output.modules=paperless",
+                                "unboundair.output.paperless.token=$TOKEN",
+                                // The production default /var/lib/unboundair is not
+                                // writable in the container; the temp dir stands in.
+                                "unboundair.outbox.path=${tempDir.resolve("outbox")}",
+                                // No scanner host is configured on purpose: the parse
+                                // fails before any connection would be opened.
+                                "unboundair.page-size=din-a4",
+                            ).run("run"),
+                    )
+                } catch (e: Throwable) {
+                    bootFailure.set(e)
+                }
+            }
+        boot.join(BOOT_JOIN_MILLIS)
+        assertThat(boot.isAlive)
+            .`as`("the run command with an invalid page-size must end on its own, no service to stop")
+            .isFalse()
+        assertThat(bootFailure.get())
+            .`as`("a bad page-size must fail through the exit code, not crash the process")
+            .isNull()
+        val context =
+            checkNotNull(contextRef.get()) {
+                "the run command returned without handing back its Spring context"
+            }
+        assertThat(SpringApplication.exit(context))
+            .`as`("SV-09: an invalid page-size must prevent startup with a non-zero exit code")
+            .isEqualTo(1)
+        context.close()
+        assertThat(capturedOutput.all)
+            .`as`("the message must name the offending value and list the accepted forms")
+            .contains("din-a4", "a6-landscape", "210x297mm")
     }
 
     /**
