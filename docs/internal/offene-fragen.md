@@ -210,6 +210,8 @@ Zwei getrennte Probleme treffen hier zusammen:
 
 **Wie damit umgegangen wird:** Der Container ist zum Bauen und Testen da – der Gradle-Build braucht kein Git. Git-Befehle laufen daneben, nicht darin.
 
+**Nachtrag 10.10.2026 (SV-09): Es gibt einen begehbaren Weg.** Startet man den Container mit einem zusätzlichen Bind-Mount des gemeinsamen Git-Verzeichnisses (`devcontainer up --mount type=bind,source=<Hauptklon>/.git,target=<Hauptklon>/.git`), funktionieren Git-Befehle auch im Worktree. Damit führen die beiden Wächter aus, die sonst an der Umgebung scheitern: der Provenance-Wächter aus DO-15 meldet dann echte Verstöße statt „marker commit is unknown", und `RepositoryHygieneTest` überspringt nicht mehr. Der Mount ist eine Einrichtung der lokalen Arbeitsumgebung und gehört nicht ins Repository – wer den Container frisch daraus hochzieht, bekommt den alten Zustand zurück. Die eigentliche Auflösung bleibt „Klärt sich" unten.
+
 **Klärt sich,** sobald Git 2.48 oder neuer überall verfügbar ist, wo der Dev Container gebaut wird. Dann lassen sich Worktrees mit relativen Pfaden anlegen (`git worktree add --relative-paths`), und die `devcontainer`-CLI kann das gemeinsame Git-Verzeichnis mitmounten (`--mount-git-worktree-common-dir`). Aktuell scheitert das an den ausgelieferten Git-Versionen: Debian Trixie liefert 2.47, Ubuntu Noble 2.43.
 
 ---
