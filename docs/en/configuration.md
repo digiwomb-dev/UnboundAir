@@ -2,7 +2,7 @@
 title: Configuration
 ---
 
-<!-- translated from docs/de/configuration.md @ 5f6d93a71836affe9415004a8828463762a3c3cb -->
+<!-- translated from docs/de/configuration.md @ 2074ca10533d8e7e912ad43ae6bbbf5421c67db3 -->
 
 
 Every `UnboundAir` setting with default and environment variable (DO-09, requirement KL-01). This file is the reference: what the code knows is in here — and what is in here exists in the code.
@@ -61,8 +61,29 @@ Both are adjustable so tests can run against the fake scanner on a free port wit
 | `unboundair.bw-threshold` | `UNBOUNDAIR_BWTHRESHOLD` | `128` | Brightness threshold for `bw`, valid `1..255`: what is darker than the threshold turns black. A **lower** value yields a brighter page with less clogged type, a **higher** one a darker, bolder page. Applies only with `color-mode = bw` (SV-08). |
 | `unboundair.keep-raw` | `UNBOUNDAIR_KEEPRAW` | `false` | Stores the unprocessed JPEG additionally (SV-06). Meant for debugging, costs double the space. |
 | `unboundair.dpi` | `UNBOUNDAIR_DPI` | `300` | Scan resolution in DPI, 300 or 600 (SC-07, SC-08). |
+| `unboundair.page-size` | `UNBOUNDAIR_PAGESIZE` | `off` | Target page format of the finished PDF (SV-09). `off` keeps the old behaviour: the page box is the scan size (SV-05). Any other value sets the box to the named format; the content is placed in the centre unscaled, never upscaled, never recompressed. |
 
 `bw` needs the `jbig2` program for the PDF path — without it, no black-and-white page reaches the PDF.
+
+#### Page size
+
+Valid values are `off`, the names `a4`, `a5`, `a6`, `a6-landscape` (landscape), `letter`, `legal`, and free dimensions in whole millimetres such as `210x297mm`. Case does not matter. One point is 1/72 inch, so 1 mm = 72/25.4 points:
+
+| Value | Millimetres | Points |
+|---|---|---|
+| `a4` | 210×297 | 595.28×841.89 |
+| `a5` | 148×210 | 419.53×595.28 |
+| `a6` | 105×148 | 297.64×419.53 |
+| `a6-landscape` | 148×105 (landscape) | 419.53×297.64 |
+| `letter` | 215.9×279.4 (8.5×11 in, inch-exact) | 612×792 |
+| `legal` | 215.9×355.6 (8.5×14 in, inch-exact) | 612×1008 |
+| e.g. `210x297mm` | free width×height | converted as above |
+
+There is no automatic rotation: the same value always yields the same box. A landscape scan on `a4` stays upright on the portrait box with white margins; whoever wants landscape asks for it explicitly — the `a6-landscape` preset or a free dimension such as `210x148mm`.
+
+Behaviour in both directions: a scan **smaller** than the box keeps a white margin — the content is not stretched. A scan **larger** than the box protrudes beyond it; what lies outside is **cut off, which means invisible, not deleted**: the pixels remain in the file, the page box just does not show them. Whoever needs them physically gone needs a different tool.
+
+That scans come out smaller than the paper format (OF-05 in `docs/internal/offene-fragen.md`, the scan properties in `docs/de/hardware.md`) changes nothing: the box is set as written, not re-measured.
 
 ### Output
 
