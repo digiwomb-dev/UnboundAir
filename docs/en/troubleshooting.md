@@ -2,7 +2,7 @@
 title: Troubleshooting
 ---
 
-<!-- translated from docs/de/troubleshooting.md @ 5f6d93a71836affe9415004a8828463762a3c3cb -->
+<!-- translated from docs/de/troubleshooting.md @ 2074ca10533d8e7e912ad43ae6bbbf5421c67db3 -->
 
 
 What can go wrong, how to recognise it and what to do then (DO-20). Every entry names an **observation**, its **cause** and the **remedy**.
@@ -133,6 +133,24 @@ These are **two different things**, and they look similar in the result.
 **Cause:** that page failed while scanning or processing. It is discarded and logged, the batch stays open (DL-05) — a broken page ends no document.
 
 **Remedy:** feed the sheet again. As long as the batch timeout window is still running, it lands in the same document.
+
+## The page is cropped at the edges or has a wide white margin
+
+**Observation:** the scan is cropped on the sides, or it sits with a wide white margin on the page — although the template and the set format should actually match.
+
+**Cause:** the set page size (`page-size`) does not match the template. With a target dimension the page box is set to that dimension and the scan is **centred unscaled** inside — it is neither fitted nor stretched (SV-09). If the box is smaller than the scan, it protrudes and is not visible there; if it is larger, the rest stays empty.
+
+**Remedy:** set the matching format, name a free dimension in millimetres, or choose `off` — then the scan's own size from pixels and DPI applies again (SV-05). Which values `page-size` knows is in [`configuration.md`](configuration.md).
+
+**Not an error, but expected:** an A4 scan never fills an A4 box exactly. The device delivers smaller dimensions than the fed paper (A4 measures about 206.9 × 291.3 mm instead of 210 × 297 mm) — observed, cause unknown, see OF-05 in [`../internal/offene-fragen.md`](../internal/offene-fragen.md) (German only). A narrow margin around the scan on an A4 box is therefore normal and not a defect.
+
+## A sheet fed sideways stands upright — or does not fit in the feeder at all
+
+These are **two different things**, and only one of them can be set.
+
+**Upright instead of sideways is intentional.** **Observation:** a sheet fed sideways stands upright on the page, with a wide margin above and below. **Cause:** the set format applies as written — the scan is centred unscaled inside, never rotated and never fitted (SV-09). Rotating is deliberately not part of v1 (see "End-page size adjustable" in [`../internal/entscheidungen.md`](../internal/entscheidungen.md) (German only)); in the paperless path, paperless takes over straightening via OCRmyPDF. **Remedy:** explicitly choose a landscape box — the `a6-landscape` preset or a free dimension such as `210x148mm` — or `off` for the scan's own size (SV-05).
+
+**Does not fit through the feeder, no setting helps.** **Observation:** a wide sheet cannot be fed in at all. **Cause:** this is a device limit, not a setting: the observed image width ends at about 208.6 mm (A4 sheet, approx. 2464 px at 300 dpi) **[Scan]** — measured value in [`hardware.md`](hardware.md). An A4 sheet sideways (297 mm) never reaches the PDF on account of the hardware. **Remedy:** none — what does not pass the feeder reaches no setting. **To be honest:** about 208.6 mm is the observed image width from 1–2 scans, not a measured paper limit of the feeder. Whether an A5 sheet sideways (210 mm) still passes is unmeasured — nothing is claimed in any direction here.
 
 ## What this page does not answer
 
