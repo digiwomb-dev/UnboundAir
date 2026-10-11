@@ -1,0 +1,85 @@
+# CI-02 hardening (issue #301): self-healing watchdog for the nightly.
+#
+# The nightly itself is scheduled in `nightly.yml` with three staggered cron
+# slots, but GitHub's central scheduler has no delivery guarantee — measured
+# in this repository it skipped 09.10. entirely and fired the neighbouring
+# nights six hours late. This watchdog closes the last gap: every 30 minutes
+# it checks the nightly's runs and re-dispatches the workflow when a night
+# has neither succeeded nor started recently.
+#
+# The dispatch rule (all conditions checked, any one true keeps it quiet):
+#
+#   - a run succeeded within the last 24 hours, or
+#   - a run is queued or in progress, or
+#   - a run was created within the last 6 hours.
+#
+# Only when all three are false does it dispatch. The 24-hour window heals a
+# skipped night (within one 30-minute tick), the queued/in-progress check
+# never double-fires a healthy run, and the 6-hour window bounds retries of a
+# permanently failing nightly to at most a few per day, so the runners are not
+# burned by a retry storm — a failure is visible on the Actions page and the
+# badge, it is not hammered.
+#
+# Scheduled workflows run on the default branch, so this file must live on
+# `main` for the schedule to fire; everything it dispatches is `nightly.yml`
+# on `main`, which in turn tests `ref: dev` (see the nightly's own header).
+#
+# The dispatch uses only the automatically provided GITHUB_TOKEN — triggering
+# `workflow_dispatch` with it has been allowed since 2022, and no PAT, no
+# third party and no new account is involved (CI-05).
+name: nightly-watchdog
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+# Overlapping watchdog checks add nothing; one check at a time.
+concurrency:
+  group: nightly-watchdog
+  cancel-in-progress: true
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the nightly's recent runs
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cutoff24h=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          cutoff6h=$(date -u -d '6 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          # A failed lookup must not be read as "no runs exist" — that would
+          # dispatch blindly on an API hiccup. Fail the check instead; the
+          # watchdog run goes red and the dispatch is skipped.
+          if ! recent=$(gh api "repos/digiwomb-dev/UnboundAir/actions/workflows/nightly.yml/runs?per_page=20" \
+            --jq --arg c24 "$cutoff24h" '[.workflow_runs[] | select(.created_at >= $c24)]'); then
+            echo "::error::nightly runs lookup failed — dispatching nothing"
+            exit 1
+          fi
+
+          succeeded=$(echo "$recent" | jq '[.[] | select(.conclusion == "success")] | length')
+          running=$(echo "$recent" | jq '[.[] | select(.status == "queued" or .status == "in_progress")] | length')
+          fresh=$(echo "$recent" | jq --arg c6 "$cutoff6h" '[.[] | select(.created_at >= $c6)] | length')
+
+          echo "recent runs: ${recent}"
+          echo "succeeded (24h)=${succeeded} running=${running} fresh (6h)=${fresh}"
+
+          if [ "$succeeded" -gt 0 ] || [ "$running" -gt 0 ] || [ "$fresh" -gt 0 ]; then
+            echo "nightly is healthy: succeeded recently or a run is underway — nothing to do"
+            echo "dispatch=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "no healthy nightly: dispatching a run"
+            echo "dispatch=yes" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Dispatch the nightly
+        if: steps.check.outputs.dispatch == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run nightly.yml --ref main
