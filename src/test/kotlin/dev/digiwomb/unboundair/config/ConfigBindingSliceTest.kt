@@ -111,6 +111,9 @@ class ConfigBindingSliceTest {
                 assertThat(properties.dpi)
                     .`as`("unboundair.dpi default (SC-07, SC-08)")
                     .isEqualTo(300)
+                assertThat(properties.pageSize)
+                    .`as`("unboundair.page-size default: no resizing until configured")
+                    .isEqualTo("off")
 
                 // Reflection on purpose, approved by the client: the architecture
                 // guard applies to test classes too (config is a leaf and may not
@@ -267,6 +270,16 @@ class ConfigBindingSliceTest {
                     assertThat(context.getBean(UnboundAirProperties::class.java).dpi)
                         .`as`("UNBOUNDAIR_DPI must override the 300 default (SC-07, SC-08)")
                         .isEqualTo(600)
+                }
+        }
+
+        @Test
+        fun `KL-01 the page size binds from its documented environment variable`() {
+            runnerWithEnvironment(mapOf("UNBOUNDAIR_PAGESIZE" to "a4"))
+                .run { context ->
+                    assertThat(context.getBean(UnboundAirProperties::class.java).pageSize)
+                        .`as`("UNBOUNDAIR_PAGESIZE must override the off default")
+                        .isEqualTo("a4")
                 }
         }
     }

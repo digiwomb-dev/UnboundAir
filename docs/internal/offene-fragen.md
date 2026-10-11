@@ -112,11 +112,11 @@ Unklar ist, ob der Scanner am Rand etwas abschneidet, ob der Einzug das Blatt st
 
 **Zusätzliche Beobachtung [Analyse]:** Das Testbild `din_a4_300dpi_raw.jpg` ist roh bereits 2464 × 3425 px = 208,6 × 290,0 mm. Nach Zuschnitt müsste es also *kleiner* werden als die oben genannten 206,9 × 291,3 mm – in der Höhe ist der gemessene Wert aber **größer** als das Rohbild. Mindestens eine der beiden Zahlen stammt von einem anderen Scan oder ist falsch notiert. Das ist beim Fortschreiben zu bereinigen.
 
-**So gebaut:** Seitengröße im PDF = Pixel ÷ DPI, ohne Umrechnung auf Normformate (SV-05). Maßgeblich ist die befohlene Auflösung; weicht der JPEG-Header ab, wird gewarnt statt abgebrochen.
+**So gebaut:** Seitengröße im PDF = Pixel ÷ DPI, ohne Umrechnung auf Normformate (SV-05). Maßgeblich ist die befohlene Auflösung; weicht der JPEG-Header ab, wird gewarnt statt abgebrochen. Als Opt-in legt SV-09 die Seite unskaliert zentriert in eine einstellbare Seitenbox, ohne einen Bildpixel zu verändern – das umgeht die Abweichung für die Ausgabe, ohne ihre Ursache zu klären.
 
 **Klärt:** Nachmessen mit dem Lineal am echten Gerät, zusätzlich ein Scan mit bekanntem Referenzmaß.
 
-**Zweistufig:** Steht die Ursache fest, ist zu entscheiden, ob der Dienst die Abweichung ausgleicht oder die Pixelmaße unverändert übernimmt – siehe „Seitengrößen-Abweichung" in den offenen Entscheidungen des Plans.
+**Zweistufig:** Steht die Ursache fest, ist zu entscheiden, ob der Dienst die Abweichung ausgleicht oder die Pixelmaße unverändert übernimmt – siehe „Seitengrößen-Abweichung" in den entschiedenen Punkten des Plans (SV-09).
 
 ---
 
@@ -209,6 +209,8 @@ Zwei getrennte Probleme treffen hier zusammen:
 **Warum:** Ein Worktree enthält kein `.git`-Verzeichnis, sondern nur eine Datei, die auf das gemeinsame Git-Verzeichnis des Hauptklons zeigt. Das liegt außerhalb des eingehängten Ordners und ist im Container deshalb nicht erreichbar.
 
 **Wie damit umgegangen wird:** Der Container ist zum Bauen und Testen da – der Gradle-Build braucht kein Git. Git-Befehle laufen daneben, nicht darin.
+
+**Nachtrag 10.10.2026 (SV-09): Es gibt einen begehbaren Weg.** Startet man den Container mit einem zusätzlichen Bind-Mount des gemeinsamen Git-Verzeichnisses (`devcontainer up --mount type=bind,source=<Hauptklon>/.git,target=<Hauptklon>/.git`), funktionieren Git-Befehle auch im Worktree. Damit führen die beiden Wächter aus, die sonst an der Umgebung scheitern: der Provenance-Wächter aus DO-15 meldet dann echte Verstöße statt „marker commit is unknown", und `RepositoryHygieneTest` überspringt nicht mehr. Der Mount ist eine Einrichtung der lokalen Arbeitsumgebung und gehört nicht ins Repository – wer den Container frisch daraus hochzieht, bekommt den alten Zustand zurück. Die eigentliche Auflösung bleibt „Klärt sich" unten.
 
 **Klärt sich,** sobald Git 2.48 oder neuer überall verfügbar ist, wo der Dev Container gebaut wird. Dann lassen sich Worktrees mit relativen Pfaden anlegen (`git worktree add --relative-paths`), und die `devcontainer`-CLI kann das gemeinsame Git-Verzeichnis mitmounten (`--mount-git-worktree-common-dir`). Aktuell scheitert das an den ausgelieferten Git-Versionen: Debian Trixie liefert 2.47, Ubuntu Noble 2.43.
 

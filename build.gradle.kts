@@ -17,7 +17,7 @@ plugins {
     // the project's 2.4.20 and makes it crash. Spotless resolves its tools
     // through a detached configuration, which that mechanism does not touch.
     // See docs/internal/plan.md, "Entschieden", and OF-11.
-    id("com.diffplug.spotless") version "8.10.2"
+    id("com.diffplug.spotless") version "8.10.3"
 
     // Mutation testing (own task, never part of `build`/`check`). Verified on
     // JUnit Platform 6 with pitest 1.25.5 - see docs/internal/entscheidungen.md (Spike B).
@@ -97,7 +97,7 @@ dependencies {
 
     // Architecture guard (Wächter). The junit6 artifact carries JUnit Platform 6
     // support, introduced in ArchUnit 1.5.0.
-    testImplementation("com.tngtech.archunit:archunit-junit6:1.5.0")
+    testImplementation("com.tngtech.archunit:archunit-junit6:1.5.1")
 }
 
 spotless {

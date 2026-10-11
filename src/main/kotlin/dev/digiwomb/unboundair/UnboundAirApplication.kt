@@ -6,6 +6,8 @@ import dev.digiwomb.unboundair.cli.RunCommand
 import dev.digiwomb.unboundair.cli.ScanCommand
 import dev.digiwomb.unboundair.cli.StatusCommand
 import dev.digiwomb.unboundair.config.UnboundAirProperties
+import dev.digiwomb.unboundair.output.PdfBuilder
+import dev.digiwomb.unboundair.output.TargetPageSize
 import dev.digiwomb.unboundair.processing.ColorMode
 import dev.digiwomb.unboundair.processing.CropStep
 import dev.digiwomb.unboundair.processing.GrayscaleStep
@@ -169,6 +171,11 @@ class UnboundAirApplication(
                 // blocks until the process ends.
                 val clock = Clock.systemDefaultZone()
                 val pipeline = outputPipeline(properties, clock, clock.zone, ::warn)
+                // Maps the configured page size onto the PDF builder at startup:
+                // TargetPageSize.parse throws on a bad value, which run() turns
+                // into a logged error and a non-zero exit, so the service never
+                // starts with an unknown page size.
+                val targetPageSize = TargetPageSize.parse(properties.pageSize)
                 val settings =
                     PageSettings(
                         colorMode = cli.colorMode ?: parseColorMode(properties.colorMode),
@@ -186,6 +193,7 @@ class UnboundAirApplication(
                                 properties.batchTimeout,
                                 Files.createTempDirectory("unboundair-batch"),
                                 pipeline.sink,
+                                PdfBuilder(clock, targetPageSize),
                             ),
                         processor = processor,
                         workDir = Files.createTempDirectory("unboundair-work"),

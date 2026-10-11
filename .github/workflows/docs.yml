@@ -15,10 +15,6 @@ on:
     branches: [dev, main]
   pull_request:
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -30,9 +26,9 @@ jobs:
       ASTRO_TELEMETRY_DISABLED: "1"
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: npm
@@ -50,11 +46,13 @@ jobs:
         # from a repository secret and never touches the repository;
         # substituted with Python so multiline blocks and special characters
         # survive intact.
-        # Fork pull requests get no secrets, so the substitution and the
-        # assertion below are both skipped there — with comment, not
-        # silently: their builds never deploy (see the deploy job), so a
-        # placeholder cannot leak onto the published site.
-        if: github.event.pull_request.head.repo.fork != 'true'
+        # Fork pull requests get no secrets, and Dependabot runs get only
+        # Dependabot secrets, so the substitution and the assertion below are
+        # both skipped there — with comment, not silently: their builds never
+        # deploy (see the deploy job), so a placeholder cannot leak onto the
+        # published site. `fork` is a boolean and is compared with one; a
+        # comparison with the string 'true' is always unequal (#283).
+        if: github.event.pull_request.head.repo.fork != true && github.actor != 'dependabot[bot]'
         env:
           IMPRINT_BLOCK: ${{ secrets.IMPRINT_BLOCK }}
         run: |
@@ -73,10 +71,11 @@ jobs:
         working-directory: site
         run: npm run build
       - name: Assert no imprint placeholders remain
-        # Skipped on fork pull requests together with the substitution above;
-        # see the comment there. Covers the provider block; the check
-        # script (#233) watches third-party contact, not placeholders.
-        if: github.event.pull_request.head.repo.fork != 'true'
+        # Skipped on fork and Dependabot pull requests together with the
+        # substitution above; see the comment there. Covers the provider
+        # block; the check script (#233) watches third-party contact, not
+        # placeholders.
+        if: github.event.pull_request.head.repo.fork != true && github.actor != 'dependabot[bot]'
         run: |
           if grep -rn "IMPRINT_BLOCK" site/dist/ | grep "{{"; then
             echo "imprint placeholders reached the output" >&2
@@ -101,9 +100,9 @@ jobs:
       ASTRO_TELEMETRY_DISABLED: "1"
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
       - name: Download built site
@@ -133,6 +132,12 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [build, check]
     runs-on: ubuntu-latest
+    # Only deploys are serialised. At workflow level the group made every
+    # pull-request build wait for — and a newer one cancel — the pending
+    # run of any other branch (#283).
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     permissions:
       pages: write
       id-token: write
@@ -141,7 +146,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Configure Pages
-        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - name: Deploy to Pages
         id: deployment
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

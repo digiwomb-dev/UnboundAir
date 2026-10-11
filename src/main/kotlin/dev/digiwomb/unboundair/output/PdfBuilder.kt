@@ -66,9 +66,13 @@ data class PdfPage(
  * are genuine.
  *
  * @property clock source of the document timestamp; pinned in tests.
+ * @property targetPageSize the page box to use; [TargetPageSize.Off] keeps
+ *   the scan-sized box (SV-05), [TargetPageSize.Fixed] centres the unscaled
+ *   content into the configured box (SV-09).
  */
 class PdfBuilder(
     private val clock: Clock = Clock.systemDefaultZone(),
+    private val targetPageSize: TargetPageSize = TargetPageSize.Off,
 ) {
     /**
      * Writes [pages] as a multi-page PDF to [target].
@@ -207,14 +211,7 @@ class PdfBuilder(
         // "never recompress" guardrail; anything via java.awt.Image or
         // BufferedImage would decode and re-encode and must not be used here.
         val image = Image.getInstance(Files.readAllBytes(page.file))
-        val width = pointsFor(image.plainWidth, page.dpi)
-        val height = pointsFor(image.plainHeight, page.dpi)
-
-        document.setPageSize(Rectangle(width, height))
-        document.newPage()
-        image.setAbsolutePosition(0f, 0f)
-        image.scaleToFit(width, height)
-        document.add(image)
+        placeImage(document, image, image.plainWidth, image.plainHeight, page.dpi)
     }
 
     /**
@@ -240,13 +237,62 @@ class PdfBuilder(
         }
         val info = BitmapInfo.read(page.file)
         val image = ImgJBIG2(info.width, info.height, encoded, globals)
-        val width = pointsFor(info.width.toFloat(), page.dpi)
-        val height = pointsFor(info.height.toFloat(), page.dpi)
+        placeImage(document, image, info.width.toFloat(), info.height.toFloat(), page.dpi)
+    }
 
-        document.setPageSize(Rectangle(width, height))
-        document.newPage()
-        image.setAbsolutePosition(0f, 0f)
-        image.scaleToFit(width, height)
+    /**
+     * Places one image on its page at its physical size, without scaling (SV-09).
+     *
+     * The content size is always `pixels / dpi * 72` points (SV-05). With
+     * [TargetPageSize.Off] the page box is that size and the image sits at
+     * `(0, 0)`, exactly as before. With [TargetPageSize.Fixed] the page box is
+     * the configured target taken exactly as configured -- width and height
+     * are never swapped and no orientation is inspected, so a landscape scan
+     * on `a4` stays upright with white margins -- and the image is centred
+     * into it via the offset `((box - content) / 2)` on each axis, which may be
+     * negative when the content overflows the box.
+     *
+     * The image is drawn with `scaleAbsolute(widthPt, heightPt)` rather than
+     * `scaleToFit`: `plainWidth` defaults to the raw pixel count (`1px = 1pt`;
+     * the JFIF dpi is parsed but never applied, and the cm matrix derives from
+     * `plainWidth`/`plainHeight`), so omitting the scale would draw about 4.17x
+     * too large at 300 dpi, while `scaleToFit` would shrink the content to fit
+     * -- the opposite of unscaled. There is no explicit clipping path:
+     * content outside the MediaBox is clipped by the PDF specification (no
+     * `/CropBox` is written, so it defaults to the MediaBox per ISO 32000-1
+     * section 14.11.2), and a clip path would only change bytes for no gain.
+     * Overflow pixels therefore remain in the file -- invisible, not deleted.
+     * Offsets are rounded to 1/100pt by `ByteBuffer.formatDouble`, and no
+     * white rectangle is painted: the unpainted page is already white.
+     *
+     * The size must be set before starting the page: OpenPDF applies a page
+     * size to the *next* page, so setting it after `newPage()` would size the
+     * following page instead.
+     *
+     * @param pixelWidth the image width in pixels (from the SOF segment for
+     *   JPEG, from the PBM header for JBIG2, which carries no dimensions).
+     * @param pixelHeight the image height in pixels.
+     */
+    private fun placeImage(
+        document: Document,
+        image: Image,
+        pixelWidth: Float,
+        pixelHeight: Float,
+        dpi: Int,
+    ) {
+        val width = pointsFor(pixelWidth, dpi)
+        val height = pointsFor(pixelHeight, dpi)
+        val fixed = targetPageSize as? TargetPageSize.Fixed
+        if (fixed == null) {
+            document.setPageSize(Rectangle(width, height))
+            document.newPage()
+            image.setAbsolutePosition(0f, 0f)
+        } else {
+            document.setPageSize(Rectangle(fixed.widthPt, fixed.heightPt))
+            document.newPage()
+            image.setAbsolutePosition((fixed.widthPt - width) / 2f, (fixed.heightPt - height) / 2f)
+        }
+        image.scaleAbsolute(width, height)
         document.add(image)
     }
 
