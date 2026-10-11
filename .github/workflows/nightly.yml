@@ -25,9 +25,19 @@ name: nightly
 # while the night after produced no run at all. An offset minute is no
 # guarantee (`schedule` never is), it only moves the run off the busiest
 # slot. CI-02 asks for a nightly run, not for a particular time.
+#
+# Because one slot measurably skips nights (08.10. +6 h late and failed,
+# 09.10. skipped, 10.10. +6 h late), the schedule is three staggered slots
+# instead of one — a single dropped slot no longer loses the night. The
+# concurrency group below keeps double fires safe: one run completes, the
+# other is cancelled. The last line of defence is the watchdog workflow
+# `nightly-watchdog.yml`, which re-dispatches this workflow when a night
+# has neither succeeded nor started recently.
 on:
   schedule:
     - cron: '37 3 * * *'
+    - cron: '52 3 * * *'
+    - cron: '17 4 * * *'
   workflow_dispatch:
 
 # A scheduled job modifies nothing in the repository.
