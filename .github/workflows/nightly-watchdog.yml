@@ -52,30 +52,31 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cutoff24h=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)
-          cutoff6h=$(date -u -d '6 hours ago' +%Y-%m-%dT%H:%M:%SZ)
-          # A failed lookup must not be read as "no runs exist" — that would
-          # dispatch blindly on an API hiccup. Fail the check instead; the
-          # watchdog run goes red and the dispatch is skipped.
-          if ! recent=$(gh api "repos/digiwomb-dev/UnboundAir/actions/workflows/nightly.yml/runs?per_page=20" \
-            --jq --arg c24 "$cutoff24h" '[.workflow_runs[] | select(.created_at >= $c24)]'); then
+          # One API call, one jq program, one result word. The cutoffs are
+          # computed inside jq (`now` is UTC like the API's `created_at`), so
+          # nothing is interpolated into the shell and nothing is re-parsed —
+          # `gh api` has no `--arg`, and round-tripping JSON through a shell
+          # variable broke the first version. A failed lookup must not read as
+          # "no runs exist" (that would dispatch blindly), so it fails loudly.
+          if ! state=$(gh api "repos/digiwomb-dev/UnboundAir/actions/workflows/nightly.yml/runs?per_page=20" --jq '
+            def cutoff(hours): (now - (hours * 3600)) | strftime("%Y-%m-%dT%H:%M:%SZ");
+            .workflow_runs
+            | { s: ([.[] | select(.conclusion == "success" and .created_at >= cutoff(24))] | length),
+                r: ([.[] | select(.status == "queued" or .status == "in_progress")] | length),
+                f: ([.[] | select(.created_at >= cutoff(6))] | length) }
+            | if .s > 0 or .r > 0 or .f > 0 then "healthy" else "dispatch" end
+          '); then
             echo "::error::nightly runs lookup failed — dispatching nothing"
             exit 1
           fi
 
-          succeeded=$(echo "$recent" | jq '[.[] | select(.conclusion == "success")] | length')
-          running=$(echo "$recent" | jq '[.[] | select(.status == "queued" or .status == "in_progress")] | length')
-          fresh=$(echo "$recent" | jq --arg c6 "$cutoff6h" '[.[] | select(.created_at >= $c6)] | length')
-
-          echo "recent runs: ${recent}"
-          echo "succeeded (24h)=${succeeded} running=${running} fresh (6h)=${fresh}"
-
-          if [ "$succeeded" -gt 0 ] || [ "$running" -gt 0 ] || [ "$fresh" -gt 0 ]; then
-            echo "nightly is healthy: succeeded recently or a run is underway — nothing to do"
-            echo "dispatch=no" >> "$GITHUB_OUTPUT"
-          else
-            echo "no healthy nightly: dispatching a run"
+          echo "watchdog state: ${state}"
+          if [ "$state" = "dispatch" ]; then
+            echo "no healthy nightly within the windows — dispatching a run"
             echo "dispatch=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "nightly is healthy: succeeded within 24 h, running, or started within 6 h — nothing to do"
+            echo "dispatch=no" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Dispatch the nightly
