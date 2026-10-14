@@ -14,7 +14,7 @@
 # lives in Ubuntu universe (package `jbig2`, source package `jbig2enc`), so
 # the base image must have universe enabled. Pinned by digest so the runtime
 # image is reproducible; the tag alone would silently move.
-FROM eclipse-temurin:26-jre-noble@sha256:44ea8920aed64bdc43b5a6eaab0a6b40503f17636b9e661d0b6c6e3fa1442f2c
+FROM eclipse-temurin:26-jre-noble@sha256:3ed5e2e03c80f8a4901f81ef30e7becd19012e32ab6e036b255ee52fdcabac30
 
 # jpegtran (libjpeg-turbo-progs) does the lossless cropping and grayscale
 # conversion. jbig2 is the second system dependency beside jpegtran - it
