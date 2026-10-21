@@ -7,7 +7,7 @@ plugins {
     // below wins over the one Spring Boot manages. Spring Boot 4.1.1
     // manages Kotlin 2.3.21, whose compiler cannot target Java 26.
     kotlin("jvm") version "2.4.20"
-    kotlin("plugin.spring") version "2.4.20"
+    kotlin("plugin.spring") version "2.4.21"
     id("org.springframework.boot") version "4.1.1"
     id("io.spring.dependency-management") version "1.1.7"
 
