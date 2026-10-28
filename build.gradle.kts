@@ -85,7 +85,7 @@ dependencies {
     // Property-based tests. jqwik (>= 1.10) forbids use by AI coding agents,
     // which this project relies on; kotest-property has no such clause and no
     // engine of its own (it is called from plain @Test methods).
-    testImplementation("io.kotest:kotest-property:6.2.5")
+    testImplementation("io.kotest:kotest-property:6.2.6")
 
     // Contract tests against the paperless-ngx HTTP API. 4.x is still beta,
     // so 3.13.2 is the newest stable line.
