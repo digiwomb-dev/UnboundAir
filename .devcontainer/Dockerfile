@@ -12,7 +12,7 @@
 # source package `jbig2enc`), so the base image must have universe enabled -
 # this is where it would show if not. Pinned by digest so the environment is
 # reproducible; the tag alone would silently move.
-FROM eclipse-temurin:26-jdk-noble@sha256:abe71c9b7140affd9a80d6ed313c428e3393d4d18c235823b1745670d4702053
+FROM eclipse-temurin:26-jdk-noble@sha256:9c0e8eddecccc0d5679b317b0c90fa7103ad25cae33df1c00280675eb681c7f8
 
 # jpegtran (libjpeg-turbo-progs) does the lossless cropping and grayscale
 # conversion. jbig2 is the second system dependency beside jpegtran - it
